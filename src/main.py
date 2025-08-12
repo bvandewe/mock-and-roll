@@ -1,17 +1,21 @@
 import json
 import logging
 import os
-import base64
 import uuid
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union, Type
+from typing import Any, Optional
 
-from fastapi import FastAPI, Request, HTTPException, Depends, Security, Body
+import redis
+from fastapi import Body, Depends, FastAPI, HTTPException, Request, Security
 from fastapi.responses import JSONResponse
-from fastapi.security import HTTPBasic, HTTPBasicCredentials, HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import (
+    HTTPAuthorizationCredentials,
+    HTTPBasic,
+    HTTPBasicCredentials,
+    HTTPBearer,
+)
 from fastapi.security.api_key import APIKeyHeader
 from pydantic import BaseModel, Field, create_model
-import redis
 from redis.exceptions import ConnectionError as RedisConnectionError
 
 # --- Basic Setup ---
@@ -48,7 +52,7 @@ def get_redis_client():
     return redis_client
 
 
-def store_entity(entity_name: str, data: Dict[str, Any]) -> str:
+def store_entity(entity_name: str, data: dict[str, Any]) -> str:
     """Store entity in Redis and return the generated key."""
     redis_conn = get_redis_client()
     if not redis_conn:
@@ -69,7 +73,7 @@ def store_entity(entity_name: str, data: Dict[str, Any]) -> str:
         raise HTTPException(status_code=500, detail="Failed to store entity")
 
 
-def get_entity(entity_name: str, entity_id: str) -> Optional[Dict[str, Any]]:
+def get_entity(entity_name: str, entity_id: str) -> Optional[dict[str, Any]]:
     """Retrieve entity from Redis."""
     redis_conn = get_redis_client()
     if not redis_conn:
@@ -86,7 +90,7 @@ def get_entity(entity_name: str, entity_id: str) -> Optional[Dict[str, Any]]:
         return None
 
 
-def list_entities(entity_name: str) -> List[Dict[str, Any]]:
+def list_entities(entity_name: str) -> list[dict[str, Any]]:
     """List all entities of a given type."""
     redis_conn = get_redis_client()
     if not redis_conn:
@@ -122,7 +126,7 @@ def flush_cache() -> bool:
         return False
 
 
-def get_cache_info() -> Dict[str, Any]:
+def get_cache_info() -> dict[str, Any]:
     """Get Redis cache information."""
     redis_conn = get_redis_client()
     if not redis_conn:
@@ -182,7 +186,7 @@ async def get_bearer_token(credentials: HTTPAuthorizationCredentials = Security(
     raise HTTPException(status_code=401, detail="Invalid bearer token")
 
 
-def load_config() -> Dict[str, List[Dict[str, Any]]]:
+def load_config() -> dict[str, list[dict[str, Any]]]:
     """Loads the mock configuration from endpoints.json in the config directory."""
     config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config", "endpoints.json")
     try:
@@ -196,7 +200,7 @@ def load_config() -> Dict[str, List[Dict[str, Any]]]:
         return {"endpoints": []}
 
 
-def load_auth_config() -> Dict[str, Any]:
+def load_auth_config() -> dict[str, Any]:
     """Loads the authentication configuration from auth.json in the config directory."""
     auth_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config", "auth.json")
     try:
@@ -210,7 +214,7 @@ def load_auth_config() -> Dict[str, Any]:
         return {"authentication_methods": {}}
 
 
-def check_conditions(body: Dict[str, Any], conditions: Dict[str, Any]) -> bool:
+def check_conditions(body: dict[str, Any], conditions: dict[str, Any]) -> bool:
     """Checks if the request body satisfies all conditions."""
     if not conditions:
         return False
@@ -221,7 +225,7 @@ def check_conditions(body: Dict[str, Any], conditions: Dict[str, Any]) -> bool:
     return True
 
 
-def get_security_dependencies(auth_methods: List[str]):
+def get_security_dependencies(auth_methods: list[str]):
     """Returns the appropriate security dependencies for the given auth methods."""
     if not auth_methods:
         return None
@@ -265,29 +269,7 @@ def get_security_dependencies(auth_methods: List[str]):
     return [Depends(verify_auth)]
 
 
-# Generic request body models
-class ProductRequest(BaseModel):
-    name: Optional[str] = None
-    price: Optional[float] = None
-    category: Optional[str] = None
-    description: Optional[str] = None
-
-
-class OrderRequest(BaseModel):
-    product_id: Optional[str] = None
-    quantity: Optional[int] = None
-    priority: Optional[str] = None
-    customer_id: Optional[str] = None
-
-
-class CustomerRequest(BaseModel):
-    name: Optional[str] = None
-    email: Optional[str] = None
-    phone: Optional[str] = None
-    address: Optional[str] = None
-
-
-def needs_request_body(endpoint_config: Dict[str, Any]) -> bool:
+def needs_request_body(endpoint_config: dict[str, Any]) -> bool:
     """Determine if endpoint needs a request body for Swagger UI."""
     method = endpoint_config.get("method", "").upper()
     persistence = endpoint_config.get("persistence", {})
@@ -307,27 +289,7 @@ def needs_request_body(endpoint_config: Dict[str, Any]) -> bool:
     return False
 
 
-def get_request_body_model(endpoint_config: Dict[str, Any]) -> type:
-    """Get appropriate request body model based on endpoint configuration."""
-    entity_name = endpoint_config.get("persistence", {}).get("entity_name", "").lower()
-
-    if "product" in entity_name:
-        return ProductRequest
-    elif "order" in entity_name:
-        return OrderRequest
-    elif "customer" in entity_name:
-        return CustomerRequest
-    else:
-        # Generic model for other entities
-        class GenericRequest(BaseModel):
-            name: Optional[str] = None
-            value: Optional[Any] = None
-            data: Optional[Dict[str, Any]] = None
-
-        return GenericRequest
-
-
-def create_dynamic_model_from_schema(schema: Dict[str, Any], model_name: str = "DynamicRequest") -> Type[BaseModel]:
+def create_dynamic_model_from_schema(schema: dict[str, Any], model_name: str = "DynamicRequest") -> type[BaseModel]:
     """Create a dynamic Pydantic model from a JSON schema."""
     if not schema or schema.get("type") != "object":
         # Fallback to generic model
@@ -407,7 +369,7 @@ def process_response_body(body: Any) -> Any:
         return body
 
 
-def create_request_model(endpoint_config: Dict[str, Any]) -> Type[BaseModel]:
+def create_request_model(endpoint_config: dict[str, Any]) -> type[BaseModel]:
     """Create a request model based on endpoint configuration."""
     request_body_schema = endpoint_config.get("request_body_schema")
 
@@ -422,7 +384,7 @@ def create_request_model(endpoint_config: Dict[str, Any]) -> Type[BaseModel]:
         return create_model("GenericRequest", name=(Optional[str], None), value=(Optional[Any], None), data=(Optional[Dict[str, Any]], None))
 
 
-def create_handler_with_body(endpoint_config: Dict[str, Any]):
+def create_handler_with_body(endpoint_config: dict[str, Any]):
     """Create a handler that accepts a request body for POST/PUT endpoints."""
     import inspect
 
@@ -520,7 +482,7 @@ def create_handler_with_body(endpoint_config: Dict[str, Any]):
     return handler
 
 
-def create_handler(endpoint_config: Dict[str, Any]):
+def create_handler(endpoint_config: dict[str, Any]):
     """
     Factory function to create a request handler for a specific endpoint configuration.
     This closure ensures each created handler has its own isolated config.
@@ -617,7 +579,7 @@ def create_handler(endpoint_config: Dict[str, Any]):
 # --- Dynamic Route Creation ---
 
 
-def setup_routes(app_instance: FastAPI, config: Dict[str, List[Dict[str, Any]]], auth_config: Dict[str, Any]):
+def setup_routes(app_instance: FastAPI, config: dict[str, list[dict[str, Any]]], auth_config: dict[str, Any]):
     """Reads the config and dynamically adds routes to the FastAPI app."""
     global global_auth_config
     global_auth_config = auth_config
