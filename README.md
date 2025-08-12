@@ -1,92 +1,976 @@
-# mock-and-roll
 
-A highly configurable and extensible mock REST API server built with FastAPI. This server allows you to quickly create mock endpoints with various authentication methods, conditional responses, and dynamic path parameters - perfect for testing...
+# REST API Mock Server
 
-## Getting started
+[![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-green.svg)](https://fastapi.tiangolo.com)
+[![Redis](https://img.shields.io/badge/Redis-5.0+-red.svg)](https://redis.io)
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://docker.com)
+[![MIT License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+---
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+## 📖 Table of Contents
 
-## Add your files
+- [Quick Start](#-quick-start)
+- [Features](#-features)
+  - [Core Functionality](#-core-functionality)
+  - [Authentication & Security](#-authentication--security)
+  - [Developer Experience](#-developer-experience)
+- [Project Structure](#-project-structure)
+- [Installation](#-installation)
+  - [Prerequisites](#prerequisites)
+  - [Using Poetry (Recommended)](#using-poetry-recommended)
+  - [Using pip](#using-pip)
+  - [Using Docker](#using-docker)
+- [Configuration](#-configuration)
+  - [Endpoint Configuration](#endpoint-configuration-srcconfigendpointsjson)
+  - [Authentication Configuration](#authentication-configuration-srcconfigauthjson)
+  - [Persistence Configuration](#persistence-configuration-redis)
+  - [Environment Variables](#environment-variables)
+- [Usage](#-usage)
+  - [Starting the Server](#starting-the-server)
+- [API Examples](#-api-examples)
+  - [Public Endpoint (No Authentication)](#1-public-endpoint-no-authentication)
+  - [API Key Authentication](#2-api-key-authentication)
+  - [HTTP Basic Authentication](#3-http-basic-authentication)
+  - [Bearer Token (OIDC) Authentication](#4-bearer-token-oidc-authentication)
+  - [Conditional Responses](#5-conditional-responses)
+  - [OAuth2 Token Exchange](#6-oauth2-token-exchange)
+  - [Error Responses](#7-error-responses)
+  - [Redis Persistence Examples](#8-redis-persistence-examples)
+- [Roadmap](#-roadmap)
+- [Development](#-development)
+  - [Running Tests](#-running-tests)
+  - [Code Formatting](#-code-formatting)
+  - [Code Quality](#-code-quality)
+  - [Development Commands](#-development-commands)
+  - [VS Code Setup](#-vs-code-setup)
+- [Docker Usage](#-docker-usage)
+  - [Development](#development)
+  - [Production](#production)
+- [Contributing](#-contributing)
+- [License](#-license)
+- [Troubleshooting](#-troubleshooting)
+  - [Common Issues](#common-issues)
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+
+
+## 🚀 Quick Start
+
+Get up and running in under 2 minutes:
+
+```bash
+# Clone and setup
+git clone <repository-url>
+cd mock-api
+
+# Install with Poetry
+poetry install && poetry shell
+
+# Ajust the configuration to Mock your own API
+edit src/config/endpoints.json
+edit src/config/auth.json
+# >>> See below for example endpoints configs <<<
+
+# Start the server
+python -m uvicorn src.main:app --reload --port 8000
+```
+
+
+**🎉 That's it!** Your mock API server is now running at:
+- **API Base URL**: http://localhost:8000
+- **Interactive Docs**: http://localhost:8000/docs
+- **OpenAPI Schema**: http://localhost:8000/openapi.json
+
+
+### Example: Create a Product with Persistence
+
+**Endpoint config (`src/config/endpoints.json`):**
+```json
+{
+  "endpoints": [
+    {
+            "method": "POST",
+            "path": "/products",
+            "authentication": [
+                "api_key"
+            ],
+            "persistence": {
+                "entity_name": "products",
+                "action": "create"
+            },
+            "request_body_schema": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Product name",
+                        "example": "Laptop Pro"
+                    },
+                    "price": {
+                        "type": "number",
+                        "description": "Product price in USD",
+                        "example": 999.99
+                    },
+                    "category": {
+                        "type": "string",
+                        "description": "Product category",
+                        "example": "electronics"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Product description",
+                        "example": "High-performance laptop for professionals"
+                    },
+                    "in_stock": {
+                        "type": "boolean",
+                        "description": "Whether product is in stock",
+                        "example": true
+                    }
+                },
+                "required": [
+                    "name",
+                    "price"
+                ]
+            },
+            "responses": [
+                {
+                    "body_conditions": null,
+                    "response": {
+                        "status_code": 201,
+                        "body": {
+                            "message": "Product created successfully.",
+                            "product_id": "{{random_uuid}}",
+                            "created_at": "{{current_timestamp}}"
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "method": "GET",
+            "path": "/products/{product_id}",
+            "authentication": [
+                "api_key"
+            ],
+            "persistence": {
+                "entity_name": "products",
+                "action": "retrieve"
+            }
+        },
+  ]
+}
+```
+
+**Auth config (`src/config/auth.json`):**
+```json
+{
+  "authentication_methods": {
+    "api_key": {
+      "type": "api_key",
+      "name": "X-API-Key",
+      "location": "header",
+      "valid_keys": ["demo-api-key-123", "test-key-456", "admin-key-789"]
+    }
+  }
+}
+```
+
+**Create a new product (persistence action):**
+```bash
+curl -X 'POST' \
+  'http://localhost:8080/products' \
+  -H 'accept: application/json' \
+  -H 'X-API-Key: demo-api-key-123' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "name": "Laptop Pro",
+  "price": 999.99,
+  "category": "electronics",
+  "description": "High-performance laptop for professionals",
+  "in_stock": true
+}'
+```
+
+**Response:**
+
+**201 Created**
+```json
+{
+  "message": "Product created successfully.",
+  "product_id": "3d2ae57c-ac07-4709-9977-a45dc928084d",
+  "created_at": "2025-08-12T12:07:10.104556Z",
+  "id": "fddcbefc-acef-4bd3-8037-07f727eeea7c",
+  "name": "Laptop Pro",
+  "price": 999.99,
+  "category": "electronics",
+  "description": "High-performance laptop for professionals",
+  "in_stock": true
+}
+```
+
+**Retrieve the created product:**
+```bash
+curl -X 'GET' \
+  'http://localhost:8080/products/fddcbefc-acef-4bd3-8037-07f727eeea7c' \
+  -H 'accept: application/json' \
+  -H 'X-API-Key: demo-api-key-123'
+```
+
+**Response:**
+```json
+{
+  "id": "fddcbefc-acef-4bd3-8037-07f727eeea7c",
+  "entity_type": "products",
+  "created_at": "2025-08-12T12:07:10.103049",
+  "data": {
+    "name": "Laptop Pro",
+    "price": 999.99,
+    "category": "electronics",
+    "description": "High-performance laptop for professionals",
+    "in_stock": true
+  }
+}
+```
+
+---
+
+## 🚀 Features
+
+
+### Core Functionality
+- **Dynamic Endpoint Configuration**: Create REST endpoints through JSON config files (`src/config/endpoints.json`)
+- **Path Parameter Support**: Dynamic URL parameters with automatic substitution in responses
+- **Conditional Responses**: Different responses based on request body conditions (see `/users` endpoint)
+- **Request Body Validation**: Support for JSON request bodies with condition matching
+- **Redis Persistence**: Optional data persistence layer with Redis for entity storage and retrieval
+- **Admin/Cache Endpoints**: Inspect and manage Redis cache via `/admin/cache/*` endpoints
+
+### Authentication & Security
+- **Multiple Authentication Methods**: API Key, HTTP Basic Auth, and OIDC (OAuth2)
+- **Flexible Authentication**: Multiple auth methods per endpoint with OR logic
+- **OpenAPI Integration**: Full Swagger UI support with security scheme visualization
+- **Grant Type Support**: Authorization Code flow for OIDC (see config)
+
+### Developer Experience
+- **Interactive Documentation**: Auto-generated Swagger UI at `/docs`
+- **Hot Reloading**: Development mode with automatic code reloading
+- **Comprehensive Logging**: Detailed logging for debugging and monitoring
+- **Docker Support**: Ready-to-use Docker configuration with Redis
+- **Cache Management**: Admin endpoints for Redis cache inspection and management
+
+## 📁 Project Structure
 
 ```
-cd existing_repo
-git remote add origin https://ccie-gitlab.ccie.cisco.com/mozart/microservices/mock-and-roll.git
-git branch -M main
-git push -uf origin main
+mock-api/
+├── src/                          # Main application source
+│   ├── main.py                   # FastAPI application and core logic
+│   ├── config/                   # Configuration files
+│   │   ├── endpoints.json        # Endpoint definitions and responses
+│   │   └── auth.json            # Authentication configuration
+│   └── __init__.py
+├── .vscode/                      # VS Code configuration
+│   └── settings.json            # Python formatting settings (Black)
+├── Dockerfile                    # Docker container configuration
+├── docker-compose.yml           # Multi-service orchestration
+├── pyproject.toml               # Python dependencies and project metadata
+└── README.md                    # This file
 ```
 
-## Integrate with your tools
+## 🛠️ Installation
 
-- [ ] [Set up project integrations](https://ccie-gitlab.ccie.cisco.com/mozart/microservices/mock-and-roll/-/settings/integrations)
+### Prerequisites
+- Python 3.12+
+- Poetry (recommended) or pip
 
-## Collaborate with your team
+### Using Poetry (Recommended)
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Automatically merge when pipeline succeeds](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+```bash
+# Clone the repository
+git clone <repository-url>
+cd mock-api
 
-## Test and Deploy
+# Install dependencies
+poetry install
 
-Use the built-in continuous integration in GitLab.
+# Activate virtual environment
+poetry shell
+```
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing(SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+### Using pip
 
-***
+```bash
+# Clone the repository
+git clone <repository-url>
+cd mock-api
 
-# Editing this README
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!).  Thank you to [makeareadme.com](https://www.makeareadme.com/) for this template.
+# Install dependencies
+pip install fastapi uvicorn
+```
 
-## Suggestions for a good README
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+### Using Docker
 
-## Name
-Choose a self-explaining name for your project.
+```bash
+# Clone the repository
+git clone <repository-url>
+cd mock-api
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+# Build and run with Docker Compose
+docker-compose up --build
+```
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+## ⚙️ Configuration
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+### Endpoint Configuration (`src/config/endpoints.json`)
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+Define your mock endpoints with this structure:
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+```json
+{
+    "endpoints": [
+        {
+            "method": "GET|POST|PUT|DELETE|PATCH",
+            "path": "/your/path/{parameter}",
+            "authentication": ["api_key", "basic_auth", "oidc_auth_code"],
+            "required_scopes": ["read", "write"],
+            "responses": [
+                {
+                    "body_conditions": {
+                        "key": "value"
+                    },
+                    "response": {
+                        "status_code": 200,
+                        "body": {
+                            "message": "Response with {parameter} substitution"
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}
+```
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+### Authentication Configuration (`src/config/auth.json`)
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+Configure authentication methods:
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+```json
+{
+    "authentication_methods": {
+        "api_key": {
+            "type": "api_key",
+            "name": "X-API-Key",
+            "location": "header",
+            "valid_keys": ["your-api-key-here"]
+        },
+        "basic_auth": {
+            "type": "http_basic",
+            "valid_credentials": [
+                {"username": "admin", "password": "secret"}
+            ]
+        },
+        "oidc_auth_code": {
+            "type": "oidc",
+            "grant_type": "authorization_code",
+            "valid_tokens": [
+                {"access_token": "your-token", "scope": "read write"}
+            ]
+        }
+    }
+}
+```
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+### Persistence Configuration (Redis)
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+Enable data persistence for your endpoints by adding persistence configuration:
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+```json
+{
+    "method": "POST",
+    "path": "/products/{product_id}",
+    "authentication": ["api_key"],
+    "persistence": {
+        "entity_name": "products",
+        "action": "create"
+    },
+    "responses": [
+        {
+            "body_conditions": null,
+            "response": {
+                "status_code": 201,
+                "body": {
+                    "message": "Product created successfully.",
+                    "product_id": "{product_id}"
+                }
+            }
+        }
+    ]
+}
+```
 
-## License
-For open source projects, say how it is licensed.
+**Supported persistence actions:**
+- `create`: Store the request body as an entity
+- `retrieve`: Get stored entity data  
+- `update`: Update existing entity data
+- `delete`: Remove entity from storage
+- `list`: Get all entities of a given type
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+**Redis Management Endpoints:**
+- `GET /admin/cache/info` - Get Redis connection status and statistics
+- `DELETE /admin/cache/flush` - Clear all cached data
+- `GET /admin/cache/entities/{entity_name}` - List all entities of a type
+- `DELETE /admin/cache/entities/{entity_name}/{entity_id}` - Delete specific entity
+
+### Environment Variables
+
+Configure the application behavior using these environment variables:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `REDIS_HOST` | `localhost` | Redis server hostname |
+| `REDIS_PORT` | `6379` | Redis server port |
+| `REDIS_DB` | `0` | Redis database number |
+| `LOG_LEVEL` | `INFO` | Logging level (DEBUG, INFO, WARNING, ERROR) |
+
+**Example .env file:**
+```bash
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_DB=0
+LOG_LEVEL=DEBUG
+```
+
+## 🚀 Usage
+
+### Starting the Server
+
+```bash
+# Development mode (from src directory)
+cd src
+python -m uvicorn main:app --reload --port 8000
+
+# Production mode
+cd src
+python -m uvicorn main:app --host 0.0.0.0 --port 8000
+
+# Docker
+docker-compose up
+```
+
+Access the server:
+- API Base URL: `http://localhost:8000`
+- Interactive Documentation: `http://localhost:8000/docs`
+- OpenAPI Schema: `http://localhost:8000/openapi.json`
+
+## 📋 API Examples
+
+### 1. Public Endpoint (No Authentication)
+
+**Request:**
+```bash
+curl -X GET "http://localhost:8000/public/health"
+```
+
+**Response:**
+```json
+{
+    "status": "healthy",
+    "timestamp": "2025-08-11T00:00:00Z"
+}
+```
+
+
+### 2. API Key Authentication
+
+**Valid Request:**
+```bash
+curl -X GET "http://localhost:8000/items/123" \
+  -H "X-API-Key: demo-api-key-123"
+```
+
+**Response:**
+```json
+{
+  "message": "Here is the item you requested.",
+  "item_id": "123",
+  "data": {
+    "name": "A Mocked Item",
+    "value": 123
+  }
+}
+```
+
+**Invalid Request (Missing or Wrong API Key):**
+```bash
+curl -X GET "http://localhost:8000/items/123"
+```
+
+**Response:**
+```json
+{
+  "detail": "Authentication failed. Required methods: api_key. Errors: Invalid API key"
+}
+```
+
+
+### 3. HTTP Basic Authentication
+
+**Valid Request:**
+```bash
+curl -X POST "http://localhost:8000/users" \
+  -H "Content-Type: application/json" \
+  -u "admin:secret123" \
+  -d '{"role": "admin", "action": "create"}'
+```
+
+**Response:**
+```json
+{
+    "message": "Admin user created successfully.",
+    "user_id": 999
+}
+```
+
+**Valid Request (Other Credentials):**
+```bash
+curl -X POST "http://localhost:8000/users" \
+  -H "Content-Type: application/json" \
+  -u "guest:guest123" \
+  -d '{"role": "guest"}'
+```
+
+**Response:**
+{
+    "message": "Guest user created with limited permissions.",
+    "user_id": 100
+}
+```
+
+**Invalid Request (Wrong Credentials):**
+```bash
+curl -X POST "http://localhost:8000/users" \
+  -H "Content-Type: application/json" \
+  -u "admin:wrongpassword" \
+  -d '{"role": "admin", "action": "create"}'
+```
+
+**Response:**
+```json
+{
+    "detail": "Authentication failed. Required methods: basic_auth, oidc_auth_code. Errors: Invalid credentials"
+}
+```
+
+
+### 4. Bearer Token (OIDC) Authentication
+
+**Valid Request:**
+```bash
+curl -X GET "http://localhost:8000/admin/settings" \
+  -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.demo-token"
+```
+
+**Response:**
+```json
+{
+  "settings": {
+    "max_users": 1000,
+    "feature_flags": {
+      "new_ui": true,
+      "beta_features": false
+    }
+  }
+}
+```
+
+### 5. Conditional Responses
+
+**Request with Admin Role:**
+```bash
+curl -X POST "http://localhost:8000/users" \
+  -H "Content-Type: application/json" \
+  -u "admin:secret123" \
+  -d '{"role": "admin", "action": "create"}'
+```
+
+**Response:**
+```json
+{
+    "message": "Admin user created successfully.",
+    "user_id": 999
+}
+```
+
+**Request with Guest Role:**
+```bash
+curl -X POST "http://localhost:8000/users" \
+  -H "Content-Type: application/json" \
+  -u "admin:secret123" \
+  -d '{"role": "guest"}'
+```
+
+**Response:**
+```json
+{
+    "message": "Guest user created with limited permissions.",
+    "user_id": 100
+}
+```
+
+
+### 6. OAuth2 Token Exchange
+
+**Authorization Code Grant:**
+```bash
+curl -X POST "http://localhost:8000/auth/token" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "grant_type": "authorization_code",
+    "client_id": "demo-client-id",
+    "code": "auth-code-here"
+  }'
+```
+
+**Response:**
+```json
+{
+    "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.demo-token",
+    "token_type": "Bearer",
+    "expires_in": 3600,
+    "scope": "read write"
+}
+```
+
+### 7. Error Responses
+
+**400 Bad Request (Invalid JSON):**
+```bash
+curl -X POST "http://localhost:8000/users" \
+  -H "Content-Type: application/json" \
+  -u "admin:secret123" \
+  -d '{"invalid": json}'
+```
+
+**Response:**
+```json
+{
+    "error": "Invalid JSON in request body."
+}
+```
+
+**401 Unauthorized:**
+```bash
+curl -X GET "http://localhost:8000/items/123"
+```
+
+**Response:**
+```json
+{
+    "detail": "Authentication failed. Required methods: api_key. Errors: "
+}
+```
+
+**422 Validation Error (Missing Path Parameter):**
+```bash
+curl -X GET "http://localhost:8000/items/"
+```
+
+**Response:**
+```json
+{
+    "detail": [
+        {
+            "loc": ["path", "item_id"],
+            "msg": "field required",
+            "type": "value_error.missing"
+        }
+    ]
+}
+```
+
+### 8. Redis Persistence Examples
+
+
+**Create a Product (with persistence):**
+```bash
+curl -X POST "http://localhost:8000/products/123" \
+  -H "X-API-Key: test-key-456" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Laptop", "price": 999.99, "category": "electronics"}'
+```
+
+**Response:**
+```json
+{
+    "message": "Product created successfully.",
+    "product_id": "123",
+    "created_at": "2025-01-11T10:30:00Z"
+}
+```
+
+**Retrieve a Cached Product:**
+```bash
+curl -X GET "http://localhost:8000/products/123" \
+  -H "X-API-Key: test-api-key-123"
+```
+
+**Response:**
+```json
+{
+    "product_id": "123",
+    "name": "Mock Product",
+    "price": 29.99,
+    "retrieved_from_cache": true
+}
+```
+
+**List All Products:**
+```bash
+curl -X GET "http://localhost:8000/products" \
+  -H "X-API-Key: test-api-key-123"
+```
+
+**Response:**
+```json
+{
+    "products": [],
+    "total_count": 0,
+    "cached_results": true
+}
+```
+
+**Check Redis Cache Status:**
+```bash
+curl -X GET "http://localhost:8000/admin/cache/info"
+```
+
+**Response:**
+```json
+{
+    "redis_connected": true,
+    "total_keys": 5,
+    "memory_usage": "1.2MB",
+    "uptime_seconds": 3600
+}
+```
+
+## 🗺️ Roadmap
+
+### Version 0.2.0 - Persistence Layer ✅
+- **Redis Integration**: Store and retrieve entity data using Redis
+- **Cache Management**: Admin endpoints for cache inspection and management
+- **Entity Operations**: CRUD operations with automatic caching
+- **Data Persistence**: Maintain data across server restarts
+
+### Version 0.3.0 - Advanced Workflows
+- **Database Integration**: SQLite/PostgreSQL support for storing configurations
+- **Dynamic Configuration**: Runtime configuration updates via API
+- **Configuration Versioning**: Track and rollback configuration changes
+- **Backup/Restore**: Export and import configurations
+
+### Version 0.3.0 - Advanced Workflows
+- **Request Sequencing**: Chain multiple requests with state management
+- **Response Templates**: Jinja2 templating for dynamic response generation
+- **Data Fixtures**: Pre-populated datasets for complex scenarios
+- **Request Recording**: Capture and replay real API interactions
+
+### Version 0.4.0 - Enhanced Features
+- **Rate Limiting**: Per-endpoint and per-user rate limiting
+- **Request Validation**: JSON Schema validation for request bodies
+- **Response Transformation**: Modify responses based on request headers
+- **Webhook Support**: Trigger external webhooks on specific requests
+
+### Version 0.5.0 - Production Features
+- **Metrics & Analytics**: Request/response metrics and analytics dashboard
+- **Load Testing**: Built-in load testing capabilities
+- **Multi-tenancy**: Support for multiple isolated environments
+- **Plugin System**: Custom middleware and extension support
+
+## 🧪 Development
+
+### 🧪 Running Tests
+```bash
+# Install test dependencies
+poetry install --with test
+
+# Run all tests
+pytest
+
+# Run with coverage report
+pytest --cov=src --cov-report=html
+
+# Run specific test file
+pytest tests/test_auth.py
+
+# Run tests with verbose output
+pytest -v
+```
+
+### 🎨 Code Formatting
+The project uses Black for code formatting:
+```bash
+# Format all code
+black src/ tests/
+
+# Check formatting without making changes
+black --check src/
+
+# Format with line length limit
+black --line-length 88 src/
+```
+
+### 🔍 Code Quality
+```bash
+# Run linting with flake8
+flake8 src/
+
+# Type checking with mypy
+mypy src/
+
+# Security scanning with bandit
+bandit -r src/
+```
+
+### 🔧 Development Commands
+```bash
+# Start development server with auto-reload
+python -m uvicorn src.main:app --reload --port 8000
+
+# Start with debug logging
+LOG_LEVEL=DEBUG python -m uvicorn src.main:app --reload
+
+# Run with different port
+python -m uvicorn src.main:app --reload --port 8001
+
+# Check Redis connection
+redis-cli ping
+
+# Monitor Redis operations
+redis-cli monitor
+```
+
+### 💻 VS Code Setup
+The project includes VS Code configuration for:
+- Auto-formatting on save with Black
+- Python environment detection
+- Debugging configuration
+
+## 🐳 Docker Usage
+
+### Development
+```bash
+# Build and run all services (API + Redis)
+docker-compose up --build
+
+# Run in background
+docker-compose up -d
+
+# View logs for all services
+docker-compose logs -f
+
+# View logs for specific service
+docker-compose logs -f mock-api
+docker-compose logs -f redis
+
+# Stop all services
+docker-compose down
+
+# Stop and remove volumes
+docker-compose down -v
+```
+
+**Access URLs after starting:**
+- **API Server**: http://localhost:8000
+- **Interactive Docs**: http://localhost:8000/docs
+- **Redis**: localhost:6379
+
+### Production
+```bash
+# Build production image
+docker build -t mock-api-server .
+
+# Run production container with Redis link
+docker run -d --name redis redis:8.0.0
+docker run -d -p 8000:8000 --link redis:redis \
+  -e REDIS_HOST=redis \
+  -e REDIS_PORT=6379 \
+  -e LOG_LEVEL=INFO \
+  mock-api-server
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🔧 Troubleshooting
+
+### Common Issues
+
+**Port Already in Use:**
+```bash
+# Kill existing processes
+pkill -f "uvicorn"
+
+# Or use a different port
+python -m uvicorn main:app --port 8001
+```
+
+**Configuration Not Loading:**
+- Ensure JSON files are valid (use `jq . config/endpoints.json` to validate)
+- Check file paths are correct relative to the `src` directory
+- Verify file permissions
+
+**Authentication Not Working:**
+- Check that valid credentials are configured in `auth.json`
+- Ensure the correct authentication method is specified in endpoints
+- Verify headers are properly formatted
+
+**Docker Issues:**
+```bash
+# Rebuild containers
+docker-compose down
+docker-compose up --build
+
+# Check logs
+docker-compose logs mock-api-server
+```
+
+For more help, please open an issue on the repository.
+
+---
+
+## 📚 Additional Resources
+
+### 📖 Documentation
+- [FastAPI Documentation](https://fastapi.tiangolo.com/)
+- [Redis Documentation](https://redis.io/documentation)
+- [Docker Compose Documentation](https://docs.docker.com/compose/)
+- [Poetry Documentation](https://python-poetry.org/docs/)
+
+### 🔗 Related Projects
+- [FastAPI](https://github.com/tiangolo/fastapi) - Modern web framework for building APIs
+- [Redis](https://github.com/redis/redis) - In-memory data structure store
+- [Swagger UI](https://swagger.io/tools/swagger-ui/) - API documentation interface
+
+### 💡 Use Cases
+- **API Prototyping**: Quickly mock third-party APIs during development
+- **Testing**: Create predictable responses for integration tests
+- **Development**: Develop frontend applications without backend dependencies
+- **Training**: Learn API concepts with hands-on examples
+
+---
+
+**⭐ Star this repository if you find it useful!**

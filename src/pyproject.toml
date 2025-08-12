@@ -1,0 +1,39 @@
+[tool.poetry]
+package-mode = false
+name = "LdsSessionsAdapter"
+version = "0.1.0"
+description = "Lds to Mozart Sessions Adapter"
+authors = ["Bruno van de Werve <bvandewe@cisco.com>"]
+license = "MIT"
+readme = "README.md"
+
+[[tool.poetry.source]]
+name = "PyPI"
+priority = "primary"
+
+[[tool.poetry.source]]
+name = "gitlab"
+url = "https://__token__:K7bKxxsfBScbWNZK_SqL@ccie-gitlab.ccie.cisco.com/api/v4/projects/703/packages/pypi/simple"
+priority = "supplemental"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+neuroglia-python = "^0.1.5"
+apscheduler = "^3.11.0"
+redis = "^5.2.1"
+minio = "^7.2.15"
+pyhumps = "^3.8.0"
+pyjwt = "^2.10.1"
+python-dateutil = "^2.9.0.post0"
+
+[tool.poetry.group.test.dependencies]
+pytest = "^8"
+python-dotenv = "^1.1.0"
+pytest-asyncio = "^0.26.0"
+
+[tool.black]
+line-length = 500
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

@@ -1,0 +1,52 @@
+name: mock-api-dev
+services:
+  # http://localhost:8080/docs
+  mock-api:
+    image: mock-api-server
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command:
+      [
+        "sh",
+        "-c",
+        "pip install debugpy -t /tmp && python /tmp/debugpy --wait-for-client --listen 0.0.0.0:5678 -m uvicorn src.main:app --host 0.0.0.0 --port 8080 --reload",
+      ]
+    ports:
+      - 8080:8080
+      - 5678:5678
+    environment:
+      # Redis Configuration
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB: 0
+      
+      # Application Configuration
+      LOG_LEVEL: DEBUG
+      APP_TITLE: Mock API Server
+      
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+    networks:
+      - mock-api-network
+
+  # Redis cache server
+  # redis-cli -h localhost -p 6379 keys '*'
+  redis:
+    image: redis:8.0.0
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - mock-api-network
+    command: redis-server --appendonly yes
+
+volumes:
+  redis_data:
+
+networks:
+  mock-api-network:
+    driver: bridge
