@@ -1,0 +1,443 @@
+{
+    "endpoints": [
+        {
+            "method": "GET",
+            "path": "/items/{item_id}",
+            "authentication": [
+                "api_key"
+            ],
+            "responses": [
+                {
+                    "body_conditions": null,
+                    "response": {
+                        "status_code": 200,
+                        "body": {
+                            "message": "Here is the item you requested.",
+                            "item_id": "{item_id}",
+                            "data": {
+                                "name": "A Mocked Item",
+                                "value": 123
+                            }
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "method": "POST",
+            "path": "/users",
+            "authentication": [
+                "basic_auth",
+                "oidc_auth_code"
+            ],
+            "responses": [
+                {
+                    "body_conditions": {
+                        "role": "admin",
+                        "action": "create"
+                    },
+                    "response": {
+                        "status_code": 201,
+                        "body": {
+                            "message": "Admin user created successfully.",
+                            "user_id": 999
+                        }
+                    }
+                },
+                {
+                    "body_conditions": {
+                        "role": "guest"
+                    },
+                    "response": {
+                        "status_code": 201,
+                        "body": {
+                            "message": "Guest user created with limited permissions.",
+                            "user_id": 100
+                        }
+                    }
+                },
+                {
+                    "body_conditions": null,
+                    "response": {
+                        "status_code": 400,
+                        "body": {
+                            "error": "Bad Request",
+                            "detail": "Role must be specified."
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "method": "GET",
+            "path": "/public/health",
+            "responses": [
+                {
+                    "body_conditions": null,
+                    "response": {
+                        "status_code": 200,
+                        "body": {
+                            "status": "healthy",
+                            "timestamp": "2025-08-11T00:00:00Z"
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "method": "GET",
+            "path": "/admin/settings",
+            "authentication": [
+                "oidc_client_credentials"
+            ],
+            "required_scopes": [
+                "admin"
+            ],
+            "responses": [
+                {
+                    "body_conditions": null,
+                    "response": {
+                        "status_code": 200,
+                        "body": {
+                            "settings": {
+                                "max_users": 1000,
+                                "feature_flags": {
+                                    "new_ui": true,
+                                    "beta_features": false
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "method": "POST",
+            "path": "/auth/token",
+            "responses": [
+                {
+                    "body_conditions": {
+                        "grant_type": "authorization_code",
+                        "client_id": "demo-client-id"
+                    },
+                    "response": {
+                        "status_code": 200,
+                        "body": {
+                            "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.demo-token",
+                            "token_type": "Bearer",
+                            "expires_in": 3600,
+                            "scope": "read write"
+                        }
+                    }
+                },
+                {
+                    "body_conditions": {
+                        "grant_type": "client_credentials",
+                        "client_id": "service-client-id"
+                    },
+                    "response": {
+                        "status_code": 200,
+                        "body": {
+                            "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.service-token",
+                            "token_type": "Bearer",
+                            "expires_in": 7200,
+                            "scope": "service read"
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "method": "POST",
+            "path": "/products",
+            "authentication": [
+                "api_key"
+            ],
+            "persistence": {
+                "entity_name": "products",
+                "action": "create"
+            },
+            "request_body_schema": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Product name",
+                        "example": "Laptop Pro"
+                    },
+                    "price": {
+                        "type": "number",
+                        "description": "Product price in USD",
+                        "example": 999.99
+                    },
+                    "category": {
+                        "type": "string",
+                        "description": "Product category",
+                        "example": "electronics"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Product description",
+                        "example": "High-performance laptop for professionals"
+                    },
+                    "in_stock": {
+                        "type": "boolean",
+                        "description": "Whether product is in stock",
+                        "example": true
+                    }
+                },
+                "required": [
+                    "name",
+                    "price"
+                ]
+            },
+            "responses": [
+                {
+                    "body_conditions": null,
+                    "response": {
+                        "status_code": 201,
+                        "body": {
+                            "message": "Product created successfully.",
+                            "product_id": "{{random_uuid}}",
+                            "created_at": "{{current_timestamp}}"
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "method": "GET",
+            "path": "/products/{product_id}",
+            "authentication": [
+                "api_key"
+            ],
+            "persistence": {
+                "entity_name": "products",
+                "action": "retrieve"
+            }
+        },
+        {
+            "method": "PUT",
+            "path": "/products/{product_id}",
+            "authentication": [
+                "api_key"
+            ],
+            "persistence": {
+                "entity_name": "products",
+                "action": "update"
+            },
+            "request_body_schema": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Product name",
+                        "example": "Updated Laptop Pro"
+                    },
+                    "price": {
+                        "type": "number",
+                        "description": "Product price in USD",
+                        "example": 1199.99
+                    },
+                    "category": {
+                        "type": "string",
+                        "description": "Product category",
+                        "example": "electronics"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Product description",
+                        "example": "Updated high-performance laptop"
+                    },
+                    "in_stock": {
+                        "type": "boolean",
+                        "description": "Whether product is in stock",
+                        "example": true
+                    }
+                },
+                "required": []
+            },
+            "responses": [
+                {
+                    "body_conditions": null,
+                    "response": {
+                        "status_code": 200,
+                        "body": {
+                            "message": "Product updated successfully.",
+                            "product_id": "{product_id}",
+                            "updated_at": "2025-01-11T10:30:00Z"
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "method": "DELETE",
+            "path": "/products/{product_id}",
+            "authentication": [
+                "api_key"
+            ],
+            "persistence": {
+                "entity_name": "products",
+                "action": "delete"
+            },
+            "responses": [
+                {
+                    "body_conditions": null,
+                    "response": {
+                        "status_code": 204,
+                        "body": null
+                    }
+                }
+            ]
+        },
+        {
+            "method": "GET",
+            "path": "/products",
+            "authentication": [
+                "api_key"
+            ],
+            "persistence": {
+                "entity_name": "products",
+                "action": "list"
+            },
+            "responses": [
+                {
+                    "body_conditions": null,
+                    "response": {
+                        "status_code": 200,
+                        "body": {
+                            "products": [],
+                            "total_count": 0,
+                            "cached_results": true
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "method": "POST",
+            "path": "/orders",
+            "authentication": [
+                "basic_auth"
+            ],
+            "persistence": {
+                "entity_name": "orders",
+                "action": "create"
+            },
+            "request_body_schema": {
+                "type": "object",
+                "properties": {
+                    "product_id": {
+                        "type": "string",
+                        "description": "ID of the product to order",
+                        "example": "prod-123"
+                    },
+                    "quantity": {
+                        "type": "integer",
+                        "description": "Quantity to order",
+                        "minimum": 1,
+                        "example": 2
+                    },
+                    "priority": {
+                        "type": "string",
+                        "description": "Order priority level",
+                        "enum": [
+                            "low",
+                            "normal",
+                            "high",
+                            "urgent"
+                        ],
+                        "example": "high"
+                    },
+                    "customer_id": {
+                        "type": "string",
+                        "description": "ID of the customer placing the order",
+                        "example": "cust-456"
+                    },
+                    "shipping_address": {
+                        "type": "object",
+                        "properties": {
+                            "street": {
+                                "type": "string",
+                                "example": "123 Main St"
+                            },
+                            "city": {
+                                "type": "string",
+                                "example": "San Francisco"
+                            },
+                            "state": {
+                                "type": "string",
+                                "example": "CA"
+                            },
+                            "zip_code": {
+                                "type": "string",
+                                "example": "94105"
+                            }
+                        }
+                    }
+                },
+                "required": [
+                    "product_id",
+                    "quantity"
+                ]
+            },
+            "responses": [
+                {
+                    "body_conditions": {
+                        "priority": "high"
+                    },
+                    "response": {
+                        "status_code": 201,
+                        "body": {
+                            "message": "High priority order created.",
+                            "order_id": "{{random_uuid}}",
+                            "priority": "high",
+                            "processing_time": "immediate"
+                        }
+                    }
+                },
+                {
+                    "body_conditions": null,
+                    "response": {
+                        "status_code": 201,
+                        "body": {
+                            "message": "Order created successfully.",
+                            "order_id": "{{random_uuid}}",
+                            "priority": "normal",
+                            "processing_time": "24 hours"
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "method": "GET",
+            "path": "/customers/{customer_id}/profile",
+            "authentication": [
+                "oidc_auth_code"
+            ],
+            "persistence": {
+                "entity_name": "customers",
+                "action": "retrieve"
+            },
+            "responses": [
+                {
+                    "body_conditions": null,
+                    "response": {
+                        "status_code": 200,
+                        "body": {
+                            "customer_id": "{customer_id}",
+                            "name": "John Doe",
+                            "email": "john.doe@example.com",
+                            "profile_data": {
+                                "preferences": {},
+                                "cached": true
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}
