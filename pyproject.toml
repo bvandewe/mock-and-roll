@@ -1,6 +1,5 @@
 
 [tool.poetry]
-package-mode = false
 name = "RestApiMockServer"
 version = "0.1.0"
 description = "Rest API Mock Server"
