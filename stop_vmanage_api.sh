@@ -25,9 +25,31 @@ if [ $# -eq 1 ]; then
     PID=$1
     echo "📍 Using provided PID: $PID"
 else
-    # Find process by port
+    # Find process by port using Alpine/BusyBox compatible method
     echo "🔍 Finding server process on port $PORT..."
-    PID=$(lsof -ti:$PORT)
+    
+    # Try multiple methods to find the process using the port
+    PID=""
+    
+    # Method 1: Use netstat if available
+    if command -v netstat >/dev/null 2>&1; then
+        PID=$(netstat -tlnp 2>/dev/null | grep ":$PORT " | awk '{print $7}' | cut -d'/' -f1 | head -1)
+    fi
+    
+    # Method 2: Use ss if available (more modern)
+    if [ -z "$PID" ] && command -v ss >/dev/null 2>&1; then
+        PID=$(ss -tlnp | grep ":$PORT " | sed 's/.*pid=\([0-9]*\).*/\1/' | head -1)
+    fi
+    
+    # Method 3: Use ps and grep for Python processes
+    if [ -z "$PID" ]; then
+        PID=$(ps aux | grep "python.*run_server.py.*--port $PORT" | grep -v grep | awk '{print $2}' | head -1)
+    fi
+    
+    # Method 4: Look for any Python process with the port in command line
+    if [ -z "$PID" ]; then
+        PID=$(ps aux | grep "python.*$PORT" | grep -v grep | awk '{print $2}' | head -1)
+    fi
     
     if [ -z "$PID" ]; then
         echo "❌ No server found running on port $PORT"

@@ -10,6 +10,9 @@ import logging
 import os
 import sys
 
+# Add the src directory to the Python path to enable absolute imports
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 from app.factory import create_app
 from config.loader import (
     load_api_config,
