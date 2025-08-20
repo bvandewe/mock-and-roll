@@ -1,0 +1,54 @@
+# Example Dockerfile.alpine for the mock server with all required tools
+FROM python:3.11-alpine
+
+# Install system dependencies and command-line tools
+RUN apk update && apk add --no-cache \
+    # Process and system tools
+    procps \
+    util-linux \
+    coreutils \
+    findutils \
+    # Networking tools
+    net-tools \
+    iproute2 \
+    lsof \
+    curl \
+    wget \
+    # Development tools
+    bash \
+    grep \
+    sed \
+    awk \
+    git \
+    # Build dependencies for Python packages
+    gcc \
+    musl-dev \
+    linux-headers
+
+# Set bash as default shell
+SHELL ["/bin/bash", "-c"]
+
+# Install Poetry
+RUN pip install poetry
+
+# Set working directory
+WORKDIR /app
+
+# Copy project files
+COPY . .
+
+# Configure Poetry
+RUN poetry config virtualenvs.create true && \
+    poetry config virtualenvs.in-project true
+
+# Install dependencies
+RUN poetry install --no-dev
+
+# Make scripts executable
+RUN chmod +x *.sh
+
+# Expose port
+EXPOSE 8000
+
+# Default command
+CMD ["./start_vmanage_api.sh"]
