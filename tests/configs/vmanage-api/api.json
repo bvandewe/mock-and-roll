@@ -41,7 +41,7 @@
     "logging": {
         "enabled": true,
         "level": "DEBUG",
-        "file_path": "/app/latest.logs",
+        "file_path": "logs/latest.logs",
         "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         "max_file_size_mb": 10,
         "backup_count": 5,

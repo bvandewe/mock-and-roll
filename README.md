@@ -23,6 +23,7 @@
   - [Using pip](#using-pip)
   - [Using Docker](#using-docker)
 - [Configuration](#-configuration)
+  - [Configuration Folder Options](#configuration-folder-options)
   - [Endpoint Configuration](#endpoint-configuration-srcconfigendpointsjson)
   - [Authentication Configuration](#authentication-configuration-srcconfigauthjson)
   - [Template Variables & Dynamic Values](#template-variables--dynamic-values)
@@ -302,6 +303,11 @@ curl -X 'GET' \
 - **Entity Relationships**: Support for related entity data storage
 
 ### System & Management Features
+- **Flexible Configuration Management**:
+  - Custom config folder support via `--config-folder` CLI argument
+  - Multiple config source priority handling (CLI > ENV > Docker > Default)
+  - Environment-specific configuration loading
+  - Pre-configured API templates support
 - **Cache Administration**: 
   - `GET /system/cache/info` - Redis connection status and statistics (requires system auth)
   - `DELETE /system/cache/flush` - Clear all cached data (requires system auth)
@@ -316,6 +322,7 @@ curl -X 'GET' \
   - **File Logging**: Automatic log file creation and management at configurable location
   - **Dual Output**: Simultaneous logging to both stdout/stderr and file
   - **Runtime Configuration**: Change log levels and settings without restart
+- **Enhanced Server Runner**: Custom `run_server.py` script with full CLI argument support
 - **Centralized Authentication**: System endpoints use the same `auth.json` configuration as regular API endpoints
 - **Health Monitoring**: Server health and status endpoints
 - **Configuration Validation**: Startup validation of JSON configuration files
@@ -431,6 +438,44 @@ docker-compose up --build
 ```
 
 ## ⚙️ Configuration
+
+### Configuration Folder Options
+
+The mock server supports flexible configuration loading through multiple methods:
+
+**1. Default Configuration (config/ folder)**
+```bash
+python run_server.py --host 0.0.0.0 --port 8000
+```
+Uses configuration files from `config/` directory (api.json, auth.json, endpoints.json).
+
+**2. Custom Configuration Folder**
+```bash
+python run_server.py --host 0.0.0.0 --port 8000 --config-folder tests/configs/vmanage-api
+```
+Uses configuration files from the specified directory. Useful for:
+- Testing different API configurations
+- Environment-specific configurations
+- Pre-configured API templates (e.g., vManage, custom APIs)
+
+**3. Docker Volume Mounting**
+```bash
+docker run -p 8000:8000 -v /path/to/custom/config:/app/config mock-and-roll
+```
+
+**Configuration File Priority:**
+1. Custom config folder (via `--config-folder` CLI argument)
+2. Environment variable `MOCK_CONFIG_FOLDER`
+3. Docker environment path (`/app/config/`)
+4. Default relative path (`config/`)
+
+**Example Directory Structure:**
+```
+tests/configs/vmanage-api/
+├── api.json          # API metadata and logging settings
+├── auth.json         # Authentication methods and keys
+└── endpoints.json    # API endpoint definitions
+```
 
 ### Endpoint Configuration (`src/config/endpoints.json`)
 
@@ -1194,17 +1239,47 @@ SYSTEM_AUTH_METHOD=system_api_key
 
 ### Starting the Server
 
+#### Native Python Execution
+
+**Development mode (from project root):**
 ```bash
-# Development mode (from src directory)
+# Using the default config folder (config/)
+python run_server.py --host 0.0.0.0 --port 8000 --reload
+
+# Using a custom config folder
+python run_server.py --host 0.0.0.0 --port 8000 --config-folder tests/configs/vmanage-api --reload
+
+# Production mode
+python run_server.py --host 0.0.0.0 --port 8000 --workers 4
+```
+
+**Traditional uvicorn approach (from src directory):**
+```bash
+# Development mode
 cd src
 python -m uvicorn main:app --reload --port 8000
 
-# Production mode
+# Production mode  
 cd src
 python -m uvicorn main:app --host 0.0.0.0 --port 8000
+```
 
-# Docker
+**Available CLI Options:**
+- `--config-folder`: Path to custom configuration folder containing `api.json`, `auth.json`, and `endpoints.json`
+- `--host`: Bind socket to this host (default: 127.0.0.1)
+- `--port`: Bind socket to this port (default: 8000)
+- `--reload`: Enable auto-reload for development
+- `--workers`: Number of worker processes (default: 1)
+- `--log-level`: Log level (default: info)
+
+#### Docker Execution
+
+```bash
+# Using default config
 docker-compose up
+
+# Using volume-mounted custom config
+docker run -p 8000:8000 -v /path/to/custom/config:/app/config mock-and-roll
 ```
 
 Access the server:
@@ -1593,6 +1668,15 @@ curl -X GET "http://localhost:8000/system/cache/info" \
 
 ### 10. vManage API Example (Dynamic Authentication)
 
+**Running with vManage Configuration:**
+```bash
+# Start server with vManage API configuration
+python run_server.py --host 0.0.0.0 --port 8000 --config-folder tests/configs/vmanage-api --reload
+
+# Or using traditional uvicorn (requires manual config management)
+MOCK_CONFIG_FOLDER=tests/configs/vmanage-api python -m uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
 This example demonstrates the complete vManage SD-WAN API authentication flow using dynamic authentication values. The vManage configuration organizes endpoints into logical groups:
 - **Authentication** - Login, logout, and CSRF token management  
 - **Devices** - Device monitoring and management operations
@@ -1837,6 +1921,10 @@ curl -X POST "http://localhost:8000/system/logging/config" \
 ### Recent Updates ✨
 - **Centralized System Authentication**: System endpoints now use the same `auth.json` configuration as regular API endpoints for consistent security management
 - **System Namespace Consistency**: Cache management endpoints remain in `/system/cache/*` namespace for consistent system operations organization  
+- **Custom Configuration Folder Support**: Added `--config-folder` CLI argument to specify custom configuration directory
+- **Enhanced Server Runner**: New `run_server.py` script with comprehensive CLI argument support for native Python execution
+- **Configuration Priority System**: Hierarchical config loading (CLI > ENV > Docker > Default) for flexible deployment options
+- **Environment-Specific Configurations**: Easy switching between different API configurations (e.g., vManage, custom APIs)  
 - **Enhanced Swagger Integration**: System endpoints now properly display authentication requirements in Swagger UI
 - **Improved Security Consistency**: Single source of truth for all authentication configuration across the application
 
