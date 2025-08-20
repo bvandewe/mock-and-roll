@@ -18,9 +18,30 @@ fi
 echo "📁 Configuring Poetry for local virtual environment..."
 poetry config virtualenvs.in-project true
 
-# Install dependencies
+# Install dependencies with version-compatible command
 echo "📦 Installing dependencies with Poetry..."
-poetry install
+
+# Check Poetry version to use appropriate install command
+POETRY_VERSION=$(poetry --version | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
+POETRY_MAJOR=$(echo "$POETRY_VERSION" | cut -d. -f1)
+POETRY_MINOR=$(echo "$POETRY_VERSION" | cut -d. -f2)
+
+echo "📝 Detected Poetry version: $POETRY_VERSION"
+
+# Handle different Poetry versions
+if [ "$POETRY_MAJOR" -gt 2 ] || ([ "$POETRY_MAJOR" -eq 2 ] && [ "$POETRY_MINOR" -ge 0 ]); then
+    # Poetry 2.0+ with package-mode support
+    echo "📝 Using Poetry $POETRY_VERSION (v2+ syntax with package-mode)"
+    poetry install
+elif [ "$POETRY_MAJOR" -gt 1 ] || ([ "$POETRY_MAJOR" -eq 1 ] && [ "$POETRY_MINOR" -ge 8 ]); then
+    # Poetry 1.8+ supports modern syntax but may need --no-root
+    echo "📝 Using Poetry $POETRY_VERSION (modern syntax with --no-root)"
+    poetry install --no-root
+else
+    # Poetry < 1.8 uses legacy syntax
+    echo "📝 Using Poetry $POETRY_VERSION (legacy syntax)"
+    poetry install --no-root
+fi
 
 # Check if virtual environment was created
 if [ -d ".venv" ]; then

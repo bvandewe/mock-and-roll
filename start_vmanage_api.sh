@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Quick start script for vManage API mock server
+# Quick start script for vManage API Mock Server
 # This script checks for the vManage configuration and starts the server
 
 set -e  # Exit on any error
@@ -63,12 +63,33 @@ if [ ! -f "pyproject.toml" ]; then
 fi
 
 # Configure Poetry to use local virtual environment
-echo "� Configuring Poetry for local virtual environment..."
+echo "📝 Configuring Poetry for local virtual environment..."
 poetry config virtualenvs.in-project true
 
-# Install dependencies if needed
+# Install dependencies with version-compatible command
 echo "📦 Installing/updating dependencies with Poetry..."
-poetry install --only=main
+
+# Check Poetry version to use appropriate install command
+POETRY_VERSION=$(poetry --version | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
+POETRY_MAJOR=$(echo "$POETRY_VERSION" | cut -d. -f1)
+POETRY_MINOR=$(echo "$POETRY_VERSION" | cut -d. -f2)
+
+echo "📝 Detected Poetry version: $POETRY_VERSION"
+
+# Handle different Poetry versions
+if [ "$POETRY_MAJOR" -gt 2 ] || ([ "$POETRY_MAJOR" -eq 2 ] && [ "$POETRY_MINOR" -ge 0 ]); then
+    # Poetry 2.0+ with package-mode support
+    echo "📝 Using Poetry $POETRY_VERSION (v2+ syntax with package-mode)"
+    poetry install --only=main
+elif [ "$POETRY_MAJOR" -gt 1 ] || ([ "$POETRY_MAJOR" -eq 1 ] && [ "$POETRY_MINOR" -ge 8 ]); then
+    # Poetry 1.8+ supports --only=main but may not have package-mode
+    echo "📝 Using Poetry $POETRY_VERSION (modern syntax with --no-root)"
+    poetry install --only=main --no-root
+else
+    # Poetry < 1.8 uses legacy syntax
+    echo "📝 Using Poetry $POETRY_VERSION (legacy syntax)"
+    poetry install --no-dev --no-root
+fi
 
 # Check if run_server.py exists
 if [ ! -f "run_server.py" ]; then

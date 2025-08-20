@@ -60,9 +60,14 @@ echo -e "\n${BLUE}3️⃣  Testing OpenAPI schema...${NC}"
 if openapi_response=$(curl -s --max-time 5 "${BASE_URL}/openapi.json"); then
     if echo "$openapi_response" | grep -q "openapi"; then
         echo -e "   ${GREEN}✅ OpenAPI schema is available${NC}"
-        # Extract API title and version
-        title=$(echo "$openapi_response" | grep -o '"title":"[^"]*"' | cut -d'"' -f4 2>/dev/null || echo "Unknown")
-        version=$(echo "$openapi_response" | grep -o '"version":"[^"]*"' | cut -d'"' -f4 2>/dev/null || echo "Unknown")
+        # Extract API title and version with Alpine-compatible commands
+        title=$(echo "$openapi_response" | awk -F'"title":"' '{if (NF>1) print $2}' | awk -F'"' '{print $1}' | head -1)
+        version=$(echo "$openapi_response" | awk -F'"version":"' '{if (NF>1) print $2}' | awk -F'"' '{print $1}' | head -1)
+        
+        # Fallback to "Unknown" if extraction failed
+        [ -z "$title" ] && title="Unknown"
+        [ -z "$version" ] && version="Unknown"
+        
         echo -e "   ${GREEN}📋 API Title: ${title}${NC}"
         echo -e "   ${GREEN}🏷️  Version: ${version}${NC}"
     else
@@ -83,7 +88,19 @@ get_system_api_key() {
     
     if [ -f "$auth_file" ]; then
         # Extract the first valid system API key from auth.json
-        local api_key=$(grep -A 10 '"system_api_key"' "$auth_file" | grep -A 5 '"valid_keys"' | grep -o '"[^"]*"' | head -2 | tail -1 | tr -d '"')
+        # More compatible approach for Alpine/BusyBox
+        local api_key=$(awk '
+        /system_api_key/ { in_system=1 }
+        in_system && /valid_keys/ { in_keys=1; next }
+        in_system && in_keys && /"[^"]*"/ { 
+            gsub(/[",[:space:]]/, "")
+            if ($0 != "" && $0 != "[" && $0 != "]") {
+                print $0
+                exit
+            }
+        }
+        in_system && /}/ { in_system=0; in_keys=0 }
+        ' "$auth_file")
         echo "$api_key"
     else
         echo ""
@@ -121,15 +138,22 @@ if [ -n "$SYSTEM_API_KEY" ]; then
             echo -e "   ${GREEN}✅ System logs endpoint is accessible with authentication${NC}"
             echo -e "   ${GREEN}🔧 URL: ${BASE_URL}/system/logging/logs${NC}"
             
-            # Extract log count and sample from response
-            log_count=$(echo "$logs_response" | grep -o '"returned_lines":[0-9]*' | cut -d':' -f2 2>/dev/null || echo "0")
+            # Extract log count and sample from response with Alpine-compatible commands
+            log_count=$(echo "$logs_response" | awk -F'"returned_lines":' '{if (NF>1) print $2}' | awk -F',' '{print $1}' | head -1)
+            [ -z "$log_count" ] && log_count="0"
             echo -e "   ${GREEN}📊 Retrieved log entries: ${log_count}${NC}"
             
             # Show first log entry if available
-            if [ "$log_count" -gt 0 ]; then
-                first_log=$(echo "$logs_response" | grep -o '"logs":\[.*\]' | sed 's/"logs":\["//' | sed 's/".*//' | head -1)
-                if [ -n "$first_log" ]; then
-                    echo -e "   ${GREEN}📝 Sample log: ${first_log:0:80}...${NC}"
+            if [ "$log_count" -gt 0 ] 2>/dev/null; then
+                # Extract first log entry in a more portable way
+                first_log=$(echo "$logs_response" | awk -F'"logs":\\[' '{if (NF>1) print $2}' | awk -F'"' '{print $2}' | head -1)
+                if [ -n "$first_log" ] && [ ${#first_log} -gt 0 ]; then
+                    # Truncate long log lines for display
+                    if [ ${#first_log} -gt 80 ]; then
+                        echo -e "   ${GREEN}📝 Sample log: ${first_log:0:80}...${NC}"
+                    else
+                        echo -e "   ${GREEN}📝 Sample log: ${first_log}${NC}"
+                    fi
                 fi
             else
                 echo -e "   ${BLUE}ℹ️  No log entries found (log file may be empty)${NC}"
