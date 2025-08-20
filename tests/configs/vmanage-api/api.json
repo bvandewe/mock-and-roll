@@ -1,0 +1,52 @@
+{
+    "api_name": "SD WAN Manager API Mock",
+    "version": "1.0",
+    "base_url": "https://api.vmanage.example.com",
+    "description": "API for mocking SD WAN Manager Authentication",
+    "support": {
+        "email": "support@example.com",
+        "phone": "+1-800-555-0199"
+    },
+    "terms_of_service": "https://api.example.com/terms",
+    "license": {
+        "name": "MIT",
+        "url": "https://opensource.org/licenses/MIT"
+    },
+    "root_path": "/api/v1",
+    "openapi_tags": [
+        {
+            "name": "Authentication",
+            "description": "vManage authentication endpoints including login and CSRF token management"
+        },
+        {
+            "name": "Devices",
+            "description": "SD-WAN device monitoring, configuration and management operations"
+        },
+        {
+            "name": "Templates",
+            "description": "Configuration templates and policy management"
+        }
+    ],
+    "swagger_ui": {
+        "doc_expansion": "list",
+        "default_models_expand_depth": -1,
+        "default_model_expand_depth": -1,
+        "display_request_duration": true,
+        "try_it_out_enabled": true
+    },
+    "system": {
+        "protect_endpoints": true,
+        "auth_method": "system_api_key"
+    },
+    "logging": {
+        "enabled": true,
+        "level": "DEBUG",
+        "file_path": "/app/latest.logs",
+        "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        "max_file_size_mb": 10,
+        "backup_count": 5,
+        "max_body_log_size": 1024,
+        "request_response_logging": true,
+        "allow_log_deletion": true
+    }
+}

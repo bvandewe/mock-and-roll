@@ -6,6 +6,7 @@ description = "Rest API Mock Server"
 authors = ["Bruno van de Werve <bvandewe@cisco.com>"]
 license = "MIT"
 readme = "README.md"
+package-mode = false
 
 [[tool.poetry.source]]
 name = "PyPI"
@@ -20,6 +21,9 @@ pyhumps = "^3.8.0"
 pyjwt = "^2.10.1"
 python-dateutil = "^2.9.0.post0"
 pre-commit = "^4.3.0"
+requests = "^2.32.5"
+python-multipart = "^0.0.9"
+email-validator = "^2.2.0"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8"
@@ -28,6 +32,23 @@ pytest-asyncio = "^0.26.0"
 
 [tool.black]
 line-length = 500
+
+[tool.flake8]
+ignore = ["E501"]
+max-line-length = 500
+exclude = [
+    ".git",
+    "__pycache__",
+    ".venv",
+    "venv",
+    "env", 
+    ".env",
+    "build",
+    "dist",
+    "*.egg-info",
+    ".pytest_cache",
+    ".mypy_cache"
+]
 
 [build-system]
 requires = ["poetry-core"]

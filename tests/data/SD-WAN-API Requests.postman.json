@@ -1,0 +1,160 @@
+{
+    "info": {
+        "_postman_id": "cc9d60e3-32cc-4454-8e2c-05f0bcf01c30",
+        "name": "SD-WAN-API Requests",
+        "description": "This public repo contains a POSTMAN environment and collection that can be used to interact with the Cisco SD-WAN vManage REST API. The environment is pre-configured to access the Cisco DevNet Always On Sandbox for SD-WAN fabric. You can edit the variables in the environment to point to your own vManage instance. The collection contains REST API calls to authenticate, get a list of devices that are part of the SD-WAN fabric, and get device status, counters, and interface statistics for all the interfaces in the fabric. Feel free to modify them as you see fit and to add more calls to the collection. To use the Cisco SD-WAN sandbox, and search for SD-WAN sandboxes.https://developer.cisco.com/sandbox",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "1. Authentication",
+            "item": [
+                {
+                    "name": "Authentication",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/x-www-form-urlencoded"
+                            }
+                        ],
+                        "body": {
+                            "mode": "urlencoded",
+                            "urlencoded": [
+                                {
+                                    "key": "j_username",
+                                    "value": "{{j_username}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "j_password",
+                                    "value": "{{j_password}}",
+                                    "type": "text"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "https://{{vmanage}}:{{port}}/j_security_check",
+                            "protocol": "https",
+                            "host": [
+                                "{{vmanage}}"
+                            ],
+                            "port": "{{port}}",
+                            "path": [
+                                "j_security_check"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Token",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    ""
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "https://{{vmanage}}:{{port}}/dataservice/client/token",
+                            "protocol": "https",
+                            "host": [
+                                "{{vmanage}}"
+                            ],
+                            "port": "{{port}}",
+                            "path": [
+                                "dataservice",
+                                "client",
+                                "token"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Logout",
+                    "protocolProfileBehavior": {
+                        "disableBodyPruning": true
+                    },
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/x-www-form-urlencoded"
+                            },
+                            {
+                                "key": "X-XSRF-TOKEN",
+                                "value": "{{X-XSRF-TOKEN}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "urlencoded",
+                            "urlencoded": []
+                        },
+                        "url": {
+                            "raw": "https://{{vmanage}}:{{port}}/logout?nocache=",
+                            "protocol": "https",
+                            "host": [
+                                "{{vmanage}}"
+                            ],
+                            "port": "{{port}}",
+                            "path": [
+                                "logout"
+                            ],
+                            "query": [
+                                {
+                                    "key": "nocache",
+                                    "value": ""
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "2. SD-WAN Fabric Devices",
+            "item": [
+                {
+                    "name": "Devices Status",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "X-XSRF-TOKEN",
+                                "value": "{{X-XSRF-TOKEN}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "https://{{vmanage}}:{{port}}/dataservice/device/monitor",
+                            "protocol": "https",
+                            "host": [
+                                "{{vmanage}}"
+                            ],
+                            "port": "{{port}}",
+                            "path": [
+                                "dataservice",
+                                "device",
+                                "monitor"
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ]
+}

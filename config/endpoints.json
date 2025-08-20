@@ -3,6 +3,7 @@
         {
             "method": "GET",
             "path": "/items/{item_id}",
+            "tag": "Items",
             "authentication": [
                 "api_key"
             ],
@@ -26,6 +27,7 @@
         {
             "method": "POST",
             "path": "/users",
+            "tag": "User Management",
             "authentication": [
                 "basic_auth",
                 "oidc_auth_code"

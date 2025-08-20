@@ -25,7 +25,9 @@
 - [Configuration](#-configuration)
   - [Endpoint Configuration](#endpoint-configuration-srcconfigendpointsjson)
   - [Authentication Configuration](#authentication-configuration-srcconfigauthjson)
+  - [Template Variables & Dynamic Values](#template-variables--dynamic-values)
   - [Persistence Configuration](#persistence-configuration-redis)
+  - [Logging Configuration](#logging-configuration-srcconfigapijson)
   - [Environment Variables](#environment-variables)
 - [Usage](#-usage)
   - [Starting the Server](#starting-the-server)
@@ -34,10 +36,13 @@
   - [API Key Authentication](#2-api-key-authentication)
   - [HTTP Basic Authentication](#3-http-basic-authentication)
   - [Bearer Token (OIDC) Authentication](#4-bearer-token-oidc-authentication)
-  - [Conditional Responses](#5-conditional-responses)
-  - [OAuth2 Token Exchange](#6-oauth2-token-exchange)
-  - [Error Responses](#7-error-responses)
-  - [Redis Persistence Examples](#8-redis-persistence-examples)
+  - [Session Authentication](#5-session-authentication)
+  - [Conditional Responses](#6-conditional-responses)
+  - [OAuth2 Token Exchange](#7-oauth2-token-exchange)
+  - [Error Responses](#8-error-responses)
+  - [Redis Persistence Examples](#9-redis-persistence-examples)
+  - [vManage API Example (Dynamic Authentication)](#10-vmanage-api-example-dynamic-authentication)
+  - [Logging Management Examples](#11-logging-management-examples)
 - [Roadmap](#-roadmap)
 - [Development](#-development)
   - [Running Tests](#-running-tests)
@@ -62,12 +67,12 @@ Get up and running in under 2 minutes:
 ```bash
 # Clone and setup
 git clone <repository-url>
-cd mock-api
+cd mock-and-roll
 
 # Install with Poetry
 poetry install && poetry shell
 
-# Ajust the configuration to Mock your own API
+# Adjust the configuration to Mock your own API
 edit src/config/endpoints.json
 edit src/config/auth.json
 # >>> See below for example endpoints configs <<<
@@ -76,11 +81,34 @@ edit src/config/auth.json
 python -m uvicorn src.main:app --reload --port 8000
 ```
 
-
 **🎉 That's it!** Your mock API server is now running at:
 - **API Base URL**: http://localhost:8000
 - **Interactive Docs**: http://localhost:8000/docs
 - **OpenAPI Schema**: http://localhost:8000/openapi.json
+
+The interactive Swagger UI organizes endpoints into clear categories:
+- **Your configured endpoints** (from `endpoints.json`) grouped by tags:
+  - **Items** - Product/inventory operations
+  - **User Management** - User creation and management  
+  - **Authentication** - Login and security operations
+  - **Devices** - Device monitoring (vManage example)
+  - **Templates** - Configuration templates (vManage example)
+- **Cache** - Redis cache management (`/system/cache/*`)  
+- **Logs** - Runtime logging management (`/system/logging/*`)
+
+All endpoint groups start **collapsed by default** for a clean overview.
+
+### 🔥 Key Features at a Glance
+- **Dynamic Value Substitution**: Use placeholders like `${auth.vmanage_session.random_session.session_id}` 
+- **Template Variables**: Realistic timestamp generation with `{{timestamp}}`, `{{date}}`, `{{random_uuid}}`
+- **Automatic Timestamp Detection**: Static timestamps automatically replaced with realistic recent ones
+- **Multi-Factor Authentication**: Enforce multiple auth methods (session + CSRF token)
+- **Request Schema Validation**: JSON Schema validation for request bodies
+- **OpenAPI Tag Organization**: Categorize endpoints with custom tags for organized Swagger UI
+- **Customizable Swagger UI**: Configure interface behavior (collapsed sections, timing display, etc.)
+- **Redis Persistence**: Optional data persistence with CRUD operations
+- **Comprehensive Logging**: Multi-logger capture, request/response tracking, runtime configuration
+- **Real API Behavior**: Mimics production authentication flows like vManage SD-WAN API
 
 
 ### Example: Create a Product with Persistence
@@ -90,74 +118,67 @@ python -m uvicorn src.main:app --reload --port 8000
 {
   "endpoints": [
     {
-            "method": "POST",
-            "path": "/products",
-            "authentication": [
-                "api_key"
-            ],
-            "persistence": {
-                "entity_name": "products",
-                "action": "create"
-            },
-            "request_body_schema": {
-                "type": "object",
-                "properties": {
-                    "name": {
-                        "type": "string",
-                        "description": "Product name",
-                        "example": "Laptop Pro"
-                    },
-                    "price": {
-                        "type": "number",
-                        "description": "Product price in USD",
-                        "example": 999.99
-                    },
-                    "category": {
-                        "type": "string",
-                        "description": "Product category",
-                        "example": "electronics"
-                    },
-                    "description": {
-                        "type": "string",
-                        "description": "Product description",
-                        "example": "High-performance laptop for professionals"
-                    },
-                    "in_stock": {
-                        "type": "boolean",
-                        "description": "Whether product is in stock",
-                        "example": true
-                    }
-                },
-                "required": [
-                    "name",
-                    "price"
-                ]
-            },
-            "responses": [
-                {
-                    "body_conditions": null,
-                    "response": {
-                        "status_code": 201,
-                        "body": {
-                            "message": "Product created successfully.",
-                            "product_id": "{{random_uuid}}",
-                            "created_at": "{{current_timestamp}}"
-                        }
-                    }
-                }
-            ]
+      "method": "POST",
+      "path": "/products",
+      "authentication": ["api_key"],
+      "persistence": {
+        "entity_name": "products",
+        "action": "create"
+      },
+      "request_body_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Product name",
+            "example": "Laptop Pro"
+          },
+          "price": {
+            "type": "number",
+            "description": "Product price in USD",
+            "example": 999.99
+          },
+          "category": {
+            "type": "string",
+            "description": "Product category",
+            "example": "electronics"
+          },
+          "description": {
+            "type": "string",
+            "description": "Product description",
+            "example": "High-performance laptop for professionals"
+          },
+          "in_stock": {
+            "type": "boolean",
+            "description": "Whether product is in stock",
+            "example": true
+          }
         },
+        "required": ["name", "price"]
+      },
+      "responses": [
         {
-            "method": "GET",
-            "path": "/products/{product_id}",
-            "authentication": [
-                "api_key"
-            ],
-            "persistence": {
-                "entity_name": "products",
-                "action": "retrieve"
+          "body_conditions": null,
+          "response": {
+            "status_code": 201,
+            "body": {
+              "message": "Product created successfully.",
+              "product_id": "{{random_uuid}}",
+              "created_at": "{{current_timestamp}}"
             }
-        },
+          }
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/products/{product_id}",
+      "authentication": ["api_key"],
+      "persistence": {
+        "entity_name": "products",
+        "action": "retrieve"
+      }
+    }
   ]
 }
 ```
@@ -237,38 +258,124 @@ curl -X 'GET' \
 
 ## 🚀 Features
 
-
-### Core Functionality
+### Core API Functionality
 - **Dynamic Endpoint Configuration**: Create REST endpoints through JSON config files (`src/config/endpoints.json`)
-- **Path Parameter Support**: Dynamic URL parameters with automatic substitution in responses
-- **Conditional Responses**: Different responses based on request body conditions (see `/users` endpoint)
-- **Request Body Validation**: Support for JSON request bodies with condition matching
-- **Redis Persistence**: Optional data persistence layer with Redis for entity storage and retrieval
-- **Admin/Cache Endpoints**: Inspect and manage Redis cache via `/admin/cache/*` endpoints
+- **HTTP Method Support**: Full support for GET, POST, PUT, DELETE, PATCH operations
+- **Path Parameter Support**: Dynamic URL parameters with automatic substitution in responses (e.g., `/items/{item_id}`)
+- **Query Parameter Handling**: Extract and use query parameters in endpoint logic
+- **Request Body Processing**: Support for JSON and form-encoded (`application/x-www-form-urlencoded`) request bodies
+- **Conditional Responses**: Different responses based on request body conditions using `body_conditions`
+- **Custom Response Headers**: Support for custom headers in endpoint responses
+- **Status Code Control**: Configurable HTTP status codes for different response scenarios
+- **Content Type Support**: Multiple content types including JSON, HTML, and plain text responses
+
+### Request/Response Features
+- **Request Schema Validation**: Comprehensive JSON Schema validation for request payloads with `request_body_schema`
+- **Dynamic Response Generation**: Template variables and placeholders in response bodies
+- **Response Templating**: Support for dynamic values like `{{random_uuid}}` and `{{current_timestamp}}`
+- **Request Body Merging**: Automatically merge request data with response templates
+- **Error Response Handling**: Structured error responses for validation failures and authentication errors
+- **CORS Support**: Cross-Origin Resource Sharing headers for web applications
 
 ### Authentication & Security
-- **Multiple Authentication Methods**: API Key, HTTP Basic Auth, and OIDC (OAuth2)
-- **Flexible Authentication**: Multiple auth methods per endpoint with OR logic
+- **Multiple Authentication Methods**: 
+  - **API Key**: Header-based API key authentication (`X-API-Key`)
+  - **HTTP Basic Auth**: Username/password authentication
+  - **OIDC/OAuth2**: Bearer token authentication with scope validation
+  - **Session Authentication**: Cookie-based sessions (`JSESSIONID`)
+  - **CSRF Token Protection**: Anti-CSRF token validation (`X-XSRF-TOKEN`)
+- **Multi-Factor Authentication**: Enforce multiple auth methods simultaneously (AND logic)
+- **Flexible Authentication**: Multiple auth methods per endpoint with OR logic within each method
+- **Dynamic Authentication Values**: Runtime placeholder resolution using `${auth.method.selector.property}` syntax
+- **Session Management**: Realistic session handling with dynamic session ID generation
+- **CSRF Token Correlation**: Automatic correlation between session IDs and CSRF tokens
+- **Scope-based Authorization**: OIDC scope validation for fine-grained access control
 - **OpenAPI Integration**: Full Swagger UI support with security scheme visualization
-- **Grant Type Support**: Authorization Code flow for OIDC (see config)
+
+### Data Persistence & Caching
+- **Redis Integration**: Optional Redis-based persistence for entity storage
+- **CRUD Operations**: Complete Create, Read, Update, Delete, List operations for entities
+- **Entity Management**: Type-based entity storage with automatic ID generation
+- **Cache Management**: System endpoints for Redis inspection and management
+- **Data Validation**: Entity data validation before storage
+- **Automatic Timestamps**: Created/updated timestamp tracking
+- **Entity Relationships**: Support for related entity data storage
+
+### System & Management Features
+- **Cache Administration**: 
+  - `GET /system/cache/info` - Redis connection status and statistics (requires system auth)
+  - `DELETE /system/cache/flush` - Clear all cached data (requires system auth)
+  - `GET /system/cache/entities/{entity_name}` - List entities by type (requires system auth)
+  - `GET /system/cache/entities/{entity_name}/{entity_id}` - Get specific entity details (requires system auth)
+  - `DELETE /system/cache/entities/{entity_name}/{entity_id}` - Delete specific entities (requires system auth)
+- **Logging Management**:
+  - `GET /system/logging/status` - Get current logging configuration and status (requires system auth)
+  - `POST /system/logging/config` - Update logging configuration at runtime (requires system auth)
+  - `GET /system/logging/logs` - Retrieve recent log entries from log file (requires system auth)
+  - `DELETE /system/logging/logs` - Clear log file (requires `allow_log_deletion: true` and system auth)
+  - **File Logging**: Automatic log file creation and management at configurable location
+  - **Dual Output**: Simultaneous logging to both stdout/stderr and file
+  - **Runtime Configuration**: Change log levels and settings without restart
+- **Centralized Authentication**: System endpoints use the same `auth.json` configuration as regular API endpoints
+- **Health Monitoring**: Server health and status endpoints
+- **Configuration Validation**: Startup validation of JSON configuration files
+- **Error Logging**: Comprehensive error logging and debugging information
+
+### Dynamic Value Substitution
+- **Authentication Placeholders**: 
+  - `${auth.vmanage_session.random_session.session_id}` - Random session selection
+  - `${auth.vmanage_session.random_session.csrf_token}` - Correlated CSRF tokens
+  - `${auth.csrf_token.random_key}` - Random CSRF token selection
+- **Response Templates**: Dynamic value injection in response bodies and headers
+- **Timestamp Templates**: Realistic timestamp generation for mock data
+  - `{{timestamp}}` - Generates realistic ISO 8601 timestamps (recent but not current)
+  - `{{date}}` - Generates realistic dates in YYYY-MM-DD format  
+  - `{{unix_timestamp}}` - Generates realistic Unix timestamps (10 digits)
+  - `{{unix_timestamp_ms}}` - Generates realistic Unix timestamps in milliseconds (13 digits)
+  - `{{current_timestamp}}` - Generates current timestamp in ISO 8601 format
+  - `{{random_uuid}}` - Generates random UUIDs
+- **Automatic Timestamp Detection**: Automatically replaces static timestamps in responses with realistic ones
+  - Detects and replaces ISO 8601 timestamps: `2025-08-19T10:30:00Z`
+  - Detects and replaces Unix timestamps: `1724058600`
+  - Detects and replaces date patterns: `2025-08-19`
+- **Real-time Resolution**: Values resolved at request time for realistic behavior
+- **State Correlation**: Maintain consistency between related authentication values
 
 ### Developer Experience
-- **Interactive Documentation**: Auto-generated Swagger UI at `/docs`
+- **Interactive Documentation**: Auto-generated Swagger UI at `/docs` with authentication testing
+- **OpenAPI Schema**: Complete OpenAPI 3.0 specification at `/openapi.json`
 - **Hot Reloading**: Development mode with automatic code reloading
-- **Comprehensive Logging**: Detailed logging for debugging and monitoring
-- **Docker Support**: Ready-to-use Docker configuration with Redis
-- **Cache Management**: Admin endpoints for Redis cache inspection and management
+- **Advanced Logging System**: 
+  - **Multi-Logger Support**: Captures all HTTP requests, server events, and application logs
+  - **Request/Response Middleware**: Detailed logging of HTTP calls with timing and body content
+  - **Configurable Output**: Dual output (stdout + file) with independent control
+  - **Runtime Configuration**: Change log levels and settings via REST API without restart
+  - **File Management**: Automatic log file creation, rotation, and size management
+  - **Debug Mode**: Comprehensive request/response body logging for development
+  - **Production Ready**: Structured logging with appropriate verbosity levels
+- **Docker Support**: Ready-to-use Docker configuration with Redis orchestration
+- **Configuration Validation**: Startup validation with clear error messages
+- **VS Code Integration**: Pre-configured development environment settings
 
 ## 📁 Project Structure
 
 ```
-mock-api/
+mock-and-roll/
 ├── src/                          # Main application source
 │   ├── main.py                   # FastAPI application and core logic
 │   ├── config/                   # Configuration files
 │   │   ├── endpoints.json        # Endpoint definitions and responses
 │   │   └── auth.json            # Authentication configuration
 │   └── __init__.py
+├── tests/                        # Test configurations and scripts
+│   └── configs/                  # Example configurations
+│       ├── default/              # Default configuration examples
+│       │   ├── endpoints.json
+│       │   └── auth.json
+│       └── vmanage-api/          # vManage API configuration examples
+│           ├── endpoints.json
+│           ├── auth.json
+│           └── test_vmanage_auth.sh
 ├── .vscode/                      # VS Code configuration
 │   └── settings.json            # Python formatting settings (Black)
 ├── Dockerfile                    # Docker container configuration
@@ -288,7 +395,7 @@ mock-api/
 ```bash
 # Clone the repository
 git clone <repository-url>
-cd mock-api
+cd mock-and-roll
 
 # Install dependencies
 poetry install
@@ -302,14 +409,14 @@ poetry shell
 ```bash
 # Clone the repository
 git clone <repository-url>
-cd mock-api
+cd mock-and-roll
 
 # Create virtual environment
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install dependencies
-pip install fastapi uvicorn
+pip install fastapi uvicorn redis
 ```
 
 ### Using Docker
@@ -317,7 +424,7 @@ pip install fastapi uvicorn
 ```bash
 # Clone the repository
 git clone <repository-url>
-cd mock-api
+cd mock-and-roll
 
 # Build and run with Docker Compose
 docker-compose up --build
@@ -335,8 +442,20 @@ Define your mock endpoints with this structure:
         {
             "method": "GET|POST|PUT|DELETE|PATCH",
             "path": "/your/path/{parameter}",
+            "tag": "API Category",
             "authentication": ["api_key", "basic_auth", "oidc_auth_code"],
             "required_scopes": ["read", "write"],
+            "request_body_schema": {
+                "type": "object",
+                "properties": {
+                    "field": {"type": "string"}
+                },
+                "required": ["field"]
+            },
+            "persistence": {
+                "entity_name": "entities",
+                "action": "create"
+            },
             "responses": [
                 {
                     "body_conditions": {
@@ -344,6 +463,9 @@ Define your mock endpoints with this structure:
                     },
                     "response": {
                         "status_code": 200,
+                        "headers": {
+                            "X-Custom-Header": "value"
+                        },
                         "body": {
                             "message": "Response with {parameter} substitution"
                         }
@@ -355,9 +477,178 @@ Define your mock endpoints with this structure:
 }
 ```
 
+**Example from Default Configuration:**
+```json
+{
+    "method": "GET",
+    "path": "/items/{item_id}",
+    "tag": "Items",
+    "authentication": ["api_key"],
+    "responses": [
+        {
+            "body_conditions": null,
+            "response": {
+                "status_code": 200,
+                "body": {
+                    "message": "Here is the item you requested.",
+                    "item_id": "{item_id}",
+                    "data": {
+                        "name": "A Mocked Item",
+                        "value": 123
+                    }
+                }
+            }
+        }
+    ]
+}
+```
+
+**Example from vManage Configuration:**
+```json
+{
+    "method": "GET",
+    "path": "/dataservice/device/monitor",
+    "tag": "Devices",
+    "authentication": ["vmanage_session", "csrf_token"],
+    "responses": [
+        {
+            "body_conditions": null,
+            "response": {
+                "status_code": 200,
+                "headers": {
+                    "Content-Type": "application/json",
+                    "X-XSRF-TOKEN": "${auth.vmanage_session.random_session.csrf_token}"
+                },
+                "body": {
+                    "data": [
+                        {
+                            "device_id": "C8K-001",
+                            "hostname": "vEdge-C8K-001",
+                            "device_type": "vedge",
+                            "device_model": "vedge-C8000V",
+                            "status": "normal",
+                            "system_ip": "1.1.1.1",
+                            "site_id": "100",
+                            "version": "20.6.3",
+                            "uptime": "15:23:45:10",
+                            "last_updated": "2025-08-19T10:30:00Z"
+                        }
+                    ]
+                }
+            }
+        }
+    ]
+}
+```
+
+### OpenAPI Tag Configuration
+
+Organize your API endpoints in the Swagger UI using tags. Tags can be configured at two levels:
+
+#### 1. Endpoint-Level Tags (`endpoints.json`)
+
+Add a `tag` field to any endpoint to categorize it in the Swagger UI:
+
+```json
+{
+    "method": "GET",
+    "path": "/users/{user_id}",
+    "tag": "User Management",
+    "authentication": ["api_key"],
+    "responses": [...]
+}
+```
+
+**Tag Configuration Options:**
+- **String**: Simple tag name
+  ```json
+  "tag": "Authentication"
+  ```
+- **Object**: Tag with metadata (name extracted for endpoint)
+  ```json
+  "tag": {
+      "name": "User Management",
+      "description": "User operations"
+  }
+  ```
+- **Array**: Multiple tags (names extracted)
+  ```json
+  "tag": ["Users", "Management"]
+  ```
+
+#### 2. Global Tag Metadata (`api.json`)
+
+Define tag descriptions and documentation in your API configuration:
+
+```json
+{
+    "api_name": "My API",
+    "openapi_tags": [
+        {
+            "name": "Authentication",
+            "description": "Login, session management and security operations"
+        },
+        {
+            "name": "User Management",
+            "description": "User creation, authentication and management operations"
+        },
+        {
+            "name": "Items",
+            "description": "Operations with items and inventory management"
+        },
+        {
+            "name": "Devices",
+            "description": "Device monitoring and configuration operations"
+        },
+        {
+            "name": "Templates",
+            "description": "Configuration templates and policy management"
+        }
+    ]
+}
+```
+
+This creates organized, well-documented API sections in the Swagger UI with:
+- **Collapsible sections** grouped by tag
+- **Descriptions** for each tag category
+- **Consistent organization** across all endpoints
+
+### Swagger UI Configuration (`api.json`)
+
+Customize the Swagger UI interface behavior and appearance:
+
+```json
+{
+    "api_name": "My API",
+    "swagger_ui": {
+        "doc_expansion": "none",
+        "default_models_expand_depth": -1,
+        "default_model_expand_depth": -1,
+        "display_request_duration": true,
+        "try_it_out_enabled": true
+    }
+}
+```
+
+**Configuration Options:**
+- **`doc_expansion`**: Controls initial expansion state
+  - `"none"` - All sections collapsed (default)
+  - `"list"` - Expand operations only
+  - `"full"` - Expand everything
+- **`default_models_expand_depth`**: Model schema expansion depth (-1 = collapsed)
+- **`default_model_expand_depth`**: Individual model detail expansion (-1 = collapsed)
+- **`display_request_duration`**: Show request timing in UI (true/false)
+- **`try_it_out_enabled`**: Enable "Try it out" by default (true/false)
+
+This configuration creates a clean, professional interface where:
+- ✅ **All endpoint groups start collapsed** for better overview
+- ✅ **Models don't auto-expand** to reduce visual clutter
+- ✅ **Request timing is displayed** for performance insights
+- ✅ **Try it out is enabled** for easy API testing
+
 ### Authentication Configuration (`src/config/auth.json`)
 
-Configure authentication methods:
+Configure authentication methods with support for dynamic value resolution:
 
 ```json
 {
@@ -380,10 +671,227 @@ Configure authentication methods:
             "valid_tokens": [
                 {"access_token": "your-token", "scope": "read write"}
             ]
+        },
+        "vmanage_session": {
+            "type": "session",
+            "cookie_name": "JSESSIONID",
+            "valid_sessions": [
+                {
+                    "session_id": "vmanage-session-123",
+                    "csrf_token": "mock-csrf-token-xyz",
+                    "user": "admin"
+                },
+                {
+                    "session_id": "vmanage-session-456",
+                    "csrf_token": "mock-csrf-token-abc",
+                    "user": "operator"
+                },
+                {
+                    "session_id": "vmanage-session-789",
+                    "csrf_token": "mock-csrf-token-def",
+                    "user": "admin"
+                }
+            ]
+        },
+        "csrf_token": {
+            "type": "csrf",
+            "header_name": "X-XSRF-TOKEN",
+            "valid_tokens": [
+                "mock-csrf-token-xyz",
+                "mock-csrf-token-abc",
+                "mock-csrf-token-def",
+                "csrf-alt-token-123",
+                "csrf-alt-token-456"
+            ]
         }
     }
 }
 ```
+
+#### Dynamic Authentication Values
+
+The mock server supports **dynamic authentication value substitution** using placeholder syntax. This eliminates hardcoded values and enables realistic session/token behavior:
+
+**Placeholder Syntax:**
+```
+${auth.method.selector.property}
+```
+
+**Available Placeholders:**
+- `${auth.vmanage_session.random_session.session_id}` - Random session ID from valid_sessions
+- `${auth.vmanage_session.random_session.csrf_token}` - Corresponding CSRF token for the session
+- `${auth.csrf_token.random_key}` - Random CSRF token from valid_tokens
+
+**Example Usage in Endpoints:**
+```json
+{
+    "method": "POST",
+    "path": "/j_security_check",
+    "responses": [
+        {
+            "response": {
+                "status_code": 200,
+                "headers": {
+                    "Set-Cookie": "JSESSIONID=${auth.vmanage_session.random_session.session_id}; Path=/; HttpOnly"
+                },
+                "body": {
+                    "message": "Authentication successful"
+                }
+            }
+        }
+    ]
+},
+{
+    "method": "GET",
+    "path": "/dataservice/client/token",
+    "authentication": ["vmanage_session"],
+    "responses": [
+        {
+            "response": {
+                "status_code": 200,
+                "headers": {
+                    "X-XSRF-TOKEN": "${auth.vmanage_session.random_session.csrf_token}"
+                },
+                "body": "${auth.vmanage_session.random_session.csrf_token}"
+            }
+        }
+    ]
+}
+```
+
+#### Multi-Factor Authentication
+
+For endpoints requiring multiple authentication factors (like vManage APIs), specify multiple methods:
+
+```json
+{
+    "method": "GET",
+    "path": "/dataservice/device/monitor",
+    "authentication": [
+        "vmanage_session",
+        "csrf_token"
+    ],
+    "responses": [
+        {
+            "response": {
+                "status_code": 200,
+                "headers": {
+                    "Content-Type": "application/json",
+                    "X-XSRF-TOKEN": "${auth.vmanage_session.random_session.csrf_token}"
+                },
+                "body": {
+                    "data": [...]
+                }
+            }
+        }
+    ]
+}
+```
+
+**Authentication Logic:**
+- **Multiple methods = AND logic**: All specified methods must be valid
+- **Single method = OR logic**: Any valid credential for that method works
+- **No authentication = Public endpoint**: No validation required
+
+#### CSRF Token Management
+
+The server automatically includes CSRF tokens in response headers for authenticated endpoints:
+
+```json
+{
+    "headers": {
+        "X-XSRF-TOKEN": "${auth.vmanage_session.random_session.csrf_token}"
+    }
+}
+```
+
+This enables proper CSRF token rotation and client-side token management, mimicking real API behavior.
+
+### Template Variables & Dynamic Values
+
+The mock server supports powerful template variables for generating realistic, dynamic response data. Templates are processed at request time to provide fresh, realistic data for testing.
+
+#### Available Template Variables
+
+**Core Templates:**
+- `{{random_uuid}}` - Generates random UUIDs
+- `{{current_timestamp}}` - Current timestamp in ISO 8601 format
+
+**Timestamp Templates (Realistic):**
+- `{{timestamp}}` - Recent but not current ISO 8601 timestamp (1-30 minutes ago)
+- `{{date}}` - Recent date in YYYY-MM-DD format (1-7 days ago)  
+- `{{unix_timestamp}}` - Recent Unix timestamp (10 digits)
+- `{{unix_timestamp_ms}}` - Recent Unix timestamp in milliseconds (13 digits)
+
+#### Usage Examples
+
+**Basic Template Usage:**
+```json
+{
+    "response": {
+        "status_code": 200,
+        "body": {
+            "transaction_id": "{{random_uuid}}",
+            "timestamp": "{{timestamp}}",
+            "created_date": "{{date}}",
+            "last_seen": "{{unix_timestamp}}"
+        }
+    }
+}
+```
+
+**Realistic Device Data:**
+```json
+{
+    "response": {
+        "body": {
+            "devices": [
+                {
+                    "device_id": "router-001", 
+                    "status": "online",
+                    "last_updated": "{{timestamp}}",
+                    "boot_time": "{{unix_timestamp}}",
+                    "session_id": "{{random_uuid}}"
+                }
+            ]
+        }
+    }
+}
+```
+
+#### Automatic Timestamp Detection
+
+The server automatically detects and replaces static timestamps in your configuration with realistic recent timestamps:
+
+**Automatic Detection Patterns:**
+- ISO 8601: `2025-08-19T10:30:00Z` → Recent realistic timestamp  
+- Unix timestamps: `1724058600` → Recent realistic Unix timestamp
+- Dates: `2025-08-19` → Recent realistic date
+
+**Example Configuration:**
+```json
+{
+    "response": {
+        "body": {
+            "devices": [
+                {
+                    "device_id": "C8K-001",
+                    "last_updated": "2025-08-19T10:30:00Z"
+                }
+            ]
+        }
+    }
+}
+```
+
+The static timestamp `2025-08-19T10:30:00Z` will automatically be replaced with a realistic recent timestamp when the response is served.
+
+#### Template Benefits
+
+- **Realistic Testing**: Generate believable mock data that changes over time
+- **No Hardcoding**: Eliminate static timestamps that become stale
+- **Consistent Behavior**: Templates generate consistent patterns (e.g., always 1-30 minutes ago)
+- **Easy Migration**: Existing static timestamps are automatically converted
 
 ### Persistence Configuration (Redis)
 
@@ -421,10 +929,231 @@ Enable data persistence for your endpoints by adding persistence configuration:
 - `list`: Get all entities of a given type
 
 **Redis Management Endpoints:**
-- `GET /admin/cache/info` - Get Redis connection status and statistics
-- `DELETE /admin/cache/flush` - Clear all cached data
-- `GET /admin/cache/entities/{entity_name}` - List all entities of a type
-- `DELETE /admin/cache/entities/{entity_name}/{entity_id}` - Delete specific entity
+- `GET /system/cache/info` - Get Redis connection status and statistics
+- `DELETE /system/cache/flush` - Clear all cached data
+- `GET /system/cache/entities/{entity_name}` - List all entities of a type
+- `GET /system/cache/entities/{entity_name}/{entity_id}` - Get specific entity details
+- `DELETE /system/cache/entities/{entity_name}/{entity_id}` - Delete specific entity
+
+### System Security Configuration (`src/config/api.json`)
+
+The application supports protecting system endpoints with API key authentication using centralized configuration:
+
+```json
+{
+  "system": {
+    "protect_endpoints": true,
+    "auth_method": "system_api_key"
+  }
+}
+```
+
+**System Configuration Options:**
+- `protect_endpoints`: Enable/disable protection for `/admin/*` and `/system/*` endpoints (cache and logging management)
+- `auth_method`: Authentication method to use (must exist in `auth.json`)
+
+**Authentication Configuration (`config/auth.json`):**
+```json
+{
+  "authentication_methods": {
+    "system_api_key": {
+      "type": "api_key",
+      "name": "X-API-Key",
+      "location": "header",
+      "description": "System administration API key for protected endpoints",
+      "valid_keys": [
+        "system-admin-key-123",
+        "sysadmin-secret-key-789",
+        "admin-system-access-123"
+      ]
+    }
+  }
+}
+```
+
+**Protected Endpoints:**
+- All `/admin/*` endpoints (cache management)
+- All `/system/*` endpoints (logging management)
+
+**🔐 Centralized Authentication Integration:**
+System endpoints use the same centralized `auth.json` configuration as regular API endpoints, ensuring:
+- **Single source of truth** for all authentication configuration
+- **Consistent security policies** across all endpoints
+- **Unified API key management** 
+- **Swagger UI integration** with proper authentication schemes
+
+When protection is enabled, these endpoints require a valid `X-API-Key` header with one of the configured system API keys. The authentication is validated by middleware before reaching the endpoint handlers.
+
+**Using System Endpoints in Swagger UI:**
+1. Navigate to http://localhost:8000/docs
+2. Click the "Authorize" button 
+3. Enter one of the valid system API keys in the `system_api_key` field
+4. System endpoints will now be accessible through the Swagger interface
+
+### Logging Configuration (`src/config/api.json`)
+
+The application supports comprehensive logging with dual output, request/response tracking, and runtime management:
+
+```json
+{
+  "logging": {
+    "enabled": true,
+    "level": "INFO",
+    "console_enabled": true,
+    "file_enabled": true,
+    "file_path": "/app/latest.logs",
+    "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    "max_file_size_mb": 10,
+    "backup_count": 5,
+    "max_body_log_size": 2048,
+    "request_response_logging": true,
+    "allow_log_deletion": true
+  }
+}
+```
+
+**Core Configuration Options:**
+- `enabled`: Enable/disable entire logging system
+- `level`: Log level (`DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`)
+- `console_enabled`: Enable logging to stdout/stderr
+- `file_enabled`: Enable logging to file
+- `file_path`: Path where log file will be created (auto-creates if missing)
+- `format`: Python logging format string
+- `max_file_size_mb`: Maximum log file size before rotation (MB)
+- `backup_count`: Number of rotated log files to keep
+
+**Request/Response Logging Options:**
+- `request_response_logging`: Enable detailed HTTP request/response logging middleware
+- `max_body_log_size`: Maximum size of request/response body to log (characters)
+
+**Security and Management Options:**
+- `allow_log_deletion`: Enable/disable log file deletion via API (default: true)
+
+**Multi-Logger Support:**
+The system captures logs from all components:
+- **Application Logs** (`root`) - Core server logic and business operations
+- **HTTP Access Logs** (`uvicorn.access`) - Standard web server access logs
+- **Request/Response Logs** (`api.requests`) - Detailed API call tracking with timing
+- **Server Logs** (`uvicorn`) - Server startup, shutdown, and system events
+- **Framework Logs** (`fastapi`) - FastAPI framework operations
+
+**Log Output Examples:**
+
+*INFO Level (Production):*
+```
+2025-08-20 10:41:41,097 - root - INFO - Logging configured - Level: INFO, File: /app/latest.logs
+2025-08-20 10:41:41,139 - root - INFO - Adding logging management endpoints
+2025-08-20 10:42:15,234 - api.requests - INFO - REQUEST: GET /dataservice/device/monitor from 192.168.65.1
+2025-08-20 10:42:15,236 - api.requests - INFO - RESPONSE: 401 for GET /dataservice/device/monitor - Time: 0.002s
+2025-08-20 10:42:15,237 - uvicorn.access - INFO - 192.168.65.1:22520 - "GET /dataservice/device/monitor HTTP/1.1" 401 Unauthorized
+```
+
+*DEBUG Level (Development):*
+```
+2025-08-20 10:42:15,234 - api.requests - INFO - REQUEST: GET /dataservice/device/monitor from 192.168.65.1
+2025-08-20 10:42:15,234 - api.requests - DEBUG - Request Headers: {'host': '0.0.0.0:8000', 'user-agent': 'curl/8.7.1', 'accept': '*/*'}
+2025-08-20 10:42:15,235 - root - DEBUG - Checking authentication for endpoint: /dataservice/device/monitor
+2025-08-20 10:42:15,235 - root - DEBUG - Authentication methods required: ['vmanage_session', 'csrf_token']
+2025-08-20 10:42:15,236 - api.requests - INFO - RESPONSE: 401 for GET /dataservice/device/monitor - Time: 0.002s
+2025-08-20 10:42:15,236 - api.requests - DEBUG - Response Headers: {'content-length': '74', 'content-type': 'application/json'}
+2025-08-20 10:42:15,236 - api.requests - DEBUG - Response Body: {"error":"Authentication failed","message":"Invalid credentials"}
+```
+
+**Logging Management API Endpoints:**
+- `GET /system/logging/status` - View current logging configuration and file status (requires system auth)
+- `POST /system/logging/config` - Update logging settings at runtime (requires system auth)
+- `GET /system/logging/logs?lines=100` - Get recent log entries from file (requires system auth)
+- `DELETE /system/logging/logs` - Clear log file (requires `allow_log_deletion: true` and system auth)
+
+**Example: Update logging configuration at runtime:**
+```bash
+curl -X POST "http://localhost:8000/system/logging/config" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: system-admin-key-123" \
+  -d '{
+    "level": "DEBUG",
+    "file_enabled": true,
+    "console_enabled": true,
+    "request_response_logging": true,
+    "max_body_log_size": 4096,
+    "allow_log_deletion": false
+  }'
+```
+
+**Example: Get recent log entries:**
+```bash
+curl -X GET "http://localhost:8000/system/logging/logs?lines=50" \
+  -H "X-API-Key: system-admin-key-123"
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "data": {
+    "total_lines": 147,
+    "returned_lines": 50,
+    "logs": [
+      "2025-08-20 10:42:15,234 - api.requests - INFO - REQUEST: GET /dataservice/device/monitor from 192.168.65.1",
+      "2025-08-20 10:42:15,236 - api.requests - INFO - RESPONSE: 401 for GET /dataservice/device/monitor - Time: 0.002s",
+      "2025-08-20 10:42:15,237 - uvicorn.access - INFO - 192.168.65.1:22520 - \"GET /dataservice/device/monitor HTTP/1.1\" 401 Unauthorized"
+    ]
+  }
+}
+```
+
+**Example: Clear log file:**
+```bash
+curl -X DELETE "http://localhost:8000/system/logging/logs" \
+  -H "X-API-Key: system-admin-key-123"
+```
+
+**Response (when allowed):**
+```json
+{
+  "status": "success",
+  "message": "Log file cleared successfully"
+}
+```
+
+**Response (when disabled):**
+```json
+{
+  "detail": "Log file deletion is disabled in the configuration"
+}
+```
+
+**Authentication Examples:**
+
+**Unauthenticated request (when protection is enabled):**
+```bash
+curl -X GET "http://localhost:8000/system/logging/status"
+```
+**Response:**
+```json
+{
+  "detail": "Missing X-API-Key header for system endpoint"
+}
+```
+
+**Authenticated request:**
+```bash
+curl -X GET "http://localhost:8000/system/logging/status" \
+  -H "X-API-Key: system-admin-key-123"
+```
+**Response:**
+```json
+{
+  "status": "success",
+  "data": {
+    "enabled": true,
+    "level": "DEBUG",
+    "console_enabled": true,
+    "file_enabled": true,
+    "allow_log_deletion": true
+  }
+}
+```
 
 ### Environment Variables
 
@@ -435,7 +1164,15 @@ Configure the application behavior using these environment variables:
 | `REDIS_HOST` | `localhost` | Redis server hostname |
 | `REDIS_PORT` | `6379` | Redis server port |
 | `REDIS_DB` | `0` | Redis database number |
-| `LOG_LEVEL` | `INFO` | Logging level (DEBUG, INFO, WARNING, ERROR) |
+| `LOG_LEVEL` | `INFO` | Default logging level (DEBUG, INFO, WARNING, ERROR) |
+| `LOG_FILE_PATH` | `/app/latest.logs` | Default log file location |
+| `LOG_TO_FILE` | `true` | Enable file logging by default |
+| `LOG_TO_CONSOLE` | `true` | Enable console logging by default |
+| `LOG_MAX_BODY_SIZE` | `2048` | Maximum request/response body size to log |
+| `LOG_REQUEST_RESPONSE` | `true` | Enable detailed request/response logging |
+| `LOG_ALLOW_DELETION` | `true` | Allow log file deletion via API |
+| `SYSTEM_PROTECT_ENDPOINTS` | `false` | Enable system endpoint protection |
+| `SYSTEM_AUTH_METHOD` | `system_api_key` | Authentication method for system endpoints |
 
 **Example .env file:**
 ```bash
@@ -443,6 +1180,14 @@ REDIS_HOST=localhost
 REDIS_PORT=6379
 REDIS_DB=0
 LOG_LEVEL=DEBUG
+LOG_FILE_PATH=/app/debug.logs
+LOG_TO_FILE=true
+LOG_TO_CONSOLE=true
+LOG_MAX_BODY_SIZE=4096
+LOG_REQUEST_RESPONSE=true
+LOG_ALLOW_DELETION=true
+SYSTEM_PROTECT_ENDPOINTS=true
+SYSTEM_AUTH_METHOD=system_api_key
 ```
 
 ## 🚀 Usage
@@ -545,6 +1290,7 @@ curl -X POST "http://localhost:8000/users" \
 ```
 
 **Response:**
+```json
 {
     "message": "Guest user created with limited permissions.",
     "user_id": 100
@@ -571,7 +1317,7 @@ curl -X POST "http://localhost:8000/users" \
 
 **Valid Request:**
 ```bash
-curl -X GET "http://localhost:8000/admin/settings" \
+curl -X GET "http://localhost:8000/user/settings" \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.demo-token"
 ```
 
@@ -588,7 +1334,91 @@ curl -X GET "http://localhost:8000/admin/settings" \
 }
 ```
 
-### 5. Conditional Responses
+### 5. Session Authentication
+
+Session authentication uses cookies for authentication, which is common in web applications. This mock server supports session authentication via `JSESSIONID` cookies.
+
+**Valid Request with Session Cookie:**
+```bash
+curl -X GET "http://localhost:8000/dataservice/device" \
+  -H "Cookie: JSESSIONID=C4AC92C3F40C2B9A2DE9C2839FB45"
+```
+
+**Response:**
+```json
+{
+  "data": [
+    {
+      "deviceId": "CSR1000V-001",
+      "hostname": "CSR1000V-001",
+      "deviceType": "vedge",
+      "deviceModel": "CSR1000V"
+    }
+  ]
+}
+```
+
+**Using Session Authentication in Swagger UI:**
+
+Since Swagger UI doesn't automatically handle `Set-Cookie` responses, you need to manually provide the session cookie:
+
+1. In Swagger UI, click the "Authorize" button (🔒)
+2. In the "session_cookie (apiKey)" section, enter the session ID:
+   - **Value:** `JSESSIONID=C4AC92C3F40C2B9A2DE9C2839FB45` (full cookie format)
+   - **Or:** `C4AC92C3F40C2B9A2DE9C2839FB45` (just the session ID)
+
+**Using CSRF Token Authentication in Swagger UI:**
+
+Many vManage endpoints require a CSRF token (X-XSRF-TOKEN header) for security:
+
+1. In Swagger UI, click the "Authorize" button (🔒)
+2. In the "csrf_token (apiKey)" section, enter the CSRF token:
+   - **Value:** `mock-csrf-token-456`
+
+**Note:** For endpoints that require both session and CSRF token authentication, you need to provide both tokens in Swagger UI.
+
+**Using CSRF Token with Session:**
+```bash
+curl -X GET "http://localhost:8000/dataservice/device/monitor" \
+  -H "Cookie: JSESSIONID=vmanage-session-123" \
+  -H "X-XSRF-TOKEN: mock-csrf-token-456"
+```
+
+**Response:**
+```json
+{
+  "data": [
+    {
+      "device_id": "C8K-001",
+      "hostname": "vEdge-C8K-001",
+      "device_type": "vedge",
+      "device_model": "vedge-C8000V",
+      "status": "normal"
+    }
+  ]
+}
+```
+
+**CSRF Token Only Authentication:**
+```bash
+curl -X GET "http://localhost:8000/dataservice/device/monitor" \
+  -H "X-XSRF-TOKEN: mock-csrf-token-456"
+```
+
+**Invalid Session Example:**
+```bash
+curl -X GET "http://localhost:8000/dataservice/device" \
+  -H "Cookie: JSESSIONID=invalid-session"
+```
+
+**Response:**
+```json
+{
+  "detail": "Authentication failed. Required methods: vmanage_session. Errors: Invalid session cookie"
+}
+```
+
+### 6. Conditional Responses
 
 **Request with Admin Role:**
 ```bash
@@ -623,9 +1453,9 @@ curl -X POST "http://localhost:8000/users" \
 ```
 
 
-### 6. OAuth2 Token Exchange
+### 7. OAuth2 Token Exchange
 
-**Authorization Code Grant:**
+**Authorization Code Grant (Default Configuration):**
 ```bash
 curl -X POST "http://localhost:8000/auth/token" \
   -H "Content-Type: application/json" \
@@ -646,7 +1476,7 @@ curl -X POST "http://localhost:8000/auth/token" \
 }
 ```
 
-### 7. Error Responses
+### 8. Error Responses
 
 **400 Bad Request (Invalid JSON):**
 ```bash
@@ -693,7 +1523,7 @@ curl -X GET "http://localhost:8000/items/"
 }
 ```
 
-### 8. Redis Persistence Examples
+### 9. Redis Persistence Examples
 
 
 **Create a Product (with persistence):**
@@ -746,50 +1576,287 @@ curl -X GET "http://localhost:8000/products" \
 
 **Check Redis Cache Status:**
 ```bash
-curl -X GET "http://localhost:8000/admin/cache/info"
+curl -X GET "http://localhost:8000/system/cache/info" \
+  -H "X-API-Key: system-admin-key-123"
 ```
 
 **Response:**
 ```json
 {
-    "redis_connected": true,
-    "total_keys": 5,
-    "memory_usage": "1.2MB",
-    "uptime_seconds": 3600
+    "status": "connected",
+    "keys": 5,
+    "memory_used": "1.2MB",
+    "connected_clients": 1,
+    "uptime": 3600
 }
 ```
 
+### 10. vManage API Example (Dynamic Authentication)
+
+This example demonstrates the complete vManage SD-WAN API authentication flow using dynamic authentication values. The vManage configuration organizes endpoints into logical groups:
+- **Authentication** - Login, logout, and CSRF token management  
+- **Devices** - Device monitoring and management operations
+- **Templates** - Configuration templates and policy management
+
+**Step 1: Login and Get Session Cookie**
+```bash
+curl -X POST "http://localhost:8000/j_security_check" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "j_username=admin&j_password=admin" \
+  -i
+```
+
+**Response:**
+```http
+HTTP/1.1 200 OK
+Set-Cookie: JSESSIONID=vmanage-session-789; Path=/; HttpOnly
+Content-Type: text/html
+
+{"message":"Authentication successful","redirect":"/dataservice/client/token"}
+```
+
+**Step 2: Get CSRF Token**
+```bash
+curl -X GET "http://localhost:8000/dataservice/client/token" \
+  -H "Cookie: JSESSIONID=vmanage-session-789" \
+  -i
+```
+
+**Response:**
+```http
+HTTP/1.1 200 OK
+Content-Type: text/plain
+X-XSRF-TOKEN: mock-csrf-token-abc
+
+"mock-csrf-token-abc"
+```
+
+**Step 3: Access Protected Endpoints**
+```bash
+curl -X GET "http://localhost:8000/dataservice/device/monitor" \
+  -H "Cookie: JSESSIONID=vmanage-session-789" \
+  -H "X-XSRF-TOKEN: mock-csrf-token-abc" \
+  -i
+```
+
+**Response:**
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+X-XSRF-TOKEN: mock-csrf-token-abc
+
+{
+  "data": [
+    {
+      "device_id": "C8K-001",
+      "hostname": "vEdge-C8K-001",
+      "device_type": "vedge",
+      "device_model": "vedge-C8000V",
+      "status": "normal",
+      "system_ip": "1.1.1.1",
+      "site_id": "100",
+      "version": "20.6.3",
+      "uptime": "15:23:45:10",
+      "last_updated": "2025-08-19T10:30:00Z"
+    }
+  ]
+}
+```
+
+**Step 4: Create Device Template with CSRF Protection**
+```bash
+curl -X POST "http://localhost:8000/dataservice/template/device" \
+  -H "Cookie: JSESSIONID=vmanage-session-789" \
+  -H "X-XSRF-TOKEN: mock-csrf-token-abc" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "templateName": "Branch-Router-Template",
+    "deviceType": "vedge-C8000V",
+    "templateDefinition": {
+      "system": {
+        "host-name": "{{hostname}}",
+        "system-ip": "{{system_ip}}",
+        "site-id": "{{site_id}}"
+      }
+    }
+  }' \
+  -i
+```
+
+**Response:**
+```http
+HTTP/1.1 201 Created
+Content-Type: application/json
+X-XSRF-TOKEN: mock-csrf-token-abc
+
+{
+  "templateId": "template-12345",
+  "templateName": "Branch-Router-Template",
+  "status": "created",
+  "message": "Device template created successfully"
+}
+```
+
+**Key Features Demonstrated:**
+
+1. **Dynamic Session Management**: Each login generates a random session ID from `auth.json`
+2. **CSRF Token Correlation**: CSRF tokens are automatically correlated with session IDs
+3. **Multi-Factor Authentication**: Endpoints require both session cookie AND CSRF token
+4. **Automatic Token Rotation**: Fresh CSRF tokens included in response headers
+5. **Real API Behavior**: Mimics actual vManage authentication patterns
+
+**Authentication Test Suite:**
+
+Run the comprehensive authentication test suite:
+```bash
+./tests/configs/vmanage-api/test_vmanage_auth.sh
+```
+
+This test suite validates:
+- 19 different authentication scenarios
+- Session and CSRF token validation
+- Multi-factor authentication enforcement
+- Login/logout flows
+- Dynamic value resolution
+
+### 11. Logging Management Examples
+
+**Get comprehensive logging status:**
+```bash
+curl -X GET "http://localhost:8000/system/logging/status"
+```
+
+**Response:**
+```json
+{
+  "enabled": true,
+  "level": "INFO",
+  "console_enabled": true,
+  "file_enabled": true,
+  "file_path": "/app/latest.logs",
+  "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+  "max_file_size_mb": 10,
+  "backup_count": 5,
+  "max_body_log_size": 2048,
+  "request_response_logging": true,
+  "allow_log_deletion": true,
+  "file_exists": true,
+  "file_size_bytes": 15420,
+  "file_size_mb": 0.01
+}
+```
+
+**Enable DEBUG mode with detailed request/response logging:**
+```bash
+curl -X POST "http://localhost:8000/system/logging/config" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "level": "DEBUG",
+    "console_enabled": true,
+    "file_enabled": true,
+    "request_response_logging": true,
+    "max_body_log_size": 4096,
+    "allow_log_deletion": false
+  }'
+```
+
+**Response:**
+```json
+{
+  "message": "Logging configuration updated successfully",
+  "new_config": {
+    "enabled": true,
+    "level": "DEBUG",
+    "console_enabled": true,
+    "file_enabled": true,
+    "request_response_logging": true,
+    "max_body_log_size": 4096,
+    "allow_log_deletion": false
+  }
+}
+```
+
+**View recent logs with all API calls captured:**
+```bash
+curl -X GET "http://localhost:8000/system/logging/logs?lines=20"
+```
+
+**Response showing comprehensive logging:**
+```json
+{
+  "status": "success",
+  "data": {
+    "total_lines": 147,
+    "returned_lines": 20,
+    "logs": [
+      "2025-08-20 10:42:15,234 - api.requests - INFO - REQUEST: POST /j_security_check from 192.168.65.1",
+      "2025-08-20 10:42:15,234 - api.requests - DEBUG - Request Headers: {'content-type': 'application/x-www-form-urlencoded', 'content-length': '36'}",
+      "2025-08-20 10:42:15,235 - api.requests - DEBUG - Request Body: j_username=admin&j_password=admin123",
+      "2025-08-20 10:42:15,235 - root - INFO - Form handler called for /j_security_check with username: admin",
+      "2025-08-20 10:42:15,236 - api.requests - INFO - RESPONSE: 200 for POST /j_security_check - Time: 0.002s",
+      "2025-08-20 10:42:15,236 - api.requests - DEBUG - Response Headers: {'content-type': 'application/json', 'set-cookie': 'JSESSIONID=vmanage-session-123; Path=/; HttpOnly'}",
+      "2025-08-20 10:42:15,236 - api.requests - DEBUG - Response Body: {\"message\": \"Authentication successful\"}",
+      "2025-08-20 10:42:15,237 - uvicorn.access - INFO - 192.168.65.1:22520 - \"POST /j_security_check HTTP/1.1\" 200 OK",
+      "2025-08-20 10:42:18,445 - api.requests - INFO - REQUEST: GET /dataservice/device/monitor from 192.168.65.1",
+      "2025-08-20 10:42:18,445 - api.requests - DEBUG - Request Headers: {'cookie': 'JSESSIONID=vmanage-session-123', 'x-xsrf-token': 'mock-csrf-token-456'}",
+      "2025-08-20 10:42:18,446 - root - DEBUG - Checking authentication for endpoint: /dataservice/device/monitor",
+      "2025-08-20 10:42:18,446 - root - DEBUG - Authentication methods required: ['vmanage_session', 'csrf_token']",
+      "2025-08-20 10:42:18,447 - root - DEBUG - Session authentication successful for user: admin",
+      "2025-08-20 10:42:18,447 - api.requests - INFO - RESPONSE: 200 for GET /dataservice/device/monitor - Time: 0.002s",
+      "2025-08-20 10:42:18,447 - api.requests - DEBUG - Response Body: {\"data\": [{\"device_id\": \"C8K-001\", \"hostname\": \"vEdge-C8K-001\"}]}",
+      "2025-08-20 10:42:18,448 - uvicorn.access - INFO - 192.168.65.1:44316 - \"GET /dataservice/device/monitor HTTP/1.1\" 200 OK"
+    ]
+  }
+}
+```
+
+**Production mode (INFO level) for cleaner logs:**
+```bash
+curl -X POST "http://localhost:8000/system/logging/config" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "level": "INFO",
+    "console_enabled": false,
+    "file_enabled": true,
+    "request_response_logging": true,
+    "allow_log_deletion": true
+  }'
+```
+
+**Key Features Demonstrated:**
+- **Multi-Logger Capture**: All HTTP requests, server events, and application logs in one file
+- **Request/Response Middleware**: Complete HTTP call tracking with timing information
+- **Debug vs Production**: Configurable verbosity levels for different environments
+- **Body Content Logging**: Request/response payloads captured (configurable size limits)
+- **Authentication Tracking**: Detailed auth flow logging for debugging security issues
+- **Runtime Configuration**: Change settings without server restart
+- **File Management**: Automatic creation, rotation, and size management
+
 ## 🗺️ Roadmap
 
-### Version 0.2.0 - Persistence Layer ✅
+### Recent Updates ✨
+- **Centralized System Authentication**: System endpoints now use the same `auth.json` configuration as regular API endpoints for consistent security management
+- **System Namespace Consistency**: Cache management endpoints remain in `/system/cache/*` namespace for consistent system operations organization  
+- **Enhanced Swagger Integration**: System endpoints now properly display authentication requirements in Swagger UI
+- **Improved Security Consistency**: Single source of truth for all authentication configuration across the application
+
+### Version 0.1.0 - Persistence Layer ✅
 - **Redis Integration**: Store and retrieve entity data using Redis
-- **Cache Management**: Admin endpoints for cache inspection and management
+- **Cache Management**: System endpoints for cache inspection and management
 - **Entity Operations**: CRUD operations with automatic caching
 - **Data Persistence**: Maintain data across server restarts
 
-### Version 0.3.0 - Advanced Workflows
-- **Database Integration**: SQLite/PostgreSQL support for storing configurations
-- **Dynamic Configuration**: Runtime configuration updates via API
-- **Configuration Versioning**: Track and rollback configuration changes
-- **Backup/Restore**: Export and import configurations
+### Version 0.2.0 - Advanced Authentication Features ✅
+- **Multi-Factor Authentication**: Support for additional authentication factors (e.g., TOTP)
+- **OAuth 2.0 Support**: Integration with external OAuth providers
+- **API Key Management**: Generate and revoke API keys for users
+- **Session Management**: Fine-grained control over user sessions
 
-### Version 0.3.0 - Advanced Workflows
+### Version 0.3.0 - Advanced Workflows 📋
 - **Request Sequencing**: Chain multiple requests with state management
 - **Response Templates**: Jinja2 templating for dynamic response generation
 - **Data Fixtures**: Pre-populated datasets for complex scenarios
 - **Request Recording**: Capture and replay real API interactions
-
-### Version 0.4.0 - Enhanced Features
-- **Rate Limiting**: Per-endpoint and per-user rate limiting
-- **Request Validation**: JSON Schema validation for request bodies
-- **Response Transformation**: Modify responses based on request headers
-- **Webhook Support**: Trigger external webhooks on specific requests
-
-### Version 0.5.0 - Production Features
-- **Metrics & Analytics**: Request/response metrics and analytics dashboard
-- **Load Testing**: Built-in load testing capabilities
-- **Multi-tenancy**: Support for multiple isolated environments
-- **Plugin System**: Custom middleware and extension support
 
 ## 🧪 Development
 
@@ -809,6 +1876,32 @@ pytest tests/test_auth.py
 
 # Run tests with verbose output
 pytest -v
+
+# Test template functionality
+python test_templates.py
+```
+
+### 🧪 Testing Template Functionality
+You can test the template system using the included test script:
+
+```bash
+# Test timestamp templates and substitution
+python test_templates.py
+```
+
+This will show examples of:
+- Static timestamp replacement with realistic values
+- Template placeholder processing (`{{timestamp}}`, `{{date}}`, etc.)
+- Automatic detection and conversion of various timestamp formats
+
+**Sample output:**
+```
+Testing timestamp template substitution...
+Original data:
+{'device': {'last_updated': '2025-08-19T10:30:00Z', 'timestamp': '1724058600'}}
+
+Processed data:  
+{'device': {'last_updated': '2025-08-20T14:23:15Z', 'timestamp': '1724074995'}}
 ```
 
 ### 🎨 Code Formatting

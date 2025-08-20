@@ -5,12 +5,13 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 ENV PYTHONPATH=/app/src
 
-COPY poetry.lock pyproject.toml /app/
+COPY poetry.lock pyproject.toml README.md /app/
 RUN pip install poetry
 RUN poetry config virtualenvs.create false && \
     poetry install --no-interaction --no-ansi
 
-COPY . /app
+COPY config/ /app/config/
+COPY src/ /app/src/
 
 RUN adduser -u 5678 --disabled-password --gecos "" appuser && chown -R appuser /app
 USER appuser

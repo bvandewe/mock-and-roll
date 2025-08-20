@@ -1,0 +1,18 @@
+[flake8]
+# Ignore line length errors (E501)
+ignore = E501
+# Set maximum line length (optional, but good to be explicit)
+max-line-length = 500
+# Exclude common directories that don't need linting
+exclude = 
+    .git,
+    __pycache__,
+    .venv,
+    venv,
+    env,
+    .env,
+    build,
+    dist,
+    *.egg-info,
+    .pytest_cache,
+    .mypy_cache

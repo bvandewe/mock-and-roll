@@ -1,0 +1,479 @@
+{
+    "endpoints": [
+        {
+            "name": "Authentication",
+            "method": "POST",
+            "path": "/j_security_check",
+            "tag": "Authentication",
+            "authentication": [],
+            "request_headers": {
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form_parameters": [
+                {
+                    "name": "j_username",
+                    "type": "string",
+                    "required": true,
+                    "description": "Username for authentication"
+                },
+                {
+                    "name": "j_password",
+                    "type": "string",
+                    "required": true,
+                    "description": "Password for authentication"
+                }
+            ],
+            "responses": [
+                {
+                    "body_conditions": {
+                        "j_username": "admin",
+                        "j_password": "admin"
+                    },
+                    "response": {
+                        "status_code": 200,
+                        "headers": {
+                            "Set-Cookie": "JSESSIONID=${auth.vmanage_session.random_session.session_id}; Path=/; HttpOnly",
+                            "Content-Type": "text/html"
+                        },
+                        "body": {
+                            "message": "Authentication successful",
+                            "redirect": "/dataservice/client/token"
+                        }
+                    }
+                },
+                {
+                    "body_conditions": null,
+                    "response": {
+                        "status_code": 401,
+                        "headers": {
+                            "Content-Type": "application/json"
+                        },
+                        "body": {
+                            "error": "Authentication failed",
+                            "message": "Invalid username or password"
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Get CSRF Token",
+            "method": "GET",
+            "path": "/dataservice/client/token",
+            "tag": "Authentication",
+            "authentication": [
+                "vmanage_session"
+            ],
+            "request_headers": {
+                "Cookie": "JSESSIONID=${auth.vmanage_session.random_session.session_id}"
+            },
+            "responses": [
+                {
+                    "body_conditions": null,
+                    "response": {
+                        "status_code": 200,
+                        "headers": {
+                            "Content-Type": "text/plain",
+                            "X-XSRF-TOKEN": "${auth.vmanage_session.random_session.csrf_token}"
+                        },
+                        "body": "${auth.vmanage_session.random_session.csrf_token}"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Logout",
+            "method": "GET",
+            "path": "/logout",
+            "authentication": [
+                "vmanage_session",
+                "csrf_token"
+            ],
+            "tag": "Authentication",
+            "responses": [
+                {
+                    "body_conditions": null,
+                    "response": {
+                        "status_code": 200,
+                        "headers": {
+                            "Content-Type": "application/json",
+                            "Set-Cookie": "JSESSIONID=; Path=/; HttpOnly; Expires=Thu, 01 Jan 1970 00:00:00 GMT"
+                        },
+                        "body": {
+                            "message": "Logout successful"
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Device Monitor",
+            "method": "GET",
+            "path": "/dataservice/device/monitor",
+            "tag": "Devices",
+            "authentication": [
+                "vmanage_session",
+                "csrf_token"
+            ],
+            "responses": [
+                {
+                    "body_conditions": null,
+                    "response": {
+                        "status_code": 200,
+                        "headers": {
+                            "Content-Type": "application/json",
+                            "X-XSRF-TOKEN": "${auth.vmanage_session.random_session.csrf_token}"
+                        },
+                        "body": {
+                            "data": [
+                                {
+                                    "device_id": "C8K-001",
+                                    "hostname": "vEdge-C8K-001",
+                                    "device_type": "vedge",
+                                    "device_model": "vedge-C8000V",
+                                    "status": "normal",
+                                    "system_ip": "1.1.1.1",
+                                    "site_id": "100",
+                                    "version": "20.6.3",
+                                    "uptime": "15:23:45:10",
+                                    "last_updated": "{{timestamp}}"
+                                },
+                                {
+                                    "device_id": "vSmart-001",
+                                    "hostname": "vSmart-001",
+                                    "device_type": "vsmart",
+                                    "device_model": "vsmart",
+                                    "status": "normal",
+                                    "system_ip": "1.1.1.10",
+                                    "site_id": "1000",
+                                    "version": "20.6.3",
+                                    "uptime": "30:12:34:56",
+                                    "last_updated": "{{timestamp}}"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Device Interface Statistics",
+            "method": "GET",
+            "path": "/dataservice/device/interface",
+            "authentication": [
+                "vmanage_session",
+                "csrf_token"
+            ],
+            "tag": "Devices",
+            "responses": [
+                {
+                    "body_conditions": null,
+                    "response": {
+                        "status_code": 200,
+                        "headers": {
+                            "Content-Type": "application/json",
+                            "X-XSRF-TOKEN": "${auth.vmanage_session.random_session.csrf_token}"
+                        },
+                        "body": {
+                            "data": [
+                                {
+                                    "device_id": "C8K-001",
+                                    "interface_name": "GigabitEthernet1",
+                                    "operational_status": "up",
+                                    "admin_status": "up",
+                                    "ip_address": "192.168.1.1/24",
+                                    "bandwidth": "1000000",
+                                    "tx_packets": 150432,
+                                    "rx_packets": 147890,
+                                    "last_updated": "{{timestamp}}"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Device Control Connections",
+            "method": "GET",
+            "path": "/dataservice/device/control/connections",
+            "authentication": [
+                "vmanage_session",
+                "csrf_token"
+            ],
+            "tag": "Devices",
+            "responses": [
+                {
+                    "body_conditions": null,
+                    "response": {
+                        "status_code": 200,
+                        "headers": {
+                            "Content-Type": "application/json",
+                            "X-XSRF-TOKEN": "${auth.vmanage_session.random_session.csrf_token}"
+                        },
+                        "body": {
+                            "data": [
+                                {
+                                    "device_id": "C8K-001",
+                                    "peer_type": "vsmart",
+                                    "peer_ip": "1.1.1.10",
+                                    "state": "up",
+                                    "uptime": "15:23:45:10",
+                                    "domain_id": "1",
+                                    "last_updated": "{{timestamp}}"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Create Device Template",
+            "method": "POST",
+            "path": "/dataservice/template/device",
+            "authentication": [
+                "vmanage_session",
+                "csrf_token"
+            ],
+            "tag": "Templates",
+            "request_body_schema": {
+                "type": "object",
+                "properties": {
+                    "templateName": {
+                        "type": "string",
+                        "description": "Name of the device template",
+                        "example": "Branch-Router-Template"
+                    },
+                    "templateDescription": {
+                        "type": "string",
+                        "description": "Description of the template",
+                        "example": "Template for branch router configuration"
+                    },
+                    "deviceType": {
+                        "type": "string",
+                        "description": "Type of device",
+                        "enum": [
+                            "vedge-C8000V",
+                            "vedge-ISR4331",
+                            "vsmart",
+                            "vbond"
+                        ],
+                        "example": "vedge-C8000V"
+                    },
+                    "templateDefinition": {
+                        "type": "object",
+                        "description": "Template configuration definition",
+                        "properties": {
+                            "system": {
+                                "type": "object",
+                                "properties": {
+                                    "host-name": {
+                                        "type": "string",
+                                        "example": "{{hostname}}"
+                                    },
+                                    "system-ip": {
+                                        "type": "string",
+                                        "example": "{{system_ip}}"
+                                    },
+                                    "site-id": {
+                                        "type": "string",
+                                        "example": "{{site_id}}"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "required": [
+                    "templateName",
+                    "deviceType",
+                    "templateDefinition"
+                ],
+                "additionalProperties": true
+            },
+            "responses": [
+                {
+                    "body_conditions": null,
+                    "response": {
+                        "status_code": 201,
+                        "headers": {
+                            "Content-Type": "application/json",
+                            "X-XSRF-TOKEN": "${auth.vmanage_session.random_session.csrf_token}"
+                        },
+                        "body": {
+                            "templateId": "template-12345",
+                            "templateName": "Branch-Router-Template",
+                            "status": "created",
+                            "message": "Device template created successfully"
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Attach Device to Template",
+            "method": "POST",
+            "path": "/dataservice/template/device/config/attachfeature",
+            "authentication": [
+                "vmanage_session",
+                "csrf_token"
+            ],
+            "tag": "Templates",
+            "request_body_schema": {
+                "type": "object",
+                "properties": {
+                    "deviceTemplateList": {
+                        "type": "array",
+                        "description": "List of devices to attach to template",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "templateId": {
+                                    "type": "string",
+                                    "description": "Template ID to attach",
+                                    "example": "template-12345"
+                                },
+                                "device": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "csv-status": {
+                                                "type": "string",
+                                                "example": "complete"
+                                            },
+                                            "csv-deviceId": {
+                                                "type": "string",
+                                                "example": "C8K-001"
+                                            },
+                                            "csv-deviceIP": {
+                                                "type": "string",
+                                                "example": "1.1.1.1"
+                                            },
+                                            "csv-host-name": {
+                                                "type": "string",
+                                                "example": "branch-router-01"
+                                            },
+                                            "csv-system-ip": {
+                                                "type": "string",
+                                                "example": "1.1.1.1"
+                                            },
+                                            "csv-site-id": {
+                                                "type": "string",
+                                                "example": "100"
+                                            }
+                                        },
+                                        "required": [
+                                            "csv-deviceId",
+                                            "csv-deviceIP"
+                                        ]
+                                    }
+                                }
+                            },
+                            "required": [
+                                "templateId",
+                                "device"
+                            ]
+                        }
+                    }
+                },
+                "required": [
+                    "deviceTemplateList"
+                ],
+                "additionalProperties": false
+            },
+            "responses": [
+                {
+                    "body_conditions": null,
+                    "response": {
+                        "status_code": 200,
+                        "headers": {
+                            "Content-Type": "application/json",
+                            "X-XSRF-TOKEN": "${auth.vmanage_session.random_session.csrf_token}"
+                        },
+                        "body": {
+                            "id": "action-12345",
+                            "status": "Success",
+                            "message": "Template attachment initiated successfully"
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Create Site List",
+            "method": "POST",
+            "path": "/dataservice/template/policy/list/site",
+            "authentication": [
+                "vmanage_session",
+                "csrf_token"
+            ],
+            "tag": "Templates",
+            "request_body_schema": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Name of the site list",
+                        "example": "branch-sites"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Description of the site list",
+                        "example": "List of all branch office sites"
+                    },
+                    "type": {
+                        "type": "string",
+                        "description": "Type of list",
+                        "enum": [
+                            "site"
+                        ],
+                        "example": "site"
+                    },
+                    "entries": {
+                        "type": "array",
+                        "description": "List of site IDs",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "siteId": {
+                                    "type": "string",
+                                    "description": "Site ID",
+                                    "example": "100"
+                                }
+                            },
+                            "required": [
+                                "siteId"
+                            ]
+                        }
+                    }
+                },
+                "required": [
+                    "name",
+                    "type",
+                    "entries"
+                ],
+                "additionalProperties": false
+            },
+            "responses": [
+                {
+                    "body_conditions": null,
+                    "response": {
+                        "status_code": 201,
+                        "headers": {
+                            "Content-Type": "application/json",
+                            "X-XSRF-TOKEN": "${auth.vmanage_session.random_session.csrf_token}"
+                        },
+                        "body": {
+                            "listId": "site-list-123",
+                            "name": "branch-sites",
+                            "status": "created",
+                            "message": "Site list created successfully"
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

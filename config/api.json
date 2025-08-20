@@ -1,0 +1,59 @@
+{
+    "api_name": "Mock API",
+    "version": "0.1.0",
+    "base_url": "https://api.example.com",
+    "description": "API for managing resources",
+    "support": {
+        "email": "support@example.com",
+        "phone": "+1-800-555-0199"
+    },
+    "terms_of_service": "https://api.example.com/terms",
+    "license": {
+        "name": "MIT",
+        "url": "https://opensource.org/licenses/MIT"
+    },
+    "root_path": "/api/v1",
+    "openapi_tags": [
+        {
+            "name": "Items",
+            "description": "Operations with items and inventory management"
+        },
+        {
+            "name": "User Management",
+            "description": "User creation, authentication and management operations"
+        },
+        {
+            "name": "Authentication",
+            "description": "Login, session management and security operations"
+        },
+        {
+            "name": "Device Management",
+            "description": "Device monitoring and configuration operations"
+        }
+    ],
+    "swagger_ui": {
+        "doc_expansion": "none",
+        "default_models_expand_depth": -1,
+        "default_model_expand_depth": -1,
+        "display_request_duration": true,
+        "try_it_out_enabled": true
+    },
+    "persistence": "redis",
+    "system": {
+        "protect_endpoints": true,
+        "auth_method": "system_api_key"
+    },
+    "logging": {
+        "enabled": true,
+        "level": "DEBUG",
+        "console_enabled": true,
+        "file_enabled": true,
+        "file_path": "/app/latest.logs",
+        "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        "max_file_size_mb": 10,
+        "backup_count": 5,
+        "max_body_log_size": 127,
+        "request_response_logging": true,
+        "allow_log_deletion": true
+    }
+}

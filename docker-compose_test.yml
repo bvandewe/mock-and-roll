@@ -1,20 +1,21 @@
 name: mock-api-dev
 services:
-  # http://localhost:8000/docs
+  # http://localhost:8080/docs
   mock-api:
-    image: mock-api-server
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: "ccie-gitlab.ccie.cisco.com:4567/mozart/microservices/mock-and-roll/mock-and-roll:v0.1.0"
     command:
       [
-        "sh",
-        "-c",
-        "pip install debugpy -t /tmp && python /tmp/debugpy --wait-for-client --listen 0.0.0.0:5678 -m uvicorn src.main:app --host 0.0.0.0 --port 8080 --reload",
+        "uvicorn",
+        "src.main:app",
+        "--proxy-headers", # Include proxy headers from Dockerfile CMD
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8080", # Ensure it runs on 8080 to match port mapping
+        "--reload", # Keep reload for development convenience
       ]
     ports:
-      - 8000:8080
-      - 5678:5678
+      - 8080:8080
     environment:
       # Redis Configuration
       REDIS_HOST: redis
@@ -27,8 +28,8 @@ services:
       
     volumes:
       - ./src:/app/src
-      # - ./config:/app/config # Uncomment to mount the default config directory...
-      - ./tests/configs/vmanage-api/:/app/config # Uncomment to mount the test config directory...
+      - ./config:/app/config
+      # - ./tests/configs/vmanage-api/:/app/config # Mounts the test config directory...
     depends_on:
       - redis
     networks:
