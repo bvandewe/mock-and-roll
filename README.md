@@ -1272,6 +1272,61 @@ python -m uvicorn main:app --host 0.0.0.0 --port 8000
 - `--workers`: Number of worker processes (default: 1)
 - `--log-level`: Log level (default: info)
 
+#### Shell Scripts for Server Management
+
+For convenient server management, several shell scripts are provided that handle Poetry virtual environments automatically:
+
+**Quick Server Management:**
+```bash
+# Start server in background with Poetry environment
+./start_vmanage_api.sh [config-folder]
+
+# Stop all running servers  
+./stop_vmanage_api.sh
+
+# List all running vManage API servers
+./list_servers.sh
+
+# Test server status and functionality
+./test_vmanage_api.sh [port]
+
+# Setup Poetry environment (one-time setup)
+./setup_environment.sh
+```
+
+**Script Features:**
+- **Port Configuration**: Reads port from `.VMANAGE_API_PORT` file (default: 8000)
+- **Background Execution**: Servers run in background with process tracking
+- **Poetry Integration**: Automatically uses Poetry virtual environment
+- **Configuration Validation**: Checks for required config files before starting
+- **Process Management**: PID tracking and graceful shutdown
+
+**Example Usage:**
+```bash
+# Setup environment (first time only)
+./setup_environment.sh
+
+# Start with default config (config/ folder)
+./start_vmanage_api.sh
+# Output: Server started in background (PID: 12345)
+
+# Start with custom config
+./start_vmanage_api.sh tests/configs/vmanage-api
+# Output: Server started in background (PID: 12346)
+
+# Test server functionality
+./test_vmanage_api.sh
+# Output: Comprehensive server status report
+
+# List running servers
+./list_servers.sh
+# Output: Shows all running servers with PIDs and URLs
+
+# Stop all servers
+./stop_vmanage_api.sh
+# Output: Gracefully stops all running servers
+```
+
 #### Docker Execution
 
 ```bash

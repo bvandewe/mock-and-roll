@@ -48,6 +48,28 @@ done
 echo "✅ Configuration files found"
 echo "🔧 Checking Python environment..."
 
+# Check if Poetry is available
+if ! command -v poetry &> /dev/null; then
+    echo "❌ Error: Poetry is not available in PATH!"
+    echo "   Please install Poetry: curl -sSL https://install.python-poetry.org | python3 -"
+    exit 1
+fi
+
+# Check if pyproject.toml exists (Poetry project)
+if [ ! -f "pyproject.toml" ]; then
+    echo "❌ Error: pyproject.toml not found in current directory!"
+    echo "   Please run this script from the project root directory."
+    exit 1
+fi
+
+# Configure Poetry to use local virtual environment
+echo "� Configuring Poetry for local virtual environment..."
+poetry config virtualenvs.in-project true
+
+# Install dependencies if needed
+echo "📦 Installing/updating dependencies with Poetry..."
+poetry install --only=main
+
 # Check if run_server.py exists
 if [ ! -f "run_server.py" ]; then
     echo "❌ Error: run_server.py not found in current directory!"
@@ -55,17 +77,10 @@ if [ ! -f "run_server.py" ]; then
     exit 1
 fi
 
-# Check if Python is available
-if ! command -v python &> /dev/null; then
-    echo "❌ Error: Python is not available in PATH!"
-    echo "   Please ensure Python is installed and activated."
-    exit 1
-fi
-
-echo "✅ Python environment ready"
+echo "✅ Poetry environment ready"
 echo ""
-echo "🔄 Starting server in background..."
-python run_server.py --host "$HOST" --port "$PORT" --config-folder "$CONFIG_FOLDER" --reload &
+echo "🔄 Starting server in background using Poetry..."
+poetry run python run_server.py --host "$HOST" --port "$PORT" --config-folder "$CONFIG_FOLDER" --reload &
 
 # Capture the process ID
 SERVER_PID=$!
@@ -88,11 +103,27 @@ echo "   ps -p $SERVER_PID"
 echo ""
 
 # Wait a moment for the server to start
-sleep 2
+sleep 3
 
 # Check if the process is still running
 if ps -p $SERVER_PID > /dev/null 2>&1; then
     echo "🟢 Server is running (PID: $SERVER_PID)"
+    
+    # Additional verification - check if port is being used
+    if lsof -ti:$PORT > /dev/null 2>&1; then
+        ACTUAL_PID=$(lsof -ti:$PORT)
+        echo "🌐 Port $PORT is in use by process: $ACTUAL_PID"
+        
+        # Test server response
+        echo "🔍 Testing server response..."
+        if curl -s http://localhost:$PORT/ > /dev/null 2>&1; then
+            echo "✅ Server is responding to HTTP requests"
+        else
+            echo "⚠️  Server not responding to HTTP requests yet"
+        fi
+    else
+        echo "⚠️  Port $PORT is not in use - server may not have started correctly"
+    fi
 else
     echo "🔴 Server failed to start or exited immediately"
     echo "   Check the logs above for error details"
