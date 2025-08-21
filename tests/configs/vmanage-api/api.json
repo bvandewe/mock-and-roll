@@ -13,6 +13,7 @@
         "url": "https://opensource.org/licenses/MIT"
     },
     "root_path": "/api/v1",
+    "persistence": "redis",
     "openapi_tags": [
         {
             "name": "Authentication",

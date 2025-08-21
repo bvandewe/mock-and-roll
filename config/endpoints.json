@@ -32,6 +32,10 @@
                 "basic_auth",
                 "oidc_auth_code"
             ],
+            "persistence": {
+                "entity_name": "users",
+                "action": "create"
+            },
             "responses": [
                 {
                     "body_conditions": {

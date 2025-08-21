@@ -3,6 +3,14 @@
 # Script to stop vManage API mock server
 # Usage: ./stop_vmanage_api.sh [PID]
 
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Get the project root directory (parent of scripts)
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# Change to project root to ensure relative paths work correctly
+cd "$PROJECT_ROOT"
+
 # Read port from .VMANAGE_API_PORT file if it exists, otherwise use default
 if [ -f ".VMANAGE_API_PORT" ]; then
     PORT=$(cat .VMANAGE_API_PORT | tr -d '[:space:]')

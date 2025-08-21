@@ -1,11 +1,26 @@
 #!/usr/bin/env bash
 
-# Setup script for vManage API Mock Server
-# This ensures Poetry environment is properly configured
+# Setup Environment Script for Mock Server
+# This script sets up the development environment and dependencies
 
 set -e
 
-echo "🔧 Setting up vManage API Mock Server environment..."
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Get the project root directory (parent of scripts)
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# Change to project root to ensure relative paths work correctly
+cd "$PROJECT_ROOT"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+echo -e "${BLUE}🔧 Setting up Mock Server environment...${NC}"
 
 # Check if Poetry is available
 if ! command -v poetry &> /dev/null; then

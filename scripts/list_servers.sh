@@ -3,6 +3,14 @@
 # Script to list running vManage API mock servers
 # This script detects running servers and provides management information
 
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Get the project root directory (parent of scripts)
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# Change to project root to ensure relative paths work correctly
+cd "$PROJECT_ROOT"
+
 echo "🔍 Scanning for running vManage API Mock Servers..."
 echo ""
 

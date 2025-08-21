@@ -5,6 +5,14 @@
 
 set -e
 
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Get the project root directory (parent of scripts)
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# Change to project root to ensure relative paths work correctly
+cd "$PROJECT_ROOT"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
