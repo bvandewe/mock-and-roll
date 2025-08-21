@@ -1,24 +1,67 @@
 #!/usr/bin/env bash
 
-# Mock Server Scripts - Quick Access Helper
-# This script provides easy access to all server scripts
+# Mock Server Management Script
+# Unified interface that simplifies access to server management operations
 # 
-# Usage:
-#   ./run.sh                    # Show help
-#   ./run.sh start basic        # Start basic config
-#   ./run.sh stop               # Stop servers  
-#   ./run.sh list               # List running servers
-#   ./run.sh help               # Show detailed help
+# This script calls specialized scripts in the scripts/ directory for actual operations
 
-SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/scripts" && pwd)"
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPTS_DIR="$SCRIPT_DIR/scripts"
 
-# If no arguments provided, show help
+# Function to show usage
+show_usage() {
+    echo "🚀 Mock API Server Management"
+    echo ""
+    echo "USAGE:"
+    echo "  ./run.sh COMMAND [OPTIONS...]"
+    echo ""
+    echo "COMMANDS:"
+    echo "  start [CONFIG] [--port PORT] [--reload]"
+    echo "                          Start server with optional configuration"
+    echo "                          CONFIG: basic, persistence, vmanage (interactive if omitted)"
+    echo "                          --port: Custom port (default: 8001)"
+    echo "                          --reload: Enable auto-reload for development"
+    echo ""
+    echo "  stop [--all] [--pid PID]"
+    echo "                          Stop running servers"
+    echo "                          --all: Stop all servers"
+    echo "                          --pid: Stop specific process ID"
+    echo ""
+    echo "  list                    List running mock API servers"
+    echo "  status                  Alias for 'list'"
+    echo ""
+    echo "  logs [--lines N] [FILTER]"
+    echo "                          View server logs"
+    echo "                          --lines: Number of recent lines (default: 500)"
+    echo "                          FILTER: Optional endpoint filter pattern"
+    echo ""
+    echo "  success [FORMAT]        Generate success rate report"
+    echo "                          FORMAT: summary (default), detailed, json"
+    echo ""
+    echo "  config-help             Show configuration system guide"
+    echo "  help                    Show detailed script information"
+    echo ""
+    echo "EXAMPLES:"
+    echo "  ./run.sh start                     # Interactive config selection"
+    echo "  ./run.sh start basic               # Start basic configuration"
+    echo "  ./run.sh start vmanage --port 8080 # Start vManage config on port 8080"
+    echo "  ./run.sh stop                      # Stop servers (auto-detect)"
+    echo "  ./run.sh list                      # Show running servers"
+    echo "  ./run.sh logs --lines 100          # Show last 100 log lines"
+    echo "  ./run.sh success detailed          # Detailed success analysis"
+    echo ""
+    echo "📂 Available configurations: basic, persistence, vmanage"
+    echo "📖 For complete documentation: ./run.sh help"
+}
+
+# If no arguments provided, show usage
 if [ $# -eq 0 ]; then
-    "$SCRIPTS_DIR/help.sh"
+    show_usage
     exit 0
 fi
 
-# Handle common commands directly
+# Handle commands
 COMMAND="$1"
 shift  # Remove the command from arguments
 
@@ -33,10 +76,14 @@ case "$COMMAND" in
         exec "$SCRIPTS_DIR/list_servers.sh" "$@"
         ;;
     "logs")
-        exec "$SCRIPTS_DIR/get_logs.sh" "$@"
+        if [ -f "$SCRIPTS_DIR/get_logs.sh" ]; then
+            exec "$SCRIPTS_DIR/get_logs.sh" "$@"
+        else
+            exec "$SCRIPTS_DIR/logs/filter_logs.sh" "$@"
+        fi
         ;;
     "success")
-        exec "$SCRIPTS_DIR/success_report.sh" "$@"
+        exec "$SCRIPTS_DIR/logs/success_report.sh" "$@"
         ;;
     "config-help")
         exec "$SCRIPTS_DIR/config_help.sh" "$@"
@@ -45,37 +92,9 @@ case "$COMMAND" in
         exec "$SCRIPTS_DIR/help.sh" "$@"
         ;;
     *)
-        # Handle script names (with or without .sh extension)
-        SCRIPT_NAME="$COMMAND"
-        if [[ ! "$SCRIPT_NAME" == *.sh ]]; then
-            SCRIPT_NAME="${SCRIPT_NAME}.sh"
-        fi
-        
-        # Full path to the script
-        SCRIPT_PATH="$SCRIPTS_DIR/$SCRIPT_NAME"
-        
-        # Check if script exists
-        if [ ! -f "$SCRIPT_PATH" ]; then
-            echo "❌ Command or script not found: $COMMAND"
-            echo ""
-            echo "📋 Available commands:"
-            echo "   start [config] [options]    # Start server"
-            echo "   stop [options]              # Stop server"
-            echo "   list                        # List running servers"
-            echo "   logs [options]              # View logs"
-            echo "   success [format]            # Success report"
-            echo "   config-help                 # Configuration help"
-            echo "   help                        # Show all scripts"
-            echo ""
-            echo "📋 Or run any script directly:"
-            "$SCRIPTS_DIR/help.sh" | grep "scripts/"
-            exit 1
-        fi
-        
-        # Make sure script is executable
-        chmod +x "$SCRIPT_PATH"
-        
-        # Execute the script with remaining arguments
-        exec "$SCRIPT_PATH" "$@"
+        echo "❌ Unknown command: $COMMAND"
+        echo ""
+        show_usage
+        exit 1
         ;;
 esac
