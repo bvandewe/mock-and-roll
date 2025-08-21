@@ -26,15 +26,26 @@ check_mock_server() {
     local port=$1
     local pid=$2
     
-    # Try to get a response from the server
-    local response=$(curl -s --connect-timeout 2 http://localhost:$port/ 2>/dev/null || echo "")
-    
-    # Check if it's our mock server based on the response
-    if [[ "$response" == *"Mock server is running"* ]]; then
-        return 0  # It's our server
-    else
-        return 1  # Not our server
+    # First check if it's a Python process with our expected command pattern
+    local cmd=$(ps -p $pid -o command --no-headers 2>/dev/null || echo "")
+    if [[ ! "$cmd" == *"python"* ]] || [[ ! "$cmd" == *"run_server.py"* && ! "$cmd" == *"uvicorn"* && ! "$cmd" == *"main:app"* ]]; then
+        return 1  # Not a Python process or not our server pattern
     fi
+    
+    # Try a quick HTTP check (with shorter timeout for Alpine)
+    if command -v curl >/dev/null 2>&1; then
+        local response=$(timeout 3 curl -s --connect-timeout 1 --max-time 2 http://localhost:$port/ 2>/dev/null || echo "")
+        if [[ "$response" == *"Mock server is running"* ]] || [[ "$response" == *"message"* ]] || [[ "$response" == *"detail"* ]]; then
+            return 0  # It's our server
+        fi
+    fi
+    
+    # Fallback: if it's a Python process with the right pattern, assume it's ours
+    if [[ "$cmd" == *"run_server.py"* ]] || [[ "$cmd" == *"main:app"* ]]; then
+        return 0
+    fi
+    
+    return 1  # Not our server
 }
 
 # Function to get process command line
@@ -90,28 +101,76 @@ PORTS_TO_CHECK=($(printf "%s\n" "${PORTS_TO_CHECK[@]}" | sort -u))
 FOUND_SERVERS=()
 
 echo -e "${YELLOW}🌐 Checking ports for running mock API servers...${NC}"
-for port in "${PORTS_TO_CHECK[@]}"; do
-    # Get PIDs using this port
-    PIDS=$(lsof -ti:$port 2>/dev/null || echo "")
-    
-    if [ -n "$PIDS" ]; then
-        for pid in $PIDS; do
-            # Check if it's our mock server
-            if check_mock_server $port $pid; then
-                config_name=$(get_config_from_port_file $port)
-                FOUND_SERVERS+=("$port:$pid:$config_name")
-                echo -e "✅ Found mock API server on port $port (PID: $pid) - Config: ${CYAN}$config_name${NC}"
-                
-                # Get process details
-                PROCESS_INFO=$(get_process_info $pid)
-                echo "   Process: $PROCESS_INFO"
-                echo "   URL: http://localhost:$port"
-                echo "   Docs: http://localhost:$port/docs"
-                echo ""
-            else
-                echo -e "ℹ️  Port $port is in use by PID $pid (not our mock API server)"
+
+# More efficient approach: find Python processes that match our pattern first
+PYTHON_PROCESSES=$(ps aux | grep -E "(run_server\.py|uvicorn.*main:app)" | grep -v grep | awk '{print $2}' || echo "")
+
+if [ -n "$PYTHON_PROCESSES" ]; then
+    for pid in $PYTHON_PROCESSES; do
+        # Get the port from the command line
+        cmd=$(ps -p $pid -o command --no-headers 2>/dev/null || echo "")
+        
+        # Extract port from command line
+        port=""
+        if [[ "$cmd" == *"--port "* ]]; then
+            port=$(echo "$cmd" | sed -n 's/.*--port \([0-9]*\).*/\1/p')
+        elif [[ "$cmd" == *":8"* ]]; then
+            # Look for uvicorn format like "0.0.0.0:8000"
+            port=$(echo "$cmd" | sed -n 's/.*:\([0-9]*\).*/\1/p')
+        fi
+        
+        # If we found a port, check if it's accessible
+        if [ -n "$port" ]; then
+            # Get config name if available
+            config_name=$(get_config_from_port_file $port)
+            if [ -z "$config_name" ]; then
+                # Try to guess config from command line
+                if [[ "$cmd" == *"configs/basic"* ]]; then
+                    config_name="basic"
+                elif [[ "$cmd" == *"configs/vmanage"* ]] || [[ "$cmd" == *"vmanage-api"* ]]; then
+                    config_name="vmanage"
+                elif [[ "$cmd" == *"configs/persistence"* ]]; then
+                    config_name="persistence"
+                else
+                    config_name="unknown"
+                fi
+            fi
+            
+            FOUND_SERVERS+=("$port:$pid:$config_name")
+            echo -e "✅ Found mock API server on port $port (PID: $pid) - Config: ${CYAN}$config_name${NC}"
+            
+            # Get process details
+            echo "   Process: $cmd"
+            echo "   URL: http://localhost:$port"
+            echo "   Docs: http://localhost:$port/docs"
+            echo ""
+        fi
+    done
+else
+    echo "   No Python mock API processes found"
+fi
+
+# Also check port files for comparison
+for port_file in .*_API_PORT; do
+    if [ -f "$port_file" ]; then
+        port=$(cat "$port_file" | tr -d '[:space:]')
+        
+        # Check if we already found this port
+        found_in_processes=false
+        for server in "${FOUND_SERVERS[@]}"; do
+            server_port=$(echo $server | cut -d: -f1)
+            if [ "$server_port" = "$port" ]; then
+                found_in_processes=true
+                break
             fi
         done
+        
+        # If not found in processes but port file exists, it might be stale
+        if [ "$found_in_processes" = false ]; then
+            echo -e "⚠️  Port file $port_file exists (port $port) but no running process found"
+            echo "   This may be a stale port file from a previous session"
+            echo ""
+        fi
     fi
 done
 
@@ -145,9 +204,7 @@ fi
 
 echo ""
 echo -e "${YELLOW}🔧 Management commands:${NC}"
-echo "   ./scripts/start_server.sh                     # Start new server"
-echo "   ./scripts/help.sh                             # Show all available scripts"
-echo "   ./scripts/config_help.sh                      # Configuration guide"
-echo "   ./stop_vmanage_api.sh     # Stop server"
-echo "   ./list_servers.sh         # Show this list"
-echo "   ./setup_environment.sh    # Setup Poetry environment"
+echo "   ./run.sh start                                 # Start new server (interactive)"
+echo "   ./run.sh stop                                  # Stop servers"
+echo "   ./run.sh list                                  # Show this list"
+echo "   ./run.sh help                                  # Show all available commands"
