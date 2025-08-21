@@ -12,6 +12,10 @@
 ## 📖 Table of Contents
 
 - [Quick Start](#-quick-start)
+- [Scripts & Tools](#-scripts--tools)
+  - [Available Scripts](#available-scripts)
+  - [Usage Options](#usage-options)
+  - [Script Categories](#script-categories)
 - [Features](#-features)
   - [Core Functionality](#-core-functionality)
   - [Authentication & Security](#-authentication--security)
@@ -257,7 +261,106 @@ curl -X 'GET' \
 
 ---
 
-## 🚀 Features
+## �️ Scripts & Tools
+
+All shell scripts have been organized into the `scripts/` directory for better project structure and maintainability.
+
+### Available Scripts
+
+📁 **Directory Structure:**
+```
+scripts/
+├── help.sh                    # Lists all available scripts with descriptions
+├── start_vmanage_api.sh      # Start the mock server
+├── stop_vmanage_api.sh       # Stop the mock server  
+├── get_logs.sh               # Fetch and filter server logs
+├── kill_all_servers.sh       # Emergency kill all server processes
+├── list_servers.sh           # List running servers
+├── test_vmanage_api.sh       # Test the API endpoints
+├── setup_environment.sh      # Environment setup
+└── setup_alpine.sh           # Alpine Linux setup tools
+```
+
+All scripts are located in the `scripts/` directory and organized by category:
+
+#### 🚀 **Server Operations**
+- `start_vmanage_api.sh` - Start the mock server
+- `stop_vmanage_api.sh` - Stop the mock server gracefully
+- `kill_all_servers.sh` - Force kill all server processes
+- `list_servers.sh` - List running server instances
+
+#### 📊 **Monitoring & Debugging**
+- `get_logs.sh` - Fetch and filter server logs by endpoint
+- `test_vmanage_api.sh` - Test API endpoints
+
+#### ⚙️ **Setup & Environment**
+- `setup_environment.sh` - General environment setup
+- `setup_alpine.sh` - Alpine Linux specific setup
+
+#### 🛠️ **Utilities**
+- `help.sh` - Script documentation and help
+
+### Usage Options
+
+#### Option 1: Using the Wrapper Script (Recommended)
+```bash
+./run.sh                    # Shows help and all available scripts
+./run.sh start_vmanage_api  # Start the server
+./run.sh get_logs           # Get all recent logs
+./run.sh get_logs /dataservice/device  # Filter logs by endpoint
+./run.sh stop_vmanage_api   # Stop the server
+```
+
+#### Option 2: Direct Script Access
+```bash
+./scripts/start_vmanage_api.sh
+./scripts/get_logs.sh /dataservice/device
+./scripts/stop_vmanage_api.sh
+```
+
+#### Option 3: Backward Compatibility (Symbolic Links)
+```bash
+./start_vmanage_api.sh    # Links to scripts/start_vmanage_api.sh
+./stop_vmanage_api.sh     # Links to scripts/stop_vmanage_api.sh
+```
+
+### Script Categories
+
+#### 📋 Getting Help
+```bash
+./run.sh                    # Shows help automatically
+./scripts/help.sh           # Direct help access
+./run.sh SCRIPT_NAME --help # Get help for specific scripts
+```
+
+#### 🚀 Quick Start Examples
+```bash
+# Start server
+./run.sh start_vmanage_api
+
+# Monitor logs in real-time
+./run.sh get_logs
+
+# Filter logs by specific endpoint
+./run.sh get_logs /dataservice/device
+
+# Get last 500 log lines and filter
+./run.sh get_logs --lines 500 /j_security_check
+
+# Stop server
+./run.sh stop_vmanage_api
+```
+
+**🌟 Benefits of This Organization:**
+- **Clean Project Root** - Main directory is less cluttered
+- **Easy Discovery** - `./run.sh` shows all available scripts
+- **Backward Compatibility** - Existing workflows still work
+- **Better Documentation** - Each script category is clearly defined
+- **Maintainability** - Scripts are grouped logically
+
+---
+
+## �🚀 Features
 
 ### Core API Functionality
 - **Dynamic Endpoint Configuration**: Create REST endpoints through JSON config files (`src/config/endpoints.json`)
