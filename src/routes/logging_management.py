@@ -89,7 +89,7 @@ def add_logging_management_endpoints(app, api_config: dict[str, Any], auth_data:
             raise HTTPException(status_code=500, detail=f"Failed to update logging configuration: {str(e)}")
 
     @router.get("/logging/logs", summary="Get recent log entries")
-    async def get_recent_logs(lines: int = Query(50, description="Number of recent lines to return", ge=1, le=1000), auth: str = Depends(get_system_auth)):
+    async def get_recent_logs(lines: int = Query(50, description="Number of recent lines to return", ge=1, le=10000), auth: str = Depends(get_system_auth)):
         """Get recent log entries from the log file."""
         try:
             logging_config = api_config.get("logging", {})
