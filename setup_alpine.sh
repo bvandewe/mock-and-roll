@@ -37,7 +37,8 @@ apk add --no-cache \
     awk \
     less \
     nano \
-    vim
+    vim \
+    jq
 
 # Git (if not already installed)
 apk add --no-cache git
@@ -54,5 +55,6 @@ echo "   - lsof (list open files)"
 echo "   - curl/wget (HTTP tools)"
 echo "   - bash (better shell)"
 echo "   - text editors (nano, vim)"
+echo "   - JSON processor (jq)"
 echo ""
 echo "🚀 Your environment is now ready for the mock server!"
