@@ -27,7 +27,7 @@ check_mock_server() {
     local pid=$2
     
     # First check if it's a Python process with our expected command pattern
-    local cmd=$(ps -p $pid -o command --no-headers 2>/dev/null || echo "")
+    local cmd=$(get_process_command $pid)
     if [[ ! "$cmd" == *"python"* ]] || [[ ! "$cmd" == *"run_server.py"* && ! "$cmd" == *"uvicorn"* && ! "$cmd" == *"main:app"* ]]; then
         return 1  # Not a Python process or not our server pattern
     fi
@@ -48,10 +48,21 @@ check_mock_server() {
     return 1  # Not our server
 }
 
-# Function to get process command line
-get_process_info() {
+# Function to get process command line (cross-platform)
+get_process_command() {
     local pid=$1
-    ps -p $pid -o pid,ppid,command --no-headers 2>/dev/null || echo "Process not found"
+    
+    # Try different ps formats for cross-platform compatibility
+    if ps -p $pid -o command= >/dev/null 2>&1; then
+        # macOS format
+        ps -p $pid -o command= 2>/dev/null | head -1
+    elif ps -p $pid -o command --no-headers >/dev/null 2>&1; then
+        # Linux format
+        ps -p $pid -o command --no-headers 2>/dev/null | head -1
+    else
+        # Fallback
+        ps -p $pid 2>/dev/null | tail -1 | awk '{for(i=5;i<=NF;i++) printf "%s ", $i; print ""}'
+    fi
 }
 
 # Function to get config name from port file
@@ -103,20 +114,32 @@ FOUND_SERVERS=()
 echo -e "${YELLOW}🌐 Checking ports for running mock API servers...${NC}"
 
 # More efficient approach: find Python processes that match our pattern first
-PYTHON_PROCESSES=$(ps aux | grep -E "(run_server\.py|uvicorn.*main:app)" | grep -v grep | awk '{print $2}' || echo "")
+PYTHON_PROCESSES=$(ps aux | grep -E "(run_server\.py|uvicorn.*(main:app|src\.main))" | grep -v grep | awk '{print $2}' || echo "")
 
 if [ -n "$PYTHON_PROCESSES" ]; then
     for pid in $PYTHON_PROCESSES; do
         # Get the port from the command line
-        cmd=$(ps -p $pid -o command --no-headers 2>/dev/null || echo "")
+        cmd=$(get_process_command $pid)
+        
+        # Debug: show what process we found (only in verbose mode)
+        if [ "${DEBUG:-}" = "1" ]; then
+            echo "   Debug: Found process $pid: $cmd"
+        fi
         
         # Extract port from command line
         port=""
         if [[ "$cmd" == *"--port "* ]]; then
             port=$(echo "$cmd" | sed -n 's/.*--port \([0-9]*\).*/\1/p')
+        elif [[ "$cmd" == *"--port="* ]]; then
+            port=$(echo "$cmd" | sed -n 's/.*--port=\([0-9]*\).*/\1/p')
         elif [[ "$cmd" == *":8"* ]]; then
-            # Look for uvicorn format like "0.0.0.0:8000"
-            port=$(echo "$cmd" | sed -n 's/.*:\([0-9]*\).*/\1/p')
+            # Look for uvicorn format like "0.0.0.0:8000" or ":8000"
+            port=$(echo "$cmd" | sed -n 's/.*:\([0-9][0-9]*\).*/\1/p')
+        fi
+        
+        # Debug: show extracted port
+        if [ "${DEBUG:-}" = "1" ]; then
+            echo "   Debug: Extracted port: '$port'"
         fi
         
         # If we found a port, check if it's accessible
@@ -143,6 +166,10 @@ if [ -n "$PYTHON_PROCESSES" ]; then
             echo "   Process: $cmd"
             echo "   URL: http://localhost:$port"
             echo "   Docs: http://localhost:$port/docs"
+            echo ""
+        else
+            echo -e "⚠️  Found Python process (PID: $pid) but couldn't extract port"
+            echo "   Command: $cmd"
             echo ""
         fi
     done
