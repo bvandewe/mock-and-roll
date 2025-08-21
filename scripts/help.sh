@@ -49,19 +49,27 @@ get_script_description() {
 echo "🚀 Server Operations:"
 echo "--------------------"
 
-if [ -f "$SCRIPTS_DIR/start_vmanage_api.sh" ]; then
-    desc=$(get_script_description "$SCRIPTS_DIR/start_vmanage_api.sh")
-    echo "  ./scripts/start_vmanage_api.sh    - $desc"
+if [ -f "$SCRIPTS_DIR/start_server.sh" ]; then
+    desc=$(get_script_description "$SCRIPTS_DIR/start_server.sh")
+    echo "  ./scripts/start_server.sh         - $desc (Recommended)"
+    echo "    Examples:"
+    echo "      ./scripts/start_server.sh                 # Interactive selection"
+    echo "      ./scripts/start_server.sh vmanage         # Start vmanage config"
+    echo "      ./scripts/start_server.sh basic --port 8002"
 fi
 
-if [ -f "$SCRIPTS_DIR/stop_vmanage_api.sh" ]; then
-    desc=$(get_script_description "$SCRIPTS_DIR/stop_vmanage_api.sh")
-    echo "  ./scripts/stop_vmanage_api.sh     - $desc"
+if [ -f "$SCRIPTS_DIR/stop_server.sh" ]; then
+    desc=$(get_script_description "$SCRIPTS_DIR/stop_server.sh")
+    echo "  ./scripts/stop_server.sh          - $desc (Recommended)"
+    echo "    Examples:"
+    echo "      ./scripts/stop_server.sh                  # Auto-detect or interactive"
+    echo "      ./scripts/stop_server.sh vmanage          # Stop vmanage config"
+    echo "      ./scripts/stop_server.sh --all            # Stop all servers"
 fi
 
-if [ -f "$SCRIPTS_DIR/kill_all_servers.sh" ]; then
-    desc=$(get_script_description "$SCRIPTS_DIR/kill_all_servers.sh")
-    echo "  ./scripts/kill_all_servers.sh     - $desc"
+if [ -f "$SCRIPTS_DIR/config_help.sh" ]; then
+    desc=$(get_script_description "$SCRIPTS_DIR/config_help.sh")
+    echo "  ./scripts/config_help.sh          - $desc"
 fi
 
 if [ -f "$SCRIPTS_DIR/list_servers.sh" ]; then
@@ -71,9 +79,26 @@ fi
 
 echo ""
 
+# Configuration Management
+echo "🔧 Configuration Management:"
+echo "-----------------------------"
+echo "  Available configs: basic, persistence, vmanage"
+echo "  Config location: configs/[NAME]/"
+echo "  Each config contains: api.json, auth.json, endpoints.json"
+echo ""
+
 # Monitoring and debugging
 echo "📊 Monitoring & Debugging:"
 echo "---------------------------"
+
+if [ -f "$SCRIPTS_DIR/success_report.sh" ]; then
+    desc=$(get_script_description "$SCRIPTS_DIR/success_report.sh")
+    echo "  ./scripts/success_report.sh       - $desc"
+    echo "    Examples:"
+    echo "      ./scripts/success_report.sh               # Summary report"
+    echo "      ./scripts/success_report.sh detailed      # Detailed analysis"
+    echo "      ./scripts/success_report.sh json          # JSON output"
+fi
 
 if [ -f "$SCRIPTS_DIR/get_logs.sh" ]; then
     desc=$(get_script_description "$SCRIPTS_DIR/get_logs.sh")
@@ -82,11 +107,6 @@ if [ -f "$SCRIPTS_DIR/get_logs.sh" ]; then
     echo "      ./scripts/get_logs.sh                     # All recent logs"
     echo "      ./scripts/get_logs.sh /dataservice/device # Filter by endpoint"
     echo "      ./scripts/get_logs.sh --lines 500 /logout # Custom line count"
-fi
-
-if [ -f "$SCRIPTS_DIR/test_vmanage_api.sh" ]; then
-    desc=$(get_script_description "$SCRIPTS_DIR/test_vmanage_api.sh")
-    echo "  ./scripts/test_vmanage_api.sh     - $desc"
 fi
 
 echo ""
@@ -117,7 +137,7 @@ for script in "$SCRIPTS_DIR"/*.sh; do
         
         # Skip scripts already listed above
         case "$script_name" in
-            "help.sh"|"start_vmanage_api.sh"|"stop_vmanage_api.sh"|"kill_all_servers.sh"|"list_servers.sh"|"get_logs.sh"|"test_vmanage_api.sh"|"setup_environment.sh"|"setup_alpine.sh")
+            "help.sh"|"start_server.sh"|"stop_server.sh"|"config_help.sh"|"list_servers.sh"|"success_report.sh"|"get_logs.sh"|"setup_environment.sh"|"setup_alpine.sh")
                 continue
                 ;;
         esac
@@ -130,12 +150,16 @@ done
 echo ""
 echo "💡 Quick Start:"
 echo "---------------"
-echo "  1. Start server:    ./scripts/start_vmanage_api.sh"
+echo "  1. Start server:    ./scripts/start_server.sh"
 echo "  2. Check logs:      ./scripts/get_logs.sh"
-echo "  3. Stop server:     ./scripts/stop_vmanage_api.sh"
+echo "  3. Stop server:     ./scripts/stop_server.sh"
+echo ""
+echo "📋 Configuration Help:"
+echo "---------------------"
+echo "  ./scripts/config_help.sh           # Detailed configuration guide"
 echo ""
 echo "📖 For detailed help on any script, run:"
 echo "  ./scripts/SCRIPT_NAME --help"
 echo ""
-echo "🌐 Server will be available at: http://0.0.0.0:8000"
-echo "📚 API Documentation: http://0.0.0.0:8000/docs"
+echo "🌐 Server will be available at: http://0.0.0.0:8001"
+echo "📚 API Documentation: http://0.0.0.0:8001/docs"

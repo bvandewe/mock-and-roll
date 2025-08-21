@@ -37,6 +37,13 @@ def setup_logging(api_config: dict[str, Any]) -> None:
     console_enabled = logging_config.get("console_enabled", True)
     file_enabled = logging_config.get("file_enabled", True)
 
+    # Handle Docker vs local development paths
+    if log_file_path.startswith("/app/") and not os.path.exists("/app"):
+        # Convert Docker path to local development path
+        log_file_path = log_file_path.replace("/app/", "logs/")
+        # Ensure logs directory exists
+        os.makedirs("logs", exist_ok=True)
+
     # Create log directory if it doesn't exist
     log_dir = Path(log_file_path).parent
     log_dir.mkdir(parents=True, exist_ok=True)

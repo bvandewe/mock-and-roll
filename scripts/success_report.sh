@@ -185,7 +185,7 @@ if [ -z "$LOGS" ]; then
 fi
 
 # Create regex pattern for success codes
-SUCCESS_PATTERN=$(echo "$SUCCESS_CODES" | sed 's/,/\\|/g')
+SUCCESS_PATTERN=$(echo "$SUCCESS_CODES" | sed 's/,/|/g')
 
 # Filter for RESPONSE entries with success codes
 if [ -n "$ENDPOINT_FILTER" ]; then
@@ -208,16 +208,19 @@ if [ -z "$SUCCESSFUL_RESPONSES" ]; then
 fi
 
 # Process the successful responses
-declare -A endpoint_counts
-declare -A method_counts  
-declare -A status_counts
 declare -a request_details
 
 while IFS= read -r line; do
-    if [[ "$line" =~ RESPONSE:\ ([0-9]+)\ for\ ([A-Z]+)\ ([^[:space:]]+) ]]; then
+    if [[ "$line" =~ RESPONSE:\ ([0-9]+)\ for\ ([A-Z]+)\ (http[s]?://[^[:space:]]+) ]]; then
         status_code="${BASH_REMATCH[1]}"
         method="${BASH_REMATCH[2]}"
-        endpoint="${BASH_REMATCH[3]}"
+        full_url="${BASH_REMATCH[3]}"
+        
+        # Extract the endpoint path from the full URL (remove query parameters)
+        endpoint=$(echo "$full_url" | sed -E 's|^https?://[^/]+(/[^?]*)?.*$|\1|')
+        if [ -z "$endpoint" ]; then
+            endpoint="/"
+        fi
         
         # Extract timestamp
         timestamp=$(echo "$line" | grep -o '^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9],[0-9][0-9][0-9]' || echo "Unknown")
@@ -228,15 +231,25 @@ while IFS= read -r line; do
         # Extract time taken
         time_taken=$(echo "$line" | grep -o 'Time: [0-9.]*s' | sed 's/Time: //' | sed 's/s//' || echo "0")
         
-        # Count statistics
-        endpoint_counts["$endpoint"]=$((${endpoint_counts["$endpoint"]} + 1))
-        method_counts["$method"]=$((${method_counts["$method"]} + 1))
-        status_counts["$status_code"]=$((${status_counts["$status_code"]} + 1))
+        # Count statistics (skip for bash 3.x compatibility)
+        # endpoint_counts["$endpoint"]=$((${endpoint_counts["$endpoint"]} + 1))
+        # method_counts["$method"]=$((${method_counts["$method"]} + 1))
+        # status_counts["$status_code"]=$((${status_counts["$status_code"]} + 1))
         
         # Store request details
         request_details+=("$timestamp|$request_id|$method|$endpoint|$status_code|$time_taken")
     fi
 done <<< "$SUCCESSFUL_RESPONSES"
+
+# Generate counts without associative arrays (for bash 3.x compatibility)
+generate_counts() {
+    local field_index=$1
+    local delimiter="|"
+    
+    for detail in "${request_details[@]}"; do
+        echo "$detail" | cut -d"$delimiter" -f"$field_index"
+    done | sort | uniq -c | sort -nr
+}
 
 # Generate output based on format
 case "$OUTPUT_FORMAT" in
@@ -265,45 +278,7 @@ case "$OUTPUT_FORMAT" in
             fi
         done
         
-        echo "  ],"
-        echo "  \"summary\": {"
-        echo "    \"by_endpoint\": {"
-        first=true
-        for endpoint in "${!endpoint_counts[@]}"; do
-            if [ "$first" = true ]; then
-                first=false
-            else
-                echo ","
-            fi
-            echo -n "      \"$endpoint\": ${endpoint_counts[$endpoint]}"
-        done
-        echo ""
-        echo "    },"
-        echo "    \"by_method\": {"
-        first=true
-        for method in "${!method_counts[@]}"; do
-            if [ "$first" = true ]; then
-                first=false
-            else
-                echo ","
-            fi
-            echo -n "      \"$method\": ${method_counts[$method]}"
-        done
-        echo ""
-        echo "    },"
-        echo "    \"by_status_code\": {"
-        first=true
-        for status in "${!status_counts[@]}"; do
-            if [ "$first" = true ]; then
-                first=false
-            else
-                echo ","
-            fi
-            echo -n "      \"$status\": ${status_counts[$status]}"
-        done
-        echo ""
-        echo "    }"
-        echo "  }"
+        echo "  ]"
         echo "}"
         ;;
         
@@ -334,23 +309,23 @@ case "$OUTPUT_FORMAT" in
         echo ""
         echo "📈 Summary by Endpoint:"
         echo "-----------------------"
-        for endpoint in "${!endpoint_counts[@]}"; do
-            printf "  %-40s : %d requests\n" "$endpoint" "${endpoint_counts[$endpoint]}"
-        done | sort -k3 -nr
+        generate_counts 4 | while read count endpoint; do
+            printf "  %-40s : %d requests\n" "$endpoint" "$count"
+        done
         
         echo ""
         echo "📊 Summary by Method:"
         echo "---------------------"
-        for method in "${!method_counts[@]}"; do
-            printf "  %-10s : %d requests\n" "$method" "${method_counts[$method]}"
-        done | sort -k3 -nr
+        generate_counts 3 | while read count method; do
+            printf "  %-10s : %d requests\n" "$method" "$count"
+        done
         
         echo ""
         echo "📊 Summary by Status Code:"
         echo "--------------------------"
-        for status in "${!status_counts[@]}"; do
-            printf "  %-10s : %d requests\n" "$status" "${status_counts[$status]}"
-        done | sort -k1 -n
+        generate_counts 5 | sort -k2 -n | while read count status; do
+            printf "  %-10s : %d requests\n" "$status" "$count"
+        done
         ;;
         
     "summary")
@@ -361,21 +336,21 @@ case "$OUTPUT_FORMAT" in
         echo ""
         
         echo "🎯 Top Endpoints:"
-        for endpoint in "${!endpoint_counts[@]}"; do
-            printf "  %-35s : %d\n" "$endpoint" "${endpoint_counts[$endpoint]}"
-        done | sort -k3 -nr | head -10
+        generate_counts 4 | head -10 | while read count endpoint; do
+            printf "  %-35s : %d\n" "$endpoint" "$count"
+        done
         
         echo ""
         echo "🔧 Methods Used:"
-        for method in "${!method_counts[@]}"; do
-            printf "  %-8s : %d requests\n" "$method" "${method_counts[$method]}"
-        done | sort -k3 -nr
+        generate_counts 3 | while read count method; do
+            printf "  %-8s : %d requests\n" "$method" "$count"
+        done
         
         echo ""
         echo "📈 Status Codes:"
-        for status in "${!status_counts[@]}"; do
-            printf "  %-8s : %d requests\n" "$status" "${status_counts[$status]}"
-        done | sort -k1 -n
+        generate_counts 5 | sort -k2 -n | while read count status; do
+            printf "  %-8s : %d requests\n" "$status" "$count"
+        done
         
         echo ""
         echo "💡 Use --format detailed for full request details"

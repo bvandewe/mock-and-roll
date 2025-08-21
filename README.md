@@ -27,12 +27,13 @@
   - [Using pip](#using-pip)
   - [Using Docker](#using-docker)
 - [Configuration](#-configuration)
-  - [Configuration Folder Options](#configuration-folder-options)
-  - [Endpoint Configuration](#endpoint-configuration-srcconfigendpointsjson)
-  - [Authentication Configuration](#authentication-configuration-srcconfigauthjson)
+  - [Configuration System](#configuration-system)
+  - [Creating Custom Configurations](#creating-custom-configurations)
+  - [Endpoint Configuration](#endpoint-configuration-endpointsjson)
+  - [Authentication Configuration](#authentication-configuration-authjson)
   - [Template Variables & Dynamic Values](#template-variables--dynamic-values)
   - [Persistence Configuration](#persistence-configuration-redis)
-  - [Logging Configuration](#logging-configuration-srcconfigapijson)
+  - [Logging Configuration](#logging-configuration-apijson)
   - [Environment Variables](#environment-variables)
 - [Usage](#-usage)
   - [Starting the Server](#starting-the-server)
@@ -77,19 +78,48 @@ cd mock-and-roll
 # Install with Poetry
 poetry install && poetry shell
 
-# Adjust the configuration to Mock your own API
-edit src/config/endpoints.json
-edit src/config/auth.json
-# >>> See below for example endpoints configs <<<
+# Start the server (interactive configuration selection)
+./run.sh start
 
-# Start the server
-python -m uvicorn src.main:app --reload --port 8000
+# Or start with a specific configuration
+./run.sh start basic           # Simple REST API
+./run.sh start vmanage         # SD-WAN vManage API mock
+./run.sh start persistence     # API with Redis persistence
 ```
 
 **🎉 That's it!** Your mock API server is now running at:
-- **API Base URL**: http://localhost:8000
-- **Interactive Docs**: http://localhost:8000/docs
-- **OpenAPI Schema**: http://localhost:8000/openapi.json
+- **API Base URL**: http://localhost:8001 (default)
+- **Interactive Docs**: http://localhost:8001/docs
+- **OpenAPI Schema**: http://localhost:8001/openapi.json
+
+### 🎯 Simple Management Commands
+
+```bash
+# Start any configuration
+./run.sh start                    # Interactive selection
+./run.sh start basic --port 8000  # Basic config on custom port
+
+# Manage servers
+./run.sh list                     # See what's running
+./run.sh stop                     # Stop servers (auto-detect)
+./run.sh stop --all               # Stop everything
+
+# Monitor activity
+./run.sh logs                     # Recent logs
+./run.sh success detailed         # Success analysis
+
+# Get help
+./run.sh help                     # All available scripts
+./run.sh config-help              # Configuration guide
+```
+
+### 📂 Available Configurations
+
+- **basic**: Simple REST API with 1 endpoint
+- **persistence**: API with Redis caching (12 endpoints)  
+- **vmanage**: Cisco SD-WAN vManage API simulation (many endpoints)
+
+See [SCRIPTS.md](SCRIPTS.md) for complete script documentation.
 
 The interactive Swagger UI organizes endpoints into clear categories:
 - **Your configured endpoints** (from `endpoints.json`) grouped by tags:
@@ -118,7 +148,7 @@ All endpoint groups start **collapsed by default** for a clean overview.
 
 ### Example: Create a Product with Persistence
 
-**Endpoint config (`src/config/endpoints.json`):**
+**Endpoint config (`configs/basic/endpoints.json`):**
 ```json
 {
   "endpoints": [
@@ -188,7 +218,7 @@ All endpoint groups start **collapsed by default** for a clean overview.
 }
 ```
 
-**Auth config (`src/config/auth.json`):**
+**Auth config (`configs/basic/auth.json`):**
 ```json
 {
   "authentication_methods": {
@@ -261,109 +291,70 @@ curl -X 'GET' \
 
 ---
 
-## �️ Scripts & Tools
+## Scripts & Tools
 
-All shell scripts have been organized into the `scripts/` directory for better project structure and maintainability.
+A streamlined script system for easy server management across all configurations.
+
+### Simple Command Interface
+
+The `./run.sh` script provides a unified interface for all operations:
+
+```bash
+# Server management
+./run.sh start                    # Interactive config selection
+./run.sh start basic              # Start basic configuration
+./run.sh stop                     # Smart stop (auto-detect ports)
+./run.sh list                     # Show running servers
+
+# Monitoring
+./run.sh logs                     # View recent activity
+./run.sh success                  # Quick success rate
+./run.sh success detailed         # Detailed analysis
+
+# Help and configuration
+./run.sh help                     # All available commands
+./run.sh config-help              # Configuration guide
+```
 
 ### Available Scripts
 
-📁 **Directory Structure:**
 ```
 scripts/
-├── help.sh                    # Lists all available scripts with descriptions
-├── start_vmanage_api.sh      # Start the mock server
-├── stop_vmanage_api.sh       # Stop the mock server  
-├── get_logs.sh               # Fetch and filter server logs
-├── kill_all_servers.sh       # Emergency kill all server processes
-├── list_servers.sh           # List running servers
-├── test_vmanage_api.sh       # Test the API endpoints
-├── setup_environment.sh      # Environment setup
-└── setup_alpine.sh           # Alpine Linux setup tools
+├── run.sh                   # Main entry point with simple commands
+├── start_server.sh          # Generic server start (any config)
+├── stop_server.sh           # Smart server stop (auto-detect)
+├── list_servers.sh          # List running servers and ports
+├── logs/
+│   ├── filter_logs.sh       # Extract requests/responses from logs
+│   └── success_report.sh    # Generate success rate reports
+└── help.sh                  # Show available commands and usage
 ```
 
-All scripts are located in the `scripts/` directory and organized by category:
+**📖 For complete script documentation, configuration details, and advanced usage, see [SCRIPTS.md](SCRIPTS.md)**
 
-#### 🚀 **Server Operations**
-- `start_vmanage_api.sh` - Start the mock server
-- `stop_vmanage_api.sh` - Stop the mock server gracefully
-- `kill_all_servers.sh` - Force kill all server processes
-- `list_servers.sh` - List running server instances
+### Quick Examples
 
-#### 📊 **Monitoring & Debugging**
-- `get_logs.sh` - Fetch and filter server logs by endpoint
-- `test_vmanage_api.sh` - Test API endpoints
-
-#### ⚙️ **Setup & Environment**
-- `setup_environment.sh` - General environment setup
-- `setup_alpine.sh` - Alpine Linux specific setup
-
-#### 🛠️ **Utilities**
-- `help.sh` - Script documentation and help
-
-### Usage Options
-
-#### Option 1: Using the Wrapper Script (Recommended)
 ```bash
-./run.sh                    # Shows help and all available scripts
-./run.sh start_vmanage_api  # Start the server
-./run.sh get_logs           # Get all recent logs
-./run.sh get_logs /dataservice/device  # Filter logs by endpoint
-./run.sh stop_vmanage_api   # Stop the server
+# Start any configuration
+./run.sh start                    # Interactive selection
+./run.sh start basic --port 8000  # Basic config on custom port
+
+# Manage servers
+./run.sh list                     # See what's running
+./run.sh stop                     # Stop servers (auto-detect)
+./run.sh stop --all               # Stop everything
+
+# Monitor activity
+./run.sh logs                     # Recent logs
+./run.sh success detailed         # Success analysis
 ```
-
-#### Option 2: Direct Script Access
-```bash
-./scripts/start_vmanage_api.sh
-./scripts/get_logs.sh /dataservice/device
-./scripts/stop_vmanage_api.sh
-```
-
-#### Option 3: Backward Compatibility (Symbolic Links)
-```bash
-./start_vmanage_api.sh    # Links to scripts/start_vmanage_api.sh
-./stop_vmanage_api.sh     # Links to scripts/stop_vmanage_api.sh
-```
-
-### Script Categories
-
-#### 📋 Getting Help
-```bash
-./run.sh                    # Shows help automatically
-./scripts/help.sh           # Direct help access
-./run.sh SCRIPT_NAME --help # Get help for specific scripts
-```
-
-#### 🚀 Quick Start Examples
-```bash
-# Start server
-./run.sh start_vmanage_api
-
-# Monitor logs in real-time
-./run.sh get_logs
-
-# Filter logs by specific endpoint
-./run.sh get_logs /dataservice/device
-
-# Get last 500 log lines and filter
-./run.sh get_logs --lines 500 /j_security_check
-
-# Stop server
-./run.sh stop_vmanage_api
-```
-
-**🌟 Benefits of This Organization:**
-- **Clean Project Root** - Main directory is less cluttered
-- **Easy Discovery** - `./run.sh` shows all available scripts
-- **Backward Compatibility** - Existing workflows still work
-- **Better Documentation** - Each script category is clearly defined
-- **Maintainability** - Scripts are grouped logically
 
 ---
 
 ## �🚀 Features
 
 ### Core API Functionality
-- **Dynamic Endpoint Configuration**: Create REST endpoints through JSON config files (`src/config/endpoints.json`)
+- **Dynamic Endpoint Configuration**: Create REST endpoints through JSON config files (`configs/{config-name}/endpoints.json`)
 - **HTTP Method Support**: Full support for GET, POST, PUT, DELETE, PATCH operations
 - **Path Parameter Support**: Dynamic URL parameters with automatic substitution in responses (e.g., `/items/{item_id}`)
 - **Query Parameter Handling**: Extract and use query parameters in endpoint logic
@@ -473,20 +464,27 @@ All scripts are located in the `scripts/` directory and organized by category:
 mock-and-roll/
 ├── src/                          # Main application source
 │   ├── main.py                   # FastAPI application and core logic
-│   ├── config/                   # Configuration files
-│   │   ├── endpoints.json        # Endpoint definitions and responses
-│   │   └── auth.json            # Authentication configuration
-│   └── __init__.py
-├── tests/                        # Test configurations and scripts
-│   └── configs/                  # Example configurations
-│       ├── default/              # Default configuration examples
-│       │   ├── endpoints.json
-│       │   └── auth.json
-│       └── vmanage-api/          # vManage API configuration examples
-│           ├── endpoints.json
-│           ├── auth.json
-│           └── test_vmanage_auth.sh
-├── .vscode/                      # VS Code configuration
+│   ├── app/                      # Application modules
+│   ├── auth/                     # Authentication handlers
+│   ├── config/                   # Configuration loaders
+│   └── routes/                   # API route handlers
+├── configs/                      # Configuration sets
+│   ├── basic/                    # Simple REST API configuration
+│   │   ├── api.json
+│   │   ├── auth.json
+│   │   └── endpoints.json
+│   ├── persistence/              # API with Redis persistence
+│   │   ├── api.json
+│   │   ├── auth.json
+│   │   └── endpoints.json
+│   └── vmanage/                  # Cisco SD-WAN vManage API
+│       ├── api.json
+│       ├── auth.json
+│       └── endpoints.json
+├── scripts/                      # Server management scripts
+│   ├── run.sh                    # Main script interface
+│   ├── start_server.sh           # Generic server start
+│   └── stop_server.sh            # Smart server stop
 │   └── settings.json            # Python formatting settings (Black)
 ├── Dockerfile                    # Docker container configuration
 ├── docker-compose.yml           # Multi-service orchestration
@@ -542,45 +540,69 @@ docker-compose up --build
 
 ## ⚙️ Configuration
 
-### Configuration Folder Options
+### Configuration System
 
-The mock server supports flexible configuration loading through multiple methods:
+The mock server uses a flexible configuration system with pre-built configuration sets:
 
-**1. Default Configuration (config/ folder)**
+**Available Configuration Sets:**
+```
+configs/
+├── basic/              # Simple REST API (1 endpoint)
+│   ├── api.json
+│   ├── auth.json
+│   └── endpoints.json
+├── persistence/        # API with Redis persistence (12 endpoints)
+│   ├── api.json
+│   ├── auth.json
+│   └── endpoints.json
+└── vmanage/           # Cisco SD-WAN vManage API simulation
+    ├── api.json
+    ├── auth.json
+    └── endpoints.json
+```
+
+**Usage with Scripts:**
 ```bash
-python run_server.py --host 0.0.0.0 --port 8000
-```
-Uses configuration files from `config/` directory (api.json, auth.json, endpoints.json).
+# Interactive selection
+./run.sh start
 
-**2. Custom Configuration Folder**
+# Specific configuration
+./run.sh start basic           # Uses configs/basic/
+./run.sh start persistence     # Uses configs/persistence/
+./run.sh start vmanage         # Uses configs/vmanage/
+```
+
+**Configuration File Structure:**
+Each configuration set contains three files:
+- `api.json` - API metadata and logging settings  
+- `auth.json` - Authentication methods and keys
+- `endpoints.json` - API endpoint definitions
+
+### Creating Custom Configurations
+
+**1. Copy an existing configuration:**
 ```bash
-python run_server.py --host 0.0.0.0 --port 8000 --config-folder tests/configs/vmanage-api
+cp -r configs/basic configs/my-api
 ```
-Uses configuration files from the specified directory. Useful for:
-- Testing different API configurations
-- Environment-specific configurations
-- Pre-configured API templates (e.g., vManage, custom APIs)
 
-**3. Docker Volume Mounting**
+**2. Edit the configuration files:**
 ```bash
-docker run -p 8000:8000 -v /path/to/custom/config:/app/config mock-and-roll
+# Edit endpoints
+vim configs/my-api/endpoints.json
+
+# Edit authentication  
+vim configs/my-api/auth.json
+
+# Edit API settings
+vim configs/my-api/api.json
 ```
 
-**Configuration File Priority:**
-1. Custom config folder (via `--config-folder` CLI argument)
-2. Environment variable `MOCK_CONFIG_FOLDER`
-3. Docker environment path (`/app/config/`)
-4. Default relative path (`config/`)
-
-**Example Directory Structure:**
-```
-tests/configs/vmanage-api/
-├── api.json          # API metadata and logging settings
-├── auth.json         # Authentication methods and keys
-└── endpoints.json    # API endpoint definitions
+**3. Start with your custom configuration:**
+```bash
+./run.sh start my-api
 ```
 
-### Endpoint Configuration (`src/config/endpoints.json`)
+### Endpoint Configuration (`endpoints.json`)
 
 Define your mock endpoints with this structure:
 
@@ -794,7 +816,7 @@ This configuration creates a clean, professional interface where:
 - ✅ **Request timing is displayed** for performance insights
 - ✅ **Try it out is enabled** for easy API testing
 
-### Authentication Configuration (`src/config/auth.json`)
+### Authentication Configuration (`auth.json`)
 
 Configure authentication methods with support for dynamic value resolution:
 
@@ -1083,7 +1105,7 @@ Enable data persistence for your endpoints by adding persistence configuration:
 - `GET /system/cache/entities/{entity_name}/{entity_id}` - Get specific entity details
 - `DELETE /system/cache/entities/{entity_name}/{entity_id}` - Delete specific entity
 
-### System Security Configuration (`src/config/api.json`)
+### System Security Configuration (`api.json`)
 
 The application supports protecting system endpoints with API key authentication using centralized configuration:
 
@@ -1100,7 +1122,7 @@ The application supports protecting system endpoints with API key authentication
 - `protect_endpoints`: Enable/disable protection for `/admin/*` and `/system/*` endpoints (cache and logging management)
 - `auth_method`: Authentication method to use (must exist in `auth.json`)
 
-**Authentication Configuration (`config/auth.json`):**
+**Authentication Configuration (`auth.json`):**
 ```json
 {
   "authentication_methods": {
@@ -1138,7 +1160,7 @@ When protection is enabled, these endpoints require a valid `X-API-Key` header w
 3. Enter one of the valid system API keys in the `system_api_key` field
 4. System endpoints will now be accessible through the Swagger interface
 
-### Logging Configuration (`src/config/api.json`)
+### Logging Configuration (`api.json`)
 
 The application supports comprehensive logging with dual output, request/response tracking, and runtime management:
 
@@ -1342,18 +1364,36 @@ SYSTEM_AUTH_METHOD=system_api_key
 
 ### Starting the Server
 
-#### Native Python Execution
+#### Recommended: Using Scripts
+
+**Interactive configuration selection:**
+```bash
+./run.sh start
+# Prompts you to choose: basic, persistence, vmanage
+```
+
+**Direct configuration:**
+```bash
+./run.sh start basic           # Simple REST API
+./run.sh start persistence     # API with Redis persistence  
+./run.sh start vmanage         # Cisco SD-WAN vManage API
+```
+
+**Custom ports:**
+```bash
+./run.sh start basic --port 8000
+./run.sh start vmanage --port 8002
+```
+
+#### Alternative: Direct Python Execution
 
 **Development mode (from project root):**
 ```bash
-# Using the default config folder (config/)
-python run_server.py --host 0.0.0.0 --port 8000 --reload
+# Using specific configuration
+python run_server.py --host 0.0.0.0 --port 8000 --config-folder configs/basic --reload
 
-# Using a custom config folder
-python run_server.py --host 0.0.0.0 --port 8000 --config-folder tests/configs/vmanage-api --reload
-
-# Production mode
-python run_server.py --host 0.0.0.0 --port 8000 --workers 4
+# Using vManage configuration
+python run_server.py --host 0.0.0.0 --port 8000 --config-folder configs/vmanage --reload
 ```
 
 **Traditional uvicorn approach (from src directory):**
@@ -1382,12 +1422,13 @@ For convenient server management, several shell scripts are provided that handle
 **Quick Server Management:**
 ```bash
 # Start server in background with Poetry environment
-./start_vmanage_api.sh [config-folder]
+./run.sh start [config-name]
 
 # Stop all running servers  
-./stop_vmanage_api.sh
+./run.sh stop
 
-# List all running vManage API servers
+# List all running servers
+./run.sh list
 ./list_servers.sh
 
 # Test server status and functionality
@@ -1409,12 +1450,12 @@ For convenient server management, several shell scripts are provided that handle
 # Setup environment (first time only)
 ./setup_environment.sh
 
-# Start with default config (config/ folder)
-./start_vmanage_api.sh
-# Output: Server started in background (PID: 12345)
+# Start with default config selection
+./run.sh start
+# Output: Interactive config selection menu
 
-# Start with custom config
-./start_vmanage_api.sh tests/configs/vmanage-api
+# Start with specific config
+./run.sh start vmanage
 # Output: Server started in background (PID: 12346)
 
 # Test server functionality
@@ -2268,8 +2309,8 @@ python -m uvicorn main:app --port 8001
 ```
 
 **Configuration Not Loading:**
-- Ensure JSON files are valid (use `jq . config/endpoints.json` to validate)
-- Check file paths are correct relative to the `src` directory
+- Ensure JSON files are valid (use `jq . configs/basic/endpoints.json` to validate)
+- Check that the configuration exists in the `configs/` directory
 - Verify file permissions
 
 **Authentication Not Working:**
@@ -2286,6 +2327,30 @@ docker-compose up --build
 # Check logs
 docker-compose logs mock-api-server
 ```
+
+**Script Issues on macOS:**
+All scripts are now compatible with macOS bash 3.x:
+- **Working Directory Resolution**: Scripts automatically navigate to project root
+- **Cross-Directory Execution**: Works from any directory location
+- **Bash 3.x Compatibility**: No associative arrays dependency
+- **Relative Path Handling**: All configuration and resource paths resolve correctly
+
+```bash
+# Scripts work from project root
+./run.sh start vmanage
+
+# Scripts work directly too  
+./scripts/start_server.sh vmanage
+
+# Simple unified interface
+./run.sh start
+```
+
+**Success Report Not Finding Requests:**
+- Ensure the server has processed some requests before running the report
+- Use `--lines` parameter to increase log analysis scope
+- Check that the server is using the expected log format
+- Verify the success status codes match your expectations (default: 200,201,202,204)
 
 For more help, please open an issue on the repository.
 

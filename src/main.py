@@ -38,12 +38,20 @@ def create_application():
     # Parse command line arguments
     args, unknown = parse_arguments()
 
-    # Set custom config folder if provided
+    # Set custom config folder if provided via command line argument
     if args.config_folder:
         if not os.path.exists(args.config_folder):
             print(f"Error: Config folder '{args.config_folder}' does not exist")
             sys.exit(1)
         set_config_folder(args.config_folder)
+    # Or if provided via environment variable
+    elif os.getenv("CONFIG_FOLDER"):
+        config_folder = os.getenv("CONFIG_FOLDER")
+        if config_folder and not os.path.exists(config_folder):
+            print(f"Error: Config folder '{config_folder}' (from CONFIG_FOLDER env var) does not exist")
+            sys.exit(1)
+        if config_folder:
+            set_config_folder(config_folder)
 
     # --- Configuration Loading ---
     # Load configurations first
