@@ -4,7 +4,7 @@
 # This script pulls logs from the server and optionally filters by endpoint path
 # 
 # Usage:
-#   ./get_logs.sh                           # Get all logs (last 1000 lines)
+#   ./get_logs.sh                           # Get all logs (last 10000 lines)
 #   ./get_logs.sh /dataservice/device       # Filter logs for specific endpoint
 #   ./get_logs.sh --lines 500 /api/users    # Get 500 lines and filter
 #   ./get_logs.sh --help                    # Show help
@@ -14,7 +14,7 @@ set -e
 # Default configuration
 DEFAULT_HOST="0.0.0.0"
 DEFAULT_PORT="8000"
-DEFAULT_LINES="1000"
+DEFAULT_LINES="10000"
 DEFAULT_API_KEY="system-admin-key-123"
 
 # Read port from .VMANAGE_API_PORT file if it exists
