@@ -1,1 +1,0 @@
-scripts/start_vmanage_api.sh
