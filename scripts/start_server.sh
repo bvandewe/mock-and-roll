@@ -143,16 +143,16 @@ validate_config() {
 
 # Function for interactive configuration selection
 interactive_selection() {
-    echo -e "${CYAN}🔧 Interactive Configuration Selection${NC}"
-    echo ""
+    echo -e "${CYAN}🔧 Interactive Configuration Selection${NC}" >&2
+    echo "" >&2
     
     local configs=($(list_configs))
     if [ ${#configs[@]} -eq 0 ]; then
-        echo -e "${RED}❌ No configurations found in '$CONFIG_BASE'${NC}"
+        echo -e "${RED}❌ No configurations found in '$CONFIG_BASE'${NC}" >&2
         exit 1
     fi
     
-    echo -e "${BLUE}Available configurations:${NC}"
+    echo -e "${BLUE}Available configurations:${NC}" >&2
     for i in "${!configs[@]}"; do
         local config_name="${configs[$i]}"
         local config_path="$CONFIG_BASE/$config_name"
@@ -168,18 +168,19 @@ interactive_selection() {
             fi
         fi
         
-        printf "${YELLOW}%2d)${NC} %-15s %s\n" $((i+1)) "$config_name" "$description"
+        printf "${YELLOW}%2d)${NC} %-15s %s\n" $((i+1)) "$config_name" "$description" >&2
     done
     
-    echo ""
-    read -p "$(echo -e ${CYAN}"Select configuration (1-${#configs[@]}): "${NC})" choice
+    echo "" >&2
+    echo -ne "${CYAN}Select configuration (1-${#configs[@]}): ${NC}" >&2
+    read choice
     
     if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le ${#configs[@]} ]; then
         selected_config="${configs[$((choice-1))]}"
-        echo -e "${GREEN}✅ Selected: $selected_config${NC}"
+        echo -e "${GREEN}✅ Selected: $selected_config${NC}" >&2
         echo "$selected_config"
     else
-        echo -e "${RED}❌ Invalid selection${NC}"
+        echo -e "${RED}❌ Invalid selection${NC}" >&2
         exit 1
     fi
 }

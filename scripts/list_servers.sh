@@ -207,9 +207,9 @@ if [ ${#FOUND_SERVERS[@]} -eq 0 ]; then
     echo "   No Mock API Servers found running"
     echo ""
     echo -e "${YELLOW}💡 To start a server:${NC}"
-    echo "   ./scripts/start_server.sh                 # Interactive selection"
-    echo "   ./scripts/start_server.sh basic           # Start basic config"
-    echo "   ./scripts/start_server.sh vmanage         # Start vmanage config"
+    echo "   ./run.sh start                            # Interactive selection"
+    echo "   ./run.sh start basic                      # Start basic config"
+    echo "   ./run.sh start vmanage                    # Start vmanage config"
 else
     echo "   Found ${#FOUND_SERVERS[@]} Mock API Server(s) running:"
     for server in "${FOUND_SERVERS[@]}"; do
@@ -220,12 +220,12 @@ else
     done
     echo ""
     echo -e "${YELLOW}🛑 To stop servers:${NC}"
-    echo "   ./scripts/stop_server.sh                  # Auto-detect or interactive"
-    echo "   ./scripts/stop_server.sh --all            # Stop all servers"
+    echo "   ./run.sh stop                             # Auto-detect or interactive"
+    echo "   ./run.sh stop --all                       # Stop all servers"
     for server in "${FOUND_SERVERS[@]}"; do
         pid=$(echo $server | cut -d: -f2)
         config=$(echo $server | cut -d: -f3)
-        echo "   ./scripts/stop_server.sh --pid $pid      # Stop server with PID $pid"
+        echo "   ./run.sh stop --pid $pid                 # Stop server with PID $pid"
     done
 fi
 
