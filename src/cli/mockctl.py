@@ -199,6 +199,27 @@ class ProcessUtils:
 
         return processes
 
+    @staticmethod
+    def find_next_available_port(start_port: int = 8000, max_attempts: int = 100) -> int:
+        """
+        Find the next available port starting from start_port.
+
+        Args:
+            start_port: Port to start searching from (default: 8000)
+            max_attempts: Maximum number of ports to try (default: 100)
+
+        Returns:
+            Next available port number
+
+        Raises:
+            RuntimeError: If no available port is found within max_attempts
+        """
+        for port in range(start_port, start_port + max_attempts):
+            if ProcessUtils.find_process_by_port(port) is None:
+                return port
+
+        raise RuntimeError(f"No available port found in range {start_port}-{start_port + max_attempts - 1}")
+
 
 class ServerState:
     """Manages server state tracking"""
@@ -539,6 +560,30 @@ Examples:
         except (FileNotFoundError, json.JSONDecodeError, KeyError):
             return None
 
+    def get_next_available_port(self, start_port: int = 8000) -> int:
+        """
+        Get the next available port starting from start_port.
+        Considers both tracked servers and running processes.
+
+        Args:
+            start_port: Port to start searching from (default: 8000)
+
+        Returns:
+            Next available port number
+        """
+        # Get ports used by tracked servers
+        used_ports = set()
+        tracked_servers = self.state.get_all_servers()
+        for server in tracked_servers:
+            used_ports.add(server.get("port"))
+
+        # Find next available port considering both tracked servers and running processes
+        for port in range(start_port, start_port + 100):  # Check up to 100 ports
+            if port not in used_ports and ProcessUtils.find_process_by_port(port) is None:
+                return port
+
+        raise RuntimeError(f"No available port found in range {start_port}-{start_port + 99}")
+
     def cmd_start(self, args):
         """Start server command"""
         # Get configuration
@@ -560,18 +605,28 @@ Examples:
             sys.exit(1)
 
         # Determine port
-        port = args.port or self.default_port
+        if args.port:
+            # User specified a port, validate it's available
+            port = args.port
 
-        # Check if port is available
-        existing_process = self.find_process_by_port(port)
-        if existing_process:
-            print(f"{Colors.RED}❌ Port {port} is already in use by process {existing_process}{Colors.NC}")
-            sys.exit(1)
+            # Validate port range
+            if not (1 <= port <= 65535):
+                print(f"{Colors.RED}❌ Invalid port number '{port}'. Must be between 1-65535{Colors.NC}")
+                sys.exit(1)
 
-        # Validate port
-        if not (1 <= port <= 65535):
-            print(f"{Colors.RED}❌ Invalid port number '{port}'. Must be between 1-65535{Colors.NC}")
-            sys.exit(1)
+            # Check if port is available
+            existing_process = self.find_process_by_port(port)
+            if existing_process:
+                print(f"{Colors.RED}❌ Port {port} is already in use by process {existing_process}{Colors.NC}")
+                sys.exit(1)
+        else:
+            # Auto-select next available port starting from 8000
+            try:
+                port = self.get_next_available_port(start_port=8000)
+                print(f"{Colors.GREEN}🔍 Auto-selected available port: {port}{Colors.NC}")
+            except RuntimeError as e:
+                print(f"{Colors.RED}❌ {e}{Colors.NC}")
+                sys.exit(1)
 
         config_path = self.configs_dir / config_name
 
