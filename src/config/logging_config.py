@@ -8,15 +8,16 @@ import logging
 import logging.handlers
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 
-def setup_logging(api_config: dict[str, Any]) -> None:
+def setup_logging(api_config: dict[str, Any], log_file_override: Optional[str] = None) -> None:
     """
     Set up logging configuration based on API config.
 
     Args:
         api_config: The API configuration dictionary containing logging settings
+        log_file_override: Optional path to override the log file location
     """
     # Get logging configuration or use defaults
     logging_config = api_config.get("logging", {})
@@ -29,7 +30,13 @@ def setup_logging(api_config: dict[str, Any]) -> None:
     # Get logging parameters
     log_level = getattr(logging, logging_config.get("level", "INFO").upper(), logging.INFO)
     log_format = logging_config.get("format", "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-    log_file_path = logging_config.get("file_path", "/app/latest.logs")
+
+    # Use override if provided, otherwise use config, otherwise default
+    if log_file_override:
+        log_file_path = log_file_override
+    else:
+        log_file_path = logging_config.get("file_path", "/app/latest.logs")
+
     max_file_size = logging_config.get("max_file_size_mb", 10) * 1024 * 1024  # Convert MB to bytes
     backup_count = logging_config.get("backup_count", 5)
 

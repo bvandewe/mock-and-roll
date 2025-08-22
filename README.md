@@ -1,7 +1,7 @@
 
 # REST API Mock Server
 
-[![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://python.org)
+[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-green.svg)](https://fastapi.tiangolo.com)
 [![Redis](https://img.shields.io/badge/Redis-5.0+-red.svg)](https://redis.io)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://docker.com)
@@ -12,21 +12,21 @@
 ## 📖 Table of Contents
 
 - [Quick Start](#-quick-start)
-- [Scripts & Tools](#-scripts--tools)
-  - [Available Scripts](#available-scripts)
-  - [Usage Options](#usage-options)
-  - [Script Categories](#script-categories)
+- [Management CLI](#-management-cli)
 - [Features](#-features)
   - [Core Functionality](#-core-functionality)
   - [Authentication & Security](#-authentication--security)
   - [Developer Experience](#-developer-experience)
 - [Project Structure](#-project-structure)
-- [Installation](#-installation)
-  - [Prerequisites](#prerequisites)
-  - [Using Poetry (Recommended)](#using-poetry-recommended)
-  - [Using pip](#using-pip)
-  - [Using Docker](#using-docker)
-- [Configuration](#-configuration)
+- [Installation](#️-installation)
+  - [System Requirements](#system-requirements)
+  - [macOS Installation](#macos-installation)
+  - [Linux Installation](#linux-installation)
+  - [Docker Installation](#docker-installation-cross-platform)
+  - [Verification](#verification)
+  - [Dependencies](#dependencies)
+  - [Troubleshooting Installation](#troubleshooting-installation)
+- [Configuration](#️-configuration)
   - [Configuration System](#configuration-system)
   - [Creating Custom Configurations](#creating-custom-configurations)
   - [Endpoint Configuration](#endpoint-configuration-endpointsjson)
@@ -38,31 +38,11 @@
 - [Usage](#-usage)
   - [Starting the Server](#starting-the-server)
 - [API Examples](#-api-examples)
-  - [Public Endpoint (No Authentication)](#1-public-endpoint-no-authentication)
-  - [API Key Authentication](#2-api-key-authentication)
-  - [HTTP Basic Authentication](#3-http-basic-authentication)
-  - [Bearer Token (OIDC) Authentication](#4-bearer-token-oidc-authentication)
-  - [Session Authentication](#5-session-authentication)
-  - [Conditional Responses](#6-conditional-responses)
-  - [OAuth2 Token Exchange](#7-oauth2-token-exchange)
-  - [Error Responses](#8-error-responses)
-  - [Redis Persistence Examples](#9-redis-persistence-examples)
-  - [vManage API Example (Dynamic Authentication)](#10-vmanage-api-example-dynamic-authentication)
-  - [Logging Management Examples](#11-logging-management-examples)
-- [Roadmap](#-roadmap)
 - [Development](#-development)
-  - [Running Tests](#-running-tests)
-  - [Code Formatting](#-code-formatting)
-  - [Code Quality](#-code-quality)
-  - [Development Commands](#-development-commands)
-  - [VS Code Setup](#-vs-code-setup)
 - [Docker Usage](#-docker-usage)
-  - [Development](#development)
-  - [Production](#production)
 - [Contributing](#-contributing)
 - [License](#-license)
 - [Troubleshooting](#-troubleshooting)
-  - [Common Issues](#common-issues)
 
 
 
@@ -79,12 +59,12 @@ cd mock-and-roll
 poetry install && poetry shell
 
 # Start the server (interactive configuration selection)
-./run.sh start
+./mockserver start
 
 # Or start with a specific configuration
-./run.sh start basic           # Simple REST API
-./run.sh start vmanage         # SD-WAN vManage API mock
-./run.sh start persistence     # API with Redis persistence
+./mockserver start basic           # Simple REST API
+./mockserver start vmanage         # SD-WAN vManage API mock
+./mockserver start persistence     # API with Redis persistence
 ```
 
 **🎉 That's it!** Your mock API server is now running at:
@@ -96,30 +76,28 @@ poetry install && poetry shell
 
 ```bash
 # Start any configuration
-./run.sh start                    # Interactive selection
-./run.sh start basic --port 8000  # Basic config on custom port
+./mockserver start                    # Interactive selection
+./mockserver start basic --port 8000  # Basic config on custom port
 
 # Manage servers
-./run.sh list                     # See what's running
-./run.sh stop                     # Stop servers (auto-detect)
-./run.sh stop --all               # Stop everything
+./mockserver list                     # See what's running
+./mockserver stop                     # Stop servers (auto-detect)
+./mockserver stop --all               # Stop everything
 
 # Monitor activity
-./run.sh logs                     # Recent logs
-./run.sh success detailed         # Success analysis
+./mockserver logs                     # Recent logs
+./mockserver success detailed         # Success analysis
 
 # Get help
-./run.sh help                     # All available scripts
-./run.sh config-help              # Configuration guide
+./mockserver help                     # All available scripts
+./mockserver config-help              # Configuration guide
 ```
 
 ### 📂 Available Configurations
 
 - **basic**: Simple REST API with 1 endpoint
-- **persistence**: API with Redis caching (12 endpoints)  
-- **vmanage**: Cisco SD-WAN vManage API simulation (many endpoints)
-
-See [SCRIPTS.md](SCRIPTS.md) for complete script documentation.
+- **persistence**: Sample API with Redis caching (12 endpoints)  
+- **vmanage**: Cisco SD-WAN vManage API simulation (incl. MFA authentication)
 
 The interactive Swagger UI organizes endpoints into clear categories:
 - **Your configured endpoints** (from `endpoints.json`) grouped by tags:
@@ -291,63 +269,88 @@ curl -X 'GET' \
 
 ---
 
-## Scripts & Tools
+## 🛠 Management CLI
 
-A streamlined script system for easy server management across all configurations.
+The mock server includes a unified Python CLI application that provides comprehensive server management with cross-platform support.
 
-### Simple Command Interface
+### Usage
 
-The `./run.sh` script provides a unified interface for all operations:
+**Primary Interface:** `./mockserver` - Main entry point  
+**Direct Access:** `./mockserver` or `python3 mockserver.py` - Direct CLI access
 
-```bash
-# Server management
-./run.sh start                    # Interactive config selection
-./run.sh start basic              # Start basic configuration
-./run.sh stop                     # Smart stop (auto-detect ports)
-./run.sh list                     # Show running servers
+### Available Commands
 
-# Monitoring
-./run.sh logs                     # View recent activity
-./run.sh success                  # Quick success rate
-./run.sh success detailed         # Detailed analysis
+| Command | Description | Examples |
+|---------|-------------|----------|
+| `start` | Start mock server with configuration | `./mockserver start basic --port 8080` |
+| `stop` | Stop running servers | `./mockserver stop --all` |
+| `list` | List running servers | `./mockserver list` |
+| `logs` | View server logs with filtering | `./mockserver logs --filter /api/users` |
+| `test` | Test server endpoints | `./mockserver test --port 8000` |
+| `success` | Generate success rate reports | `./mockserver success detailed` |
+| `config-help` | Show configuration guide | `./mockserver config-help` |
+| `help` | Show detailed help | `./mockserver help` |
 
-# Help and configuration
-./run.sh help                     # All available commands
-./run.sh config-help              # Configuration guide
-```
-
-### Available Scripts
-
-```
-scripts/
-├── run.sh                   # Main entry point with simple commands
-├── start_server.sh          # Generic server start (any config)
-├── stop_server.sh           # Smart server stop (auto-detect)
-├── list_servers.sh          # List running servers and ports
-├── logs/
-│   ├── filter_logs.sh       # Extract requests/responses from logs
-│   └── success_report.sh    # Generate success rate reports
-└── help.sh                  # Show available commands and usage
-```
-
-**📖 For complete script documentation, configuration details, and advanced usage, see [SCRIPTS.md](SCRIPTS.md)**
-
-### Quick Examples
+### Examples
 
 ```bash
-# Start any configuration
-./run.sh start                    # Interactive selection
-./run.sh start basic --port 8000  # Basic config on custom port
+# Interactive configuration selection
+./mockserver start                    # Choose from available configs
 
-# Manage servers
-./run.sh list                     # See what's running
-./run.sh stop                     # Stop servers (auto-detect)
-./run.sh stop --all               # Stop everything
+# Start specific configuration
+./mockserver start vmanage --port 8080 --reload
 
-# Monitor activity
-./run.sh logs                     # Recent logs
-./run.sh success detailed         # Success analysis
+# Stop servers by different methods
+./mockserver stop                     # Auto-detect or interactive selection
+./mockserver stop basic               # Stop by config name
+./mockserver stop --port 8001         # Stop by port
+./mockserver stop --all               # Stop all servers
+
+# Server monitoring and logs
+./mockserver list                     # List all running servers
+./mockserver logs --lines 100         # View last 100 log entries
+./mockserver logs --filter REQUEST:   # Filter logs by pattern
+./mockserver logs --port 8000         # View logs from specific server
 ```
+
+#### 📋 Logs Command Details
+
+The `logs` command provides comprehensive log viewing capabilities:
+
+**Basic Usage:**
+```bash
+# View recent logs from all running servers
+./mockserver logs
+
+# Limit number of lines
+./mockserver logs --lines 50
+
+# View logs from a specific server
+./mockserver logs --port 8000
+
+# Filter logs by pattern
+./mockserver logs --filter "ERROR"
+./mockserver logs --filter "REQUEST:"
+```
+
+**Multi-Server Support:**
+- When no `--port` is specified, shows logs from all running servers
+- Each server's logs are clearly separated with headers
+- Automatically detects and excludes stopped servers
+
+**Server State Tracking:**
+- Each server tracks its own log file location
+- Server state includes log file paths for better management
+- Supports concurrent servers on different ports
+
+### Features
+
+- **🎯 Interactive Configuration Selection**: Choose from available configs when none specified
+- **🔄 Smart Process Management**: Robust process tracking and management across platforms
+- **📊 Enhanced State Management**: JSON-based server state tracking
+- **🌐 Cross-platform Support**: Works on macOS, Linux, and Windows
+- **🛡️ Graceful Degradation**: Works even with missing optional dependencies
+- **🎨 Colored Output**: Clear, readable status messages and error reporting
 
 ---
 
@@ -481,11 +484,19 @@ mock-and-roll/
 │       ├── api.json
 │       ├── auth.json
 │       └── endpoints.json
-├── scripts/                      # Server management scripts
-│   ├── run.sh                    # Main script interface
-│   ├── start_server.sh           # Generic server start
-│   └── stop_server.sh            # Smart server stop
-│   └── settings.json            # Python formatting settings (Black)
+├── src/
+│   ├── cli/
+│   │   └── mockserver.py         # Unified Python CLI for server management
+│   ├── app/                      # FastAPI application
+│   ├── auth/                     # Authentication modules
+│   ├── config/                   # Configuration loaders
+│   ├── handlers/                 # Request handlers
+│   ├── middleware/               # Middleware components
+│   ├── models/                   # Data models
+│   ├── persistence/              # Redis integration
+│   ├── processing/               # Template processing
+│   └── routes/                   # Route definitions
+├── mockserver                    # Main CLI entry point
 ├── Dockerfile                    # Docker container configuration
 ├── docker-compose.yml           # Multi-service orchestration
 ├── pyproject.toml               # Python dependencies and project metadata
@@ -494,40 +505,176 @@ mock-and-roll/
 
 ## 🛠️ Installation
 
-### Prerequisites
-- Python 3.12+
-- Poetry (recommended) or pip
+### System Requirements
 
-### Using Poetry (Recommended)
+**Supported Platforms:**
+- macOS 10.15+ (Catalina or later)
+- Linux (Ubuntu 18.04+, CentOS 7+, Debian 9+, etc.)
+- Windows 10+ (via WSL recommended)
+
+**Required Software:**
+- Python 3.11+ 
+- Git
+
+**Optional (Enhanced Features):**
+- Redis Server (for persistence configuration)
+- Docker & Docker Compose (for containerized deployment)
+
+### macOS Installation
 
 ```bash
-# Clone the repository
+# Install Python 3.11+ (if not already installed)
+# Option 1: Using Homebrew
+brew install python@3.11
+
+# Option 2: Using pyenv
+brew install pyenv
+pyenv install 3.11.7
+pyenv local 3.11.7
+
+# Install Poetry (recommended)
+curl -sSL https://install.python-poetry.org | python3 -
+
+# Clone and setup project
 git clone <repository-url>
 cd mock-and-roll
 
-# Install dependencies
+# Install dependencies with Poetry
 poetry install
 
-# Activate virtual environment
-poetry shell
+# Or install with pip if Poetry not available
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt  # or pip install fastapi uvicorn redis psutil requests
+
+# Optional: Install Redis for persistence features
+brew install redis
+brew services start redis
 ```
 
-### Using pip
+### Linux Installation
 
+#### Ubuntu/Debian
 ```bash
-# Clone the repository
+# Update package list
+sudo apt update
+
+# Install Python 3.11+ and pip
+sudo apt install python3.11 python3.11-venv python3-pip git
+
+# Install Poetry (recommended)
+curl -sSL https://install.python-poetry.org | python3 -
+
+# Clone and setup project
 git clone <repository-url>
 cd mock-and-roll
 
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+# Install dependencies with Poetry
+poetry install
 
-# Install dependencies
-pip install fastapi uvicorn redis
+# Or install with pip if Poetry not available
+python3 -m venv venv
+source venv/bin/activate
+pip install fastapi uvicorn redis psutil requests
+
+# Optional: Install Redis for persistence features
+sudo apt install redis-server
+sudo systemctl start redis-server
+sudo systemctl enable redis-server
 ```
 
-### Using Docker
+#### CentOS/RHEL/Fedora
+```bash
+# CentOS/RHEL
+sudo yum install python3 python3-pip git
+# OR for Fedora
+sudo dnf install python3 python3-pip git
+
+# Install Poetry (recommended)
+curl -sSL https://install.python-poetry.org | python3 -
+
+# Clone and setup project
+git clone <repository-url>
+cd mock-and-roll
+
+# Install dependencies with Poetry
+poetry install
+
+# Or install with pip if Poetry not available
+python3 -m venv venv
+source venv/bin/activate
+pip install fastapi uvicorn redis psutil requests
+
+# Optional: Install Redis for persistence features
+# CentOS/RHEL
+sudo yum install redis
+sudo systemctl start redis
+sudo systemctl enable redis
+# OR for Fedora
+sudo dnf install redis
+sudo systemctl start redis
+sudo systemctl enable redis
+```
+
+#### Alpine Linux
+Alpine Linux requires additional system tools for proper operation:
+
+```bash
+# Essential package installation
+apk update
+apk add --no-cache python3 py3-pip git
+
+# Install command-line tools required by the server management
+apk add --no-cache procps util-linux coreutils findutils
+apk add --no-cache net-tools iproute2 lsof curl wget bash
+
+# Install Poetry (recommended)
+curl -sSL https://install.python-poetry.org | python3 -
+
+# Clone and setup project
+git clone <repository-url>
+cd mock-and-roll
+
+# Install dependencies with Poetry
+poetry install
+
+# Or install with pip if Poetry not available
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# Optional: Install Redis for persistence features
+apk add --no-cache redis
+rc-service redis start
+rc-update add redis
+```
+
+**Alpine Package Breakdown:**
+- `procps` - Provides `ps`, `top`, `pgrep`, `pkill` for process management
+- `util-linux` - Provides `kill`, `lscpu` for process termination
+- `coreutils` - Essential text processing tools (`grep`, `awk`, `cut`, `sort`)
+- `net-tools` - Network diagnostics (`netstat`, `ifconfig`)
+- `iproute2` - Modern networking tools (`ss`, `ip`)
+- `lsof` - List open files/ports for server detection
+- `bash` - Better shell compatibility for scripts
+
+**Minimal Alpine Installation:**
+For minimal setups, only these packages are essential:
+```bash
+apk add --no-cache procps lsof
+```
+
+**Docker Alpine Usage:**
+Use the provided Alpine Dockerfile for containerized deployment:
+```bash
+# Build Alpine-based image
+docker build -f Dockerfile.alpine -t mock-server-alpine .
+
+# Run Alpine container
+docker run -p 8000:8000 mock-server-alpine
+```
+
+### Docker Installation (Cross-platform)
 
 ```bash
 # Clone the repository
@@ -536,7 +683,99 @@ cd mock-and-roll
 
 # Build and run with Docker Compose
 docker-compose up --build
+
+# Or build manually
+docker build -t mock-server .
+docker run -p 8000:8000 mock-server
 ```
+
+### Verification
+
+```bash
+# Verify Python version
+python3 --version  # Should show 3.11+
+
+# Verify installation
+./mockserver --help
+
+# Test basic functionality
+./mockserver start basic --port 8000
+# In another terminal:
+curl http://localhost:8000/
+./mockserver stop
+```
+
+### Dependencies
+
+**Core Dependencies (automatically installed):**
+- `fastapi` - Modern web framework
+- `uvicorn` - ASGI server
+- `redis` - Redis client (for persistence features)
+- `psutil` - Process management utilities
+- `requests` - HTTP client library
+- `pyhumps` - JSON key transformation
+- `pyjwt` - JWT token handling
+- `python-dateutil` - Date parsing utilities
+- `python-multipart` - Form data handling
+- `email-validator` - Email validation
+
+**Development Dependencies:**
+- `pytest` - Testing framework
+- `python-dotenv` - Environment variable management
+- `pre-commit` - Git hooks for code quality
+
+### Troubleshooting Installation
+
+**Common Issues:**
+
+1. **Python version too old**
+   ```bash
+   # Check version
+   python3 --version
+   # Upgrade if needed (see platform-specific instructions above)
+   ```
+
+2. **Permission errors on macOS/Linux**
+   ```bash
+   # Use virtual environment to avoid system-wide installs
+   python3 -m venv venv
+   source venv/bin/activate
+   pip install --upgrade pip
+   ```
+
+3. **Poetry not found**
+   ```bash
+   # Add Poetry to PATH (typically needed after installation)
+   export PATH="$HOME/.local/bin:$PATH"
+   # Add to ~/.bashrc or ~/.zshrc for persistence
+   ```
+
+4. **Redis connection errors**
+   ```bash
+   # Check if Redis is running
+   redis-cli ping  # Should return PONG
+   # Start Redis if needed (see platform-specific instructions above)
+   ```
+
+5. **Alpine Linux - Command not found errors**
+   ```bash
+   # If you see "command not found" for ps, kill, lsof, etc.
+   # Install the required system tools:
+   apk add --no-cache procps util-linux lsof
+   
+   # Verify tools are available:
+   ps --version
+   kill -V
+   lsof -v
+   ```
+
+6. **Alpine Linux - BusyBox compatibility issues**
+   ```bash
+   # Some Alpine BusyBox tools behave differently than GNU versions
+   # The server management automatically handles these differences
+   # If you encounter issues, install GNU versions:
+   apk add --no-cache coreutils findutils grep
+   ```
 
 ## ⚙️ Configuration
 
@@ -561,15 +800,15 @@ configs/
     └── endpoints.json
 ```
 
-**Usage with Scripts:**
+**Usage with CLI:**
 ```bash
 # Interactive selection
-./run.sh start
+./mockserver start
 
 # Specific configuration
-./run.sh start basic           # Uses configs/basic/
-./run.sh start persistence     # Uses configs/persistence/
-./run.sh start vmanage         # Uses configs/vmanage/
+./mockserver start basic           # Uses configs/basic/
+./mockserver start persistence     # Uses configs/persistence/
+./mockserver start vmanage         # Uses configs/vmanage/
 ```
 
 **Configuration File Structure:**
@@ -599,7 +838,7 @@ vim configs/my-api/api.json
 
 **3. Start with your custom configuration:**
 ```bash
-./run.sh start my-api
+./mockserver start my-api
 ```
 
 ### Endpoint Configuration (`endpoints.json`)
@@ -1364,25 +1603,25 @@ SYSTEM_AUTH_METHOD=system_api_key
 
 ### Starting the Server
 
-#### Recommended: Using Scripts
+#### Recommended: Using CLI
 
 **Interactive configuration selection:**
 ```bash
-./run.sh start
+./mockserver start
 # Prompts you to choose: basic, persistence, vmanage
 ```
 
 **Direct configuration:**
 ```bash
-./run.sh start basic           # Simple REST API
-./run.sh start persistence     # API with Redis persistence  
-./run.sh start vmanage         # Cisco SD-WAN vManage API
+./mockserver start basic           # Simple REST API
+./mockserver start persistence     # API with Redis persistence  
+./mockserver start vmanage         # Cisco SD-WAN vManage API
 ```
 
 **Custom ports:**
 ```bash
-./run.sh start basic --port 8000
-./run.sh start vmanage --port 8002
+./mockserver start basic --port 8000
+./mockserver start vmanage --port 8002
 ```
 
 #### Alternative: Direct Python Execution
@@ -1422,14 +1661,13 @@ For convenient server management, several shell scripts are provided that handle
 **Quick Server Management:**
 ```bash
 # Start server in background with Poetry environment
-./run.sh start [config-name]
+./mockserver start [config-name]
 
 # Stop all running servers  
-./run.sh stop
+./mockserver stop
 
 # List all running servers
-./run.sh list
-./list_servers.sh
+./mockserver list
 
 # Test server status and functionality
 ./test_vmanage_api.sh [port]
@@ -1451,11 +1689,11 @@ For convenient server management, several shell scripts are provided that handle
 ./setup_environment.sh
 
 # Start with default config selection
-./run.sh start
+./mockserver start
 # Output: Interactive config selection menu
 
 # Start with specific config
-./run.sh start vmanage
+./mockserver start vmanage
 # Output: Server started in background (PID: 12346)
 
 # Test server functionality
@@ -2336,14 +2574,14 @@ All scripts are now compatible with macOS bash 3.x:
 - **Relative Path Handling**: All configuration and resource paths resolve correctly
 
 ```bash
-# Scripts work from project root
-./run.sh start vmanage
+# Python CLI works from project root
+./mockserver start vmanage
 
-# Scripts work directly too  
-./scripts/start_server.sh vmanage
+# Direct Python CLI usage
+python src/cli/mockserver.py start vmanage
 
 # Simple unified interface
-./run.sh start
+./mockserver start
 ```
 
 **Success Report Not Finding Requests:**

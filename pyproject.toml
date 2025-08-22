@@ -24,6 +24,7 @@ pre-commit = "^4.3.0"
 requests = "^2.32.5"
 python-multipart = "^0.0.9"
 email-validator = "^2.2.0"
+psutil = "^6.1.0"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8"

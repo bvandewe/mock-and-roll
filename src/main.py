@@ -30,6 +30,7 @@ def parse_arguments():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description="Mock API Server")
     parser.add_argument("--config-folder", type=str, help="Path to the configuration folder containing api.json, auth.json, and endpoints.json files")
+    parser.add_argument("--log-file", type=str, help="Path to the log file")
     return parser.parse_known_args()
 
 
@@ -60,8 +61,9 @@ def create_application():
     api_config = load_api_config()
 
     # --- Logging Setup ---
-    # Set up logging based on configuration
-    setup_logging(api_config)
+    # Set up logging based on configuration, with optional log file override
+    log_file_override = args.log_file or os.getenv("LOG_FILE")
+    setup_logging(api_config, log_file_override)
 
     # Create the FastAPI application
     app = create_app()

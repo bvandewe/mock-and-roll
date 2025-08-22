@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+# Convenience wrapper for the Python CLI
+# This allows calling "mockserver" directly instead of "python3 mockserver.py"
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PYTHON_CLI="$SCRIPT_DIR/src/cli/mockserver.py"
+
+# Check if Python CLI exists
+if [ ! -f "$PYTHON_CLI" ]; then
+    echo "❌ Error: Python CLI not found at $PYTHON_CLI"
+    exit 1
+fi
+
+# Check if Python 3 is available
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "❌ Error: Python 3 is required but not found"
+    echo "💡 Please install Python 3 to use this tool"
+    exit 1
+fi
+
+# Execute the Python CLI with all arguments
+exec python3 "$PYTHON_CLI" "$@"

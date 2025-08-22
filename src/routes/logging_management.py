@@ -5,6 +5,7 @@ Provides endpoints to view and configure logging settings at runtime.
 """
 
 import logging
+import os
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -93,7 +94,13 @@ def add_logging_management_endpoints(app, api_config: dict[str, Any], auth_data:
         """Get recent log entries from the log file."""
         try:
             logging_config = api_config.get("logging", {})
-            log_file_path = logging_config.get("file_path", "/app/latest.logs")
+
+            # Use the same override logic as the logging setup
+            log_file_override = os.getenv("LOG_FILE")
+            if log_file_override:
+                log_file_path = log_file_override
+            else:
+                log_file_path = logging_config.get("file_path", "/app/latest.logs")
 
             try:
                 with open(log_file_path, "r", encoding="utf-8") as f:
