@@ -59,12 +59,12 @@ cd mock-and-roll
 poetry install && poetry shell
 
 # Start the server (interactive configuration selection)
-./mockserver start
+./mockctl start
 
 # Or start with a specific configuration
-./mockserver start basic           # Simple REST API
-./mockserver start vmanage         # SD-WAN vManage API mock
-./mockserver start persistence     # API with Redis persistence
+./mockctl start basic           # Simple REST API
+./mockctl start vmanage         # SD-WAN vManage API mock
+./mockctl start persistence     # API with Redis persistence
 ```
 
 **🎉 That's it!** Your mock API server is now running at:
@@ -76,21 +76,21 @@ poetry install && poetry shell
 
 ```bash
 # Start any configuration
-./mockserver start                    # Interactive selection
-./mockserver start basic --port 8000  # Basic config on custom port
+./mockctl start                    # Interactive selection
+./mockctl start basic --port 8000  # Basic config on custom port
 
 # Manage servers
-./mockserver list                     # See what's running
-./mockserver stop                     # Stop servers (auto-detect)
-./mockserver stop --all               # Stop everything
+./mockctl list                     # See what's running
+./mockctl stop                     # Stop servers (auto-detect)
+./mockctl stop --all               # Stop everything
 
 # Monitor activity
-./mockserver logs                     # Recent logs
-./mockserver success detailed         # Success analysis
+./mockctl logs                     # Recent logs
+./mockctl success detailed         # Success analysis
 
 # Get help
-./mockserver help                     # All available scripts
-./mockserver config-help              # Configuration guide
+./mockctl help                     # All available scripts
+./mockctl config-help              # Configuration guide
 ```
 
 ### 📂 Available Configurations
@@ -275,42 +275,42 @@ The mock server includes a unified Python CLI application that provides comprehe
 
 ### Usage
 
-**Primary Interface:** `./mockserver` - Main entry point  
-**Direct Access:** `./mockserver` or `python3 mockserver.py` - Direct CLI access
+**Primary Interface:** `./mockctl` - Main entry point  
+**Direct Access:** `./mockctl` or `python3 mockctl.py` - Direct CLI access
 
 ### Available Commands
 
 | Command | Description | Examples |
 |---------|-------------|----------|
-| `start` | Start mock server with configuration | `./mockserver start basic --port 8080` |
-| `stop` | Stop running servers | `./mockserver stop --all` |
-| `list` | List running servers | `./mockserver list` |
-| `logs` | View server logs with filtering | `./mockserver logs --filter /api/users` |
-| `test` | Test server endpoints | `./mockserver test --port 8000` |
-| `success` | Generate success rate reports | `./mockserver success detailed` |
-| `config-help` | Show configuration guide | `./mockserver config-help` |
-| `help` | Show detailed help | `./mockserver help` |
+| `start` | Start mock server with configuration | `./mockctl start basic --port 8080` |
+| `stop` | Stop running servers | `./mockctl stop --all` |
+| `list` | List running servers | `./mockctl list` |
+| `logs` | View server logs with filtering | `./mockctl logs --filter /api/users` |
+| `test` | Test server endpoints | `./mockctl test --port 8000` |
+| `success` | Generate success rate reports | `./mockctl success detailed` |
+| `config-help` | Show configuration guide | `./mockctl config-help` |
+| `help` | Show detailed help | `./mockctl help` |
 
 ### Examples
 
 ```bash
 # Interactive configuration selection
-./mockserver start                    # Choose from available configs
+./mockctl start                    # Choose from available configs
 
 # Start specific configuration
-./mockserver start vmanage --port 8080 --reload
+./mockctl start vmanage --port 8080 --reload
 
 # Stop servers by different methods
-./mockserver stop                     # Auto-detect or interactive selection
-./mockserver stop basic               # Stop by config name
-./mockserver stop --port 8001         # Stop by port
-./mockserver stop --all               # Stop all servers
+./mockctl stop                     # Auto-detect or interactive selection
+./mockctl stop basic               # Stop by config name
+./mockctl stop --port 8001         # Stop by port
+./mockctl stop --all               # Stop all servers
 
 # Server monitoring and logs
-./mockserver list                     # List all running servers
-./mockserver logs --lines 100         # View last 100 log entries
-./mockserver logs --filter REQUEST:   # Filter logs by pattern
-./mockserver logs --port 8000         # View logs from specific server
+./mockctl list                     # List all running servers
+./mockctl logs --lines 100         # View last 100 log entries
+./mockctl logs --filter REQUEST:   # Filter logs by pattern
+./mockctl logs --port 8000         # View logs from specific server
 ```
 
 #### 📋 Logs Command Details
@@ -320,17 +320,17 @@ The `logs` command provides comprehensive log viewing capabilities:
 **Basic Usage:**
 ```bash
 # View recent logs from all running servers
-./mockserver logs
+./mockctl logs
 
 # Limit number of lines
-./mockserver logs --lines 50
+./mockctl logs --lines 50
 
 # View logs from a specific server
-./mockserver logs --port 8000
+./mockctl logs --port 8000
 
 # Filter logs by pattern
-./mockserver logs --filter "ERROR"
-./mockserver logs --filter "REQUEST:"
+./mockctl logs --filter "ERROR"
+./mockctl logs --filter "REQUEST:"
 ```
 
 **Multi-Server Support:**
@@ -486,7 +486,7 @@ mock-and-roll/
 │       └── endpoints.json
 ├── src/
 │   ├── cli/
-│   │   └── mockserver.py         # Unified Python CLI for server management
+│   │   └── mockctl.py         # Unified Python CLI for server management
 │   ├── app/                      # FastAPI application
 │   ├── auth/                     # Authentication modules
 │   ├── config/                   # Configuration loaders
@@ -496,7 +496,7 @@ mock-and-roll/
 │   ├── persistence/              # Redis integration
 │   ├── processing/               # Template processing
 │   └── routes/                   # Route definitions
-├── mockserver                    # Main CLI entry point
+├── mockctl                    # Main CLI entry point
 ├── Dockerfile                    # Docker container configuration
 ├── docker-compose.yml           # Multi-service orchestration
 ├── pyproject.toml               # Python dependencies and project metadata
@@ -696,13 +696,13 @@ docker run -p 8000:8000 mock-server
 python3 --version  # Should show 3.11+
 
 # Verify installation
-./mockserver --help
+./mockctl --help
 
 # Test basic functionality
-./mockserver start basic --port 8000
+./mockctl start basic --port 8000
 # In another terminal:
 curl http://localhost:8000/
-./mockserver stop
+./mockctl stop
 ```
 
 ### Dependencies
@@ -803,12 +803,12 @@ configs/
 **Usage with CLI:**
 ```bash
 # Interactive selection
-./mockserver start
+./mockctl start
 
 # Specific configuration
-./mockserver start basic           # Uses configs/basic/
-./mockserver start persistence     # Uses configs/persistence/
-./mockserver start vmanage         # Uses configs/vmanage/
+./mockctl start basic           # Uses configs/basic/
+./mockctl start persistence     # Uses configs/persistence/
+./mockctl start vmanage         # Uses configs/vmanage/
 ```
 
 **Configuration File Structure:**
@@ -838,7 +838,7 @@ vim configs/my-api/api.json
 
 **3. Start with your custom configuration:**
 ```bash
-./mockserver start my-api
+./mockctl start my-api
 ```
 
 ### Endpoint Configuration (`endpoints.json`)
@@ -1607,21 +1607,21 @@ SYSTEM_AUTH_METHOD=system_api_key
 
 **Interactive configuration selection:**
 ```bash
-./mockserver start
+./mockctl start
 # Prompts you to choose: basic, persistence, vmanage
 ```
 
 **Direct configuration:**
 ```bash
-./mockserver start basic           # Simple REST API
-./mockserver start persistence     # API with Redis persistence  
-./mockserver start vmanage         # Cisco SD-WAN vManage API
+./mockctl start basic           # Simple REST API
+./mockctl start persistence     # API with Redis persistence  
+./mockctl start vmanage         # Cisco SD-WAN vManage API
 ```
 
 **Custom ports:**
 ```bash
-./mockserver start basic --port 8000
-./mockserver start vmanage --port 8002
+./mockctl start basic --port 8000
+./mockctl start vmanage --port 8002
 ```
 
 #### Alternative: Direct Python Execution
@@ -1661,13 +1661,13 @@ For convenient server management, several shell scripts are provided that handle
 **Quick Server Management:**
 ```bash
 # Start server in background with Poetry environment
-./mockserver start [config-name]
+./mockctl start [config-name]
 
 # Stop all running servers  
-./mockserver stop
+./mockctl stop
 
 # List all running servers
-./mockserver list
+./mockctl list
 
 # Test server status and functionality
 ./test_vmanage_api.sh [port]
@@ -1689,11 +1689,11 @@ For convenient server management, several shell scripts are provided that handle
 ./setup_environment.sh
 
 # Start with default config selection
-./mockserver start
+./mockctl start
 # Output: Interactive config selection menu
 
 # Start with specific config
-./mockserver start vmanage
+./mockctl start vmanage
 # Output: Server started in background (PID: 12346)
 
 # Test server functionality
@@ -2575,13 +2575,13 @@ All scripts are now compatible with macOS bash 3.x:
 
 ```bash
 # Python CLI works from project root
-./mockserver start vmanage
+./mockctl start vmanage
 
 # Direct Python CLI usage
-python src/cli/mockserver.py start vmanage
+python src/cli/mockctl.py start vmanage
 
 # Simple unified interface
-./mockserver start
+./mockctl start
 ```
 
 **Success Report Not Finding Requests:**

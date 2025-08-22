@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Mock Server Management CLI
+Mock Server Control CLI
 A unified Python CLI tool that manages mock server instances.
 """
 
@@ -300,7 +300,7 @@ class MockServerCLI:
     """Main CLI application"""
 
     def __init__(self):
-        # Get the project root (two levels up from src/cli/mockserver.py)
+        # Get the project root (two levels up from src/cli/mockctl.py)
         self.project_root = Path(__file__).parent.parent.parent
         self.configs_dir = self.project_root / "configs"
         self.state = ServerState(self.project_root)
@@ -638,8 +638,8 @@ Examples:
             print(f"{Colors.BLUE}   OpenAPI schema: http://{args.host}:{port}/openapi.json{Colors.NC}")
             print()
             print(f"{Colors.YELLOW}🛑 To stop the server:{Colors.NC}")
-            print(f"{Colors.CYAN}   mockserver stop{Colors.NC}")
-            print(f"{Colors.CYAN}   mockserver stop --pid {process.pid}{Colors.NC}")
+            print(f"{Colors.CYAN}   mockctl stop{Colors.NC}")
+            print(f"{Colors.CYAN}   mockctl stop --pid {process.pid}{Colors.NC}")
 
             # Test server response
             print(f"{Colors.BLUE}🔍 Testing server response...{Colors.NC}")
@@ -804,7 +804,7 @@ Examples:
             # If no port specified, show logs from all running servers
             if not servers:
                 print(f"{Colors.RED}❌ No servers are currently running{Colors.NC}")
-                print(f"{Colors.YELLOW}💡 Start a server with: ./mockserver start{Colors.NC}")
+                print(f"{Colors.YELLOW}💡 Start a server with: ./mockctl start{Colors.NC}")
                 return
             servers_to_check = servers
 
@@ -980,34 +980,34 @@ Examples:
         print(f"{Colors.GREEN}🚀 Starting Servers:{Colors.NC}")
         print()
         print(f"{Colors.YELLOW}Using the Python CLI (Recommended):{Colors.NC}")
-        print("   mockserver start                    # Interactive selection")
-        print("   mockserver start vmanage            # Start vmanage config")
-        print("   mockserver start basic              # Start basic config")
-        print("   mockserver start persistence        # Start persistence config")
-        print("   mockserver start --port 8002        # Custom port")
-        print("   mockserver start vmanage --host 127.0.0.1")
+        print("   mockctl start                    # Interactive selection")
+        print("   mockctl start vmanage            # Start vmanage config")
+        print("   mockctl start basic              # Start basic config")
+        print("   mockctl start persistence        # Start persistence config")
+        print("   mockctl start --port 8002        # Custom port")
+        print("   mockctl start vmanage --host 127.0.0.1")
         print()
         print(f"{Colors.GREEN}🛑 Stopping Servers:{Colors.NC}")
         print()
-        print("   mockserver stop                     # Auto-detect or interactive")
-        print("   mockserver stop vmanage             # Stop vmanage config")
-        print("   mockserver stop --port 8001         # Stop by port")
-        print("   mockserver stop --pid 12345         # Stop by process ID")
-        print("   mockserver stop --all               # Stop all mock servers")
+        print("   mockctl stop                     # Auto-detect or interactive")
+        print("   mockctl stop vmanage             # Stop vmanage config")
+        print("   mockctl stop --port 8001         # Stop by port")
+        print("   mockctl stop --pid 12345         # Stop by process ID")
+        print("   mockctl stop --all               # Stop all mock servers")
         print()
         print(f"{Colors.GREEN}📊 Server Management:{Colors.NC}")
         print()
-        print("   mockserver list                     # List running servers")
-        print("   mockserver logs                     # Get recent logs")
-        print("   mockserver logs --lines 100         # Get last 100 lines")
-        print("   mockserver logs --filter /login     # Filter by endpoint")
-        print("   mockserver test --port 8000         # Test API endpoints")
-        print("   mockserver success detailed         # Success analysis")
+        print("   mockctl list                     # List running servers")
+        print("   mockctl logs                     # Get recent logs")
+        print("   mockctl logs --lines 100         # Get last 100 lines")
+        print("   mockctl logs --filter /login     # Filter by endpoint")
+        print("   mockctl test --port 8000         # Test API endpoints")
+        print("   mockctl success detailed         # Success analysis")
         print()
 
     def cmd_help(self, args):
         """Detailed help command"""
-        print(f"{Colors.CYAN}🚀 Mock Server Management CLI{Colors.NC}")
+        print(f"{Colors.CYAN}🚀 Mock Server Control CLI{Colors.NC}")
         print(f"{Colors.BLUE}{'=' * 28}{Colors.NC}")
         print()
         print("This unified CLI tool replaces all the bash scripts for managing mock servers.")
@@ -1024,12 +1024,12 @@ Examples:
         print(f"  Available configs: {', '.join(self.list_available_configs())}")
         print()
         print(f"{Colors.GREEN}Examples:{Colors.NC}")
-        print("  mockserver start                     # Interactive config selection")
-        print("  mockserver start basic --port 8080   # Start basic config on port 8080")
-        print("  mockserver stop --all                # Stop all servers")
-        print("  mockserver logs --filter /api/users  # Filter logs by endpoint")
+        print("  mockctl start                     # Interactive config selection")
+        print("  mockctl start basic --port 8080   # Start basic config on port 8080")
+        print("  mockctl stop --all                # Stop all servers")
+        print("  mockctl logs --filter /api/users  # Filter logs by endpoint")
         print()
-        print("For detailed configuration help, use: mockserver config-help")
+        print("For detailed configuration help, use: mockctl config-help")
 
 
 if __name__ == "__main__":
