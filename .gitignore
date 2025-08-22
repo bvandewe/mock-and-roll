@@ -55,6 +55,7 @@ docs/_build/
 
 venv
 .env
+.venv
 
 **/old.**
 node_modules
