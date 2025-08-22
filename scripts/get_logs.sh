@@ -19,15 +19,31 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 # Change to project root to ensure relative paths work correctly
 cd "$PROJECT_ROOT"
 
+# Source server state management functions
+source "$SCRIPT_DIR/server_state.sh"
+
 # Default configuration
 DEFAULT_HOST="0.0.0.0"
 DEFAULT_PORT="8000"
 DEFAULT_LINES="10000"
 DEFAULT_API_KEY="system-admin-key-123"
 
-# Read port from .VMANAGE_API_PORT file if it exists
-if [ -f ".VMANAGE_API_PORT" ]; then
-    PORT=$(cat .VMANAGE_API_PORT | tr -d '[:space:]')
+# Try to find a running server to get port from
+cleanup_dead_processes
+all_servers=$(get_all_servers)
+first_server_port=$(echo "$all_servers" | python3 -c "
+import json
+import sys
+try:
+    servers = json.load(sys.stdin)
+    if servers:
+        print(servers[0].get('port', ''))
+except:
+    pass
+")
+
+if [ -n "$first_server_port" ]; then
+    PORT="$first_server_port"
 else
     PORT="$DEFAULT_PORT"
 fi
@@ -48,7 +64,7 @@ Usage:
 
 Options:
     --host HOST         Server host (default: $DEFAULT_HOST)
-    --port PORT         Server port (default: from .VMANAGE_API_PORT or $DEFAULT_PORT)
+    --port PORT         Server port (default: auto-detect from running servers or $DEFAULT_PORT)
     --lines LINES       Number of log lines to fetch (default: $DEFAULT_LINES)
     --api-key KEY       API key for authentication (default: $DEFAULT_API_KEY)
     --help              Show this help message

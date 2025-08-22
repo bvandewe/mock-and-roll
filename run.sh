@@ -36,6 +36,13 @@ show_usage() {
     echo "                          --lines: Number of recent lines (default: 500)"
     echo "                          FILTER: Optional endpoint filter pattern"
     echo ""
+    echo "  test --port PORT [OPTIONS]"
+    echo "                          Test system logging API endpoint"
+    echo "                          --port: Server port (required)"
+    echo "                          --host: Server host (default: localhost)"
+    echo "                          --config: Configuration directory (default: configs/basic)"
+    echo "                          --api-key: System API key (auto-detected if not provided)"
+    echo ""
     echo "  success [FORMAT]        Generate success rate report"
     echo "                          FORMAT: summary (default), detailed, json"
     echo ""
@@ -49,6 +56,7 @@ show_usage() {
     echo "  ./run.sh stop                      # Stop servers (auto-detect)"
     echo "  ./run.sh list                      # Show running servers"
     echo "  ./run.sh logs --lines 100          # Show last 100 log lines"
+    echo "  ./run.sh test --port 8000          # Test API endpoints on port 8000"
     echo "  ./run.sh success detailed          # Detailed success analysis"
     echo ""
     echo "📂 Available configurations: basic, persistence, vmanage"
@@ -81,6 +89,9 @@ case "$COMMAND" in
         else
             exec "$SCRIPTS_DIR/logs/filter_logs.sh" "$@"
         fi
+        ;;
+    "test")
+        exec "$SCRIPTS_DIR/test_server.sh" "$@"
         ;;
     "success")
         exec "$SCRIPTS_DIR/logs/success_report.sh" "$@"

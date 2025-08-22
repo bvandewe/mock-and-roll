@@ -11,6 +11,9 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 # Change to project root to ensure relative paths work correctly
 cd "$PROJECT_ROOT"
 
+# Source server state management functions
+source "$SCRIPT_DIR/server_state.sh"
+
 # Colors for output
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -65,46 +68,91 @@ get_process_command() {
     fi
 }
 
-# Function to get config name from port file
-get_config_from_port_file() {
+# Migrate from old files if they exist
+migrate_from_old_files
+
+# Clean up any dead processes
+cleanup_dead_processes
+
+# Function to get config name from state or detect it
+get_config_from_state() {
     local port=$1
-    for port_file in .*_API_PORT; do
-        if [ -f "$port_file" ] && [ "$(cat "$port_file" | tr -d '[:space:]')" = "$port" ]; then
-            # Extract config name from port file name
-            echo "$port_file" | sed 's/^\.\(.*\)_API_PORT$/\1/' | tr '[:upper:]' '[:lower:]'
-            return 0
-        fi
-    done
-    echo "unknown"
+    local pid=$2
+    
+    # First try to get from state
+    server_info=$(get_server_by_port "$port")
+    if [ -n "$server_info" ]; then
+        echo "$server_info" | python3 -c "
+import json
+import sys
+try:
+    server = json.load(sys.stdin)
+    print(server.get('config', 'unknown'))
+except:
+    print('unknown')
+"
+    else
+        echo "unknown"
+    fi
 }
 
-# Read all configured ports from port files
-echo -e "${YELLOW}📁 Checking configured servers:${NC}"
-found_configs=false
-for port_file in .*_API_PORT; do
-    if [ -f "$port_file" ]; then
-        port=$(cat "$port_file" | tr -d '[:space:]')
-        config_name=$(echo "$port_file" | sed 's/^\.\(.*\)_API_PORT$/\1/' | tr '[:upper:]' '[:lower:]')
-        echo -e "   ${CYAN}$config_name${NC}: port $port (from $port_file)"
-        found_configs=true
-    fi
-done
+# Get all tracked servers from state
+echo -e "${YELLOW}📁 Checking tracked servers:${NC}"
+all_servers=$(get_all_servers)
+tracked_count=$(echo "$all_servers" | python3 -c "
+import json
+import sys
+try:
+    servers = json.load(sys.stdin)
+    print(len(servers))
+except:
+    print(0)
+")
 
-if [ "$found_configs" = false ]; then
-    echo "   No active configuration port files found"
+if [ "$tracked_count" -gt 0 ]; then
+    echo "$all_servers" | python3 -c "
+import json
+import sys
+try:
+    servers = json.load(sys.stdin)
+    for server in servers:
+        config = server.get('config', 'unknown')
+        port = server.get('port', 'unknown')
+        pid = server.get('pid', 'unknown')
+        status = server.get('status', 'unknown')
+        print(f'   {config}: port {port} (PID: {pid}, status: {status})')
+except:
+    pass
+"
+else
+    echo "   No tracked servers found"
 fi
 echo ""
 
-# Check common ports for mock API servers
+# Check common ports for mock API servers plus any tracked ports
 PORTS_TO_CHECK=("8000" "8001" "8080" "8081" "3000" "5000")
 
-# Add configured ports to check list
-for port_file in .*_API_PORT; do
-    if [ -f "$port_file" ]; then
-        port=$(cat "$port_file" | tr -d '[:space:]')
-        PORTS_TO_CHECK+=("$port")
-    fi
-done
+# Add tracked ports to check list
+if [ "$tracked_count" -gt 0 ]; then
+    tracked_ports=$(echo "$all_servers" | python3 -c "
+import json
+import sys
+try:
+    servers = json.load(sys.stdin)
+    for server in servers:
+        port = server.get('port')
+        if port:
+            print(port)
+except:
+    pass
+")
+    
+    while IFS= read -r port; do
+        if [ -n "$port" ]; then
+            PORTS_TO_CHECK+=("$port")
+        fi
+    done <<< "$tracked_ports"
+fi
 
 # Remove duplicates
 PORTS_TO_CHECK=($(printf "%s\n" "${PORTS_TO_CHECK[@]}" | sort -u))
@@ -145,7 +193,7 @@ if [ -n "$PYTHON_PROCESSES" ]; then
         # If we found a port, check if it's accessible
         if [ -n "$port" ]; then
             # Get config name if available
-            config_name=$(get_config_from_port_file $port)
+            config_name=$(get_config_from_state $port $pid)
             if [ -z "$config_name" ]; then
                 # Try to guess config from command line
                 if [[ "$cmd" == *"configs/basic"* ]]; then

@@ -5,7 +5,7 @@
 # 
 # Usage:
 #   ./stop_server.sh                     # Interactive selection or auto-detect
-#   ./stop_server.sh vmanage             # Stop server using vmanage config port
+#   ./stop_server.sh vmanage             # Stop server using vmanage config
 #   ./stop_server.sh basic               # Stop server using basic config port
 #   ./stop_server.sh --port 8001         # Stop server on specific port
 #   ./stop_server.sh --pid 12345         # Stop specific process ID
@@ -20,6 +20,9 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Change to project root to ensure relative paths work correctly
 cd "$PROJECT_ROOT"
+
+# Source server state management functions
+source "$SCRIPT_DIR/server_state.sh"
 
 # Colors for output
 RED='\033[0;31m'
@@ -63,15 +66,7 @@ EOF
 # Function to find port from config name
 get_port_from_config() {
     local config_name="$1"
-    # Convert to uppercase for bash 3.x compatibility
-    local config_name_upper=$(echo "$config_name" | tr '[:lower:]' '[:upper:]')
-    local port_file=".${config_name_upper}_API_PORT"
-    
-    if [ -f "$port_file" ]; then
-        cat "$port_file" | tr -d '[:space:]'
-    else
-        echo ""
-    fi
+    get_port_for_config "$config_name"
 }
 
 # Function to find running mock server processes
@@ -145,16 +140,8 @@ stop_process() {
         return 1
     fi
     
-    # Clean up port file if config name provided
-    if [ -n "$config_name" ]; then
-        # Convert to uppercase for bash 3.x compatibility
-        local config_name_upper=$(echo "$config_name" | tr '[:lower:]' '[:upper:]')
-        local port_file=".${config_name_upper}_API_PORT"
-        if [ -f "$port_file" ]; then
-            rm -f "$port_file"
-            echo -e "${BLUE}🗑️  Removed port file: $port_file${NC}"
-        fi
-    fi
+    # Remove from state management
+    remove_server_by_pid "$pid"
     
     return 0
 }
@@ -174,46 +161,52 @@ list_configs() {
 
 # Function to auto-detect running servers
 auto_detect_servers() {
-    echo -e "${BLUE}🔍 Auto-detecting running mock servers...${NC}"
+    echo -e "${BLUE}🔍 Auto-detecting running mock servers...${NC}" >&2
     
-    # Check port files first
-    local found_servers=()
-    for config in $(list_configs); do
-        local port=$(get_port_from_config "$config")
-        if [ -n "$port" ]; then
-            local pid=$(find_process_by_port "$port")
-            if [ -n "$pid" ]; then
-                found_servers+=("$config:$port:$pid")
-                echo -e "${YELLOW}📍 Found $config server: PID $pid on port $port${NC}"
-            fi
-        fi
-    done
+    # Clean up dead processes first
+    cleanup_dead_processes >&2
     
-    # Also check for any uvicorn processes
-    local running_processes=$(find_mock_servers)
-    if [ -n "$running_processes" ]; then
-        echo -e "${BLUE}🔍 Running mock server processes:${NC}"
-        echo "$running_processes" | while read -r line; do
-            local pid=$(echo "$line" | awk '{print $2}')
-            echo -e "${YELLOW}📍 Process: $pid${NC}"
-            found_servers+=("unknown:unknown:$pid")
-        done
-    fi
+    # Get servers from state
+    local servers_json=$(get_all_servers)
     
-    if [ ${#found_servers[@]} -eq 0 ]; then
-        echo -e "${YELLOW}⚠️  No running mock servers found${NC}"
+    if [ "$servers_json" != "[]" ]; then
+        # Parse JSON and extract server info, send to stderr for status messages
+        echo "$servers_json" | python3 -c "
+import json
+import sys
+
+try:
+    servers = json.load(sys.stdin)
+    for server in servers:
+        config = server.get('config', 'unknown')
+        port = server.get('port', 'unknown')
+        pid = server.get('pid', 'unknown')
+        print(f'{config}:{port}:{pid}')
+        print(f'Found {config} server: PID {pid} on port {port}', file=sys.stderr)
+except:
+    pass
+"
+    else
+        echo -e "${YELLOW}⚠️  No running mock servers found${NC}" >&2
         return 1
     fi
-    
-    printf '%s\n' "${found_servers[@]}"
 }
 
 # Function for interactive server selection
 interactive_selection() {
+    local detected_servers="$1"
+    
     echo -e "${CYAN}🔧 Interactive Server Selection${NC}"
     echo ""
     
-    local servers=($(auto_detect_servers))
+    # Convert the detected servers into an array
+    local servers=()
+    while IFS= read -r line; do
+        if [ -n "$line" ]; then
+            servers+=("$line")
+        fi
+    done <<< "$detected_servers"
+    
     if [ ${#servers[@]} -eq 0 ]; then
         echo -e "${YELLOW}⚠️  No running servers found${NC}"
         return 1
@@ -226,7 +219,7 @@ interactive_selection() {
         local port=$(echo "$server_info" | cut -d':' -f2)
         local pid=$(echo "$server_info" | cut -d':' -f3)
         
-        printf "${YELLOW}%2d)${NC} Config: %-10s Port: %-5s PID: %s\n" $((i+1)) "$config" "$port" "$pid"
+        printf "%2d) Config: %-10s Port: %-5s PID: %s\n" $((i+1)) "$config" "$port" "$pid"
     done
     
     echo ""
@@ -297,6 +290,9 @@ if [ "$STOP_ALL" = true ]; then
             pid=$(echo "$line" | awk '{print $2}')
             stop_process "$pid" ""
         done
+        
+        # Clear all server state
+        clear_all_state
         
         # Clean up all port files
         for port_file in .*.PORT; do
@@ -373,7 +369,7 @@ if [ $? -eq 0 ]; then
         stop_process "$pid" "$config"
     else
         # Multiple servers found, show interactive selection
-        selection=$(interactive_selection)
+        selection=$(interactive_selection "$detected")
         if [ $? -eq 0 ]; then
             config=$(echo "$selection" | cut -d':' -f1)
             pid=$(echo "$selection" | cut -d':' -f2)

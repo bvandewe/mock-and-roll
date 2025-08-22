@@ -68,3 +68,5 @@ static
 *.drawio.bkp
 
 logs/
+
+.server_state/

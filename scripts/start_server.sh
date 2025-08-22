@@ -21,6 +21,9 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 # Change to project root to ensure relative paths work correctly
 cd "$PROJECT_ROOT"
 
+# Source server state management functions
+source "$SCRIPT_DIR/server_state.sh"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -234,14 +237,15 @@ if ! validate_config "$CONFIG_PATH" "$CONFIG_NAME"; then
     exit 1
 fi
 
-# Read port from config-specific port file or use default
-# Convert to uppercase for bash 3.x compatibility
-CONFIG_NAME_UPPER=$(echo "$CONFIG_NAME" | tr '[:lower:]' '[:upper:]')
-PORT_FILE=".${CONFIG_NAME_UPPER}_API_PORT"
+# Read port from server state or use default
 if [ -z "$PORT" ]; then
-    if [ -f "$PORT_FILE" ]; then
-        PORT=$(cat "$PORT_FILE" | tr -d '[:space:]')
-        echo -e "${BLUE}📁 Port read from $PORT_FILE: $PORT${NC}"
+    # Check if there's an existing server for this config
+    existing_port=$(get_port_for_config "$CONFIG_NAME")
+    if [ -n "$existing_port" ]; then
+        PORT="$existing_port"
+        echo -e "${BLUE}📁 Found existing server for $CONFIG_NAME on port: $PORT${NC}"
+        echo -e "${YELLOW}⚠️  A server with this configuration is already tracked. Use 'stop' first or specify a different port.${NC}"
+        exit 1
     else
         PORT="$DEFAULT_PORT"
         echo -e "${BLUE}📁 Using default port: $PORT${NC}"
@@ -288,9 +292,6 @@ if command -v poetry >/dev/null 2>&1; then
     echo ""
     echo -e "${BLUE}🔄 Starting server using Poetry...${NC}"
     
-    # Create port file for stop script
-    echo "$PORT" > "$PORT_FILE"
-    
     # Start the server with Poetry
     CONFIG_FOLDER="$CONFIG_PATH" poetry run python -m uvicorn src.main:app \
         --host "$HOST" \
@@ -301,9 +302,6 @@ if command -v poetry >/dev/null 2>&1; then
     
 else
     echo -e "${BLUE}🔄 Starting server using system Python...${NC}"
-    
-    # Create port file for stop script
-    echo "$PORT" > "$PORT_FILE"
     
     # Start the server directly
     CONFIG_FOLDER="$CONFIG_PATH" python -m uvicorn src.main:app \
@@ -319,6 +317,9 @@ sleep 3
 
 # Check if server started successfully
 if ps -p $SERVER_PID > /dev/null; then
+    # Add server to state management
+    add_server "$CONFIG_NAME" "$PORT" "$SERVER_PID" "$HOST"
+    
     echo -e "${GREEN}✅ Server started successfully!${NC}"
     echo ""
     echo -e "${GREEN}📊 Server Information:${NC}"
@@ -330,8 +331,8 @@ if ps -p $SERVER_PID > /dev/null; then
     echo ""
     echo -e "${YELLOW}🛑 To stop the server, run:${NC}"
     echo -e "${CYAN}   kill $SERVER_PID${NC}"
-    echo -e "${CYAN}   OR use: ./scripts/stop_server.sh $CONFIG_NAME${NC}"
-    echo -e "${CYAN}   OR use: ./scripts/stop_server.sh (auto-detect by port)${NC}"
+    echo -e "${CYAN}   OR use: ./run.sh stop${NC}"
+    echo -e "${CYAN}   OR use: ./run.sh stop --pid $SERVER_PID${NC}"
     echo ""
     echo -e "${BLUE}💡 To check if the server is still running:${NC}"
     echo -e "${CYAN}   ps -p $SERVER_PID${NC}"
