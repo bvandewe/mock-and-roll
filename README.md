@@ -409,6 +409,14 @@ The `search` command provides powerful log analysis capabilities to find request
 - **Time Filtering**: Search logs from specific time periods using flexible time formats
 - **Auto-detection**: Automatically finds the server and log file if port not specified
 - **Smart Matching**: Uses partial path matching (e.g., `/api` matches `/api/users/123`)
+- **Log File Recovery**: Automatically finds correct log files even if server state is inconsistent
+
+**Troubleshooting:**
+If the search command reports "Log file not found", it will automatically:
+1. Search for log files matching the server configuration and port
+2. Use the most recently modified matching log file
+3. Update the server state with the correct log file path
+4. Show available log files if no matches are found
 
 **Output Example:**
 ```

@@ -1028,8 +1028,44 @@ Examples:
         log_file_path = self.project_root / server.get("log_file", f"logs/server_{port}.logs")
 
         if not log_file_path.exists():
-            print(f"{Colors.RED}❌ Log file not found: {log_file_path}{Colors.NC}")
-            return
+            # Fallback: try to find the correct log file by searching the logs directory
+            logs_dir = self.project_root / "logs"
+            if logs_dir.exists():
+                config_name = server.get("config", "unknown")
+                # Look for log files matching the pattern: *_{config_name}_{port}.logs
+                pattern = f"*_{config_name}_{port}.logs"
+                matching_files = list(logs_dir.glob(pattern))
+
+                print(f"{Colors.BLUE}🔍 Expected log file: {log_file_path}{Colors.NC}")
+                print(f"{Colors.BLUE}🔍 Searching pattern: {pattern} in {logs_dir}{Colors.NC}")
+                print(f"{Colors.BLUE}🔍 Found {len(matching_files)} matching files{Colors.NC}")
+
+                if matching_files:
+                    # Use the most recently modified log file
+                    log_file_path = max(matching_files, key=lambda f: f.stat().st_mtime)
+                    print(f"{Colors.YELLOW}⚠️  State log file not found, using: {log_file_path.name}{Colors.NC}")
+
+                    # Update the server state with the correct log file path
+                    try:
+                        servers = self.state.get_all_servers()
+                        for i, srv in enumerate(servers):
+                            if srv.get("port") == port:
+                                servers[i]["log_file"] = str(log_file_path.relative_to(self.project_root))
+                                self.state._save_servers(servers)
+                                print(f"{Colors.BLUE}💡 Updated server state with correct log file path{Colors.NC}")
+                                break
+                    except Exception as e:
+                        print(f"{Colors.YELLOW}⚠️  Could not update server state: {e}{Colors.NC}")
+                else:
+                    print(f"{Colors.RED}❌ No log files found matching pattern: {pattern}{Colors.NC}")
+                    print(f"{Colors.BLUE}💡 Available log files in logs/:{Colors.NC}")
+                    for log_file in logs_dir.glob("*.logs"):
+                        print(f"   {log_file.name}")
+                    return
+            else:
+                print(f"{Colors.RED}❌ Log file not found: {log_file_path}{Colors.NC}")
+                print(f"{Colors.RED}❌ Logs directory not found: {logs_dir}{Colors.NC}")
+                return
 
         print(f"{Colors.BLUE}🔍 Searching logs for requests to path: {args.path}{Colors.NC}")
         print(f"{Colors.BLUE}📂 Log file: {log_file_path}{Colors.NC}")
