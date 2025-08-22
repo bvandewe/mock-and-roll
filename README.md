@@ -104,6 +104,8 @@ After setup, `mockctl` will be available globally from any directory!
 # Monitor activity
 ./mockctl logs                     # Recent logs
 ./mockctl success detailed         # Success analysis
+./mockctl search /api/users        # Search for requests to /api/users
+./mockctl search /items --since 1h # Search for /items requests in last hour
 
 # Get help
 ./mockctl help                     # All available scripts
@@ -303,6 +305,7 @@ The mock server includes a unified Python CLI application that provides comprehe
 | `stop` | Stop running servers | `./mockctl stop --all` |
 | `list` | List running servers | `./mockctl list` |
 | `logs` | View server logs with filtering | `./mockctl logs --filter /api/users` |
+| `search` | Search logs for requests to specific paths | `./mockctl search /api/users --port 8000` |
 | `test` | Test server endpoints | `./mockctl test --port 8000` |
 | `success` | Generate success rate reports | `./mockctl success detailed` |
 | `config-help` | Show configuration guide | `./mockctl config-help` |
@@ -328,6 +331,12 @@ The mock server includes a unified Python CLI application that provides comprehe
 ./mockctl logs --lines 100         # View last 100 log entries
 ./mockctl logs --filter REQUEST:   # Filter logs by pattern
 ./mockctl logs --port 8000         # View logs from specific server
+
+# Search logs for specific endpoints
+./mockctl search /api/users        # Search for requests to /api/users
+./mockctl search /items --port 8001 # Search specific server
+./mockctl search /auth --since "1h ago" # Search last hour
+./mockctl search /products --since "today" # Search today's logs
 ```
 
 #### 📋 Logs Command Details
@@ -359,6 +368,68 @@ The `logs` command provides comprehensive log viewing capabilities:
 - Each server tracks its own log file location
 - Server state includes log file paths for better management
 - Supports concurrent servers on different ports
+
+#### 🔍 Search Command Details
+
+The `search` command provides powerful log analysis capabilities to find requests to specific endpoints and summarize their responses:
+
+**Basic Usage:**
+```bash
+# Search for requests to a specific path
+./mockctl search /api/users
+
+# Search specific server by port
+./mockctl search /items --port 8001
+
+# Limit search to recent log entries
+./mockctl search /auth --lines 5000
+```
+
+**Time-based Filtering:**
+```bash
+# Search logs from the last hour
+./mockctl search /api/products --since "1h ago"
+
+# Search logs from today
+./mockctl search /auth/login --since "today"
+
+# Search logs since specific time
+./mockctl search /items --since "2025-08-22 10:00"
+
+# Other time formats supported
+./mockctl search /users --since "30m ago"   # 30 minutes ago
+./mockctl search /orders --since "2d ago"   # 2 days ago
+./mockctl search /data --since "yesterday"  # Yesterday
+```
+
+**Features:**
+- **Endpoint Discovery**: Find if your server has received requests to specific paths
+- **Response Analysis**: Group responses by HTTP status code with counts and percentages
+- **Request Correlation**: Match requests with their corresponding responses using correlation IDs
+- **Time Filtering**: Search logs from specific time periods using flexible time formats
+- **Auto-detection**: Automatically finds the server and log file if port not specified
+- **Smart Matching**: Uses partial path matching (e.g., `/api` matches `/api/users/123`)
+
+**Output Example:**
+```
+🔍 Searching logs for requests to path: /api/users
+📂 Log file: logs/b06f1ff1_basic_8000.logs
+⏰ Searching since: 2025-08-22 10:00:00
+
+✅ Found 15 request(s) to paths containing '/api/users'
+📊 Response Summary by Status Code:
+
+📈 Status 200: 12 responses (80.0%)
+   └─ 2025-08-22 14:23:15,123 - GET /api/users
+   └─ 2025-08-22 14:24:30,456 - GET /api/users/123
+   └─ 2025-08-22 14:25:45,789 - POST /api/users
+
+📈 Status 404: 2 responses (13.3%)
+   └─ 2025-08-22 14:26:12,345 - GET /api/users/999
+
+📈 Status 400: 1 responses (6.7%)
+   └─ 2025-08-22 14:27:01,678 - POST /api/users
+```
 
 ### Features
 

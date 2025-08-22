@@ -358,6 +358,8 @@ Examples:
   %(prog)s stop                      # Stop servers (auto-detect)
   %(prog)s list                      # Show running servers
   %(prog)s logs --lines 100          # Show last 100 log lines
+  %(prog)s search /api/users         # Search for requests to /api/users
+  %(prog)s search /items --since 1h  # Search for /items requests in last hour
   %(prog)s test --port 8000          # Test API endpoints on port 8000
   %(prog)s success detailed          # Detailed success analysis
 
@@ -417,6 +419,14 @@ Examples:
         # Config-help command
         config_help_parser = subparsers.add_parser("config-help", help="Show configuration guide")
         config_help_parser.set_defaults(func=self.cmd_config_help)
+
+        # Search command
+        search_parser = subparsers.add_parser("search", help="Search server logs for requests to specific paths")
+        search_parser.add_argument("path", help="Path to search for in logs (e.g., '/api/users', '/items')")
+        search_parser.add_argument("--port", type=int, help="Server port (auto-detect if omitted)")
+        search_parser.add_argument("--lines", type=int, default=10000, help="Number of log lines to analyze (default: 10000)")
+        search_parser.add_argument("--since", help="Search logs since date/time (e.g., '2025-08-22 10:00', 'today', '1h ago')")
+        search_parser.set_defaults(func=self.cmd_search)
 
         # Help command
         help_parser = subparsers.add_parser("help", help="Show detailed help information")
@@ -988,6 +998,200 @@ Examples:
             else:
                 print(f"{Colors.RED}❌ Error fetching logs: {e}{Colors.NC}")
 
+    def cmd_search(self, args):
+        """Search logs for requests to specific paths"""
+        # Import required modules for date parsing
+        import re
+        from collections import defaultdict
+        from datetime import datetime
+
+        # Auto-detect port if not provided
+        port = args.port
+        if not port:
+            self.state.cleanup_dead_processes()
+            servers = self.state.get_all_servers()
+            if servers:
+                port = servers[0]["port"]
+                print(f"{Colors.BLUE}📍 Auto-detected server on port {port}{Colors.NC}")
+            else:
+                print(f"{Colors.RED}❌ No servers are currently running{Colors.NC}")
+                print(f"{Colors.YELLOW}💡 Start a server with: ./mockctl start{Colors.NC}")
+                return
+
+        # Get server info
+        server = self.state.get_server_by_port(port)
+        if not server:
+            print(f"{Colors.RED}❌ No server found running on port {port}{Colors.NC}")
+            return
+
+        # Get log file path
+        log_file_path = self.project_root / server.get("log_file", f"logs/server_{port}.logs")
+
+        if not log_file_path.exists():
+            print(f"{Colors.RED}❌ Log file not found: {log_file_path}{Colors.NC}")
+            return
+
+        print(f"{Colors.BLUE}🔍 Searching logs for requests to path: {args.path}{Colors.NC}")
+        print(f"{Colors.BLUE}📂 Log file: {log_file_path}{Colors.NC}")
+
+        # Parse time filter if provided
+        since_datetime = None
+        if args.since:
+            since_datetime = self._parse_since_time(args.since)
+            if since_datetime:
+                print(f"{Colors.BLUE}⏰ Searching since: {since_datetime.strftime('%Y-%m-%d %H:%M:%S')}{Colors.NC}")
+
+        print()
+
+        # Parse log file and search for requests
+        request_pattern = re.compile(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}).*?\[([a-f0-9]+)\] REQUEST: (\w+) http://[^/]+(/[^\s]*)")
+        response_pattern = re.compile(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}).*?\[([a-f0-9]+)\] RESPONSE: (\d+) for (\w+) http://[^/]+(/[^\s]*)")
+
+        requests_found = {}
+        responses_found = defaultdict(list)
+
+        try:
+            with open(log_file_path, "r") as f:
+                lines = f.readlines()
+                # Process last N lines if specified
+                if args.lines and len(lines) > args.lines:
+                    lines = lines[-args.lines :]
+
+                for line in lines:
+                    # Check if this line is within our time filter
+                    if since_datetime:
+                        try:
+                            log_time_str = line.split(" - ")[0].strip()
+                            log_time = datetime.strptime(log_time_str, "%Y-%m-%d %H:%M:%S,%f")
+                            if log_time < since_datetime:
+                                continue
+                        except (ValueError, IndexError):
+                            continue
+
+                    # Search for REQUEST entries
+                    request_match = request_pattern.search(line)
+                    if request_match:
+                        timestamp, correlation_id, method, path = request_match.groups()
+                        # Check if this path matches what we're searching for
+                        if args.path in path:
+                            requests_found[correlation_id] = {"timestamp": timestamp, "method": method, "path": path, "line": line.strip()}
+
+                    # Search for RESPONSE entries
+                    response_match = response_pattern.search(line)
+                    if response_match:
+                        timestamp, correlation_id, status_code, method, path = response_match.groups()
+                        # Check if this path matches what we're searching for
+                        if args.path in path and correlation_id in requests_found:
+                            responses_found[status_code].append({"timestamp": timestamp, "correlation_id": correlation_id, "method": method, "path": path, "status_code": status_code, "request_time": requests_found[correlation_id]["timestamp"]})
+
+        except IOError as e:
+            print(f"{Colors.RED}❌ Error reading log file: {e}{Colors.NC}")
+            return
+
+        # Display results
+        if not requests_found:
+            print(f"{Colors.YELLOW}🔍 No requests found for path '{args.path}'{Colors.NC}")
+            print(f"{Colors.BLUE}💡 Try a partial path match (e.g., '/api' instead of '/api/users/123'){Colors.NC}")
+            return
+
+        print(f"{Colors.GREEN}✅ Found {len(requests_found)} request(s) to paths containing '{args.path}'{Colors.NC}")
+
+        if responses_found:
+            print(f"{Colors.GREEN}📊 Response Summary by Status Code:{Colors.NC}")
+            print()
+
+            # Group by status code and display
+            total_responses = sum(len(responses) for responses in responses_found.values())
+
+            for status_code in sorted(responses_found.keys()):
+                responses = responses_found[status_code]
+                count = len(responses)
+                percentage = (count / total_responses) * 100
+
+                # Color code status codes
+                if status_code.startswith("2"):
+                    status_color = Colors.GREEN
+                elif status_code.startswith("4"):
+                    status_color = Colors.YELLOW
+                elif status_code.startswith("5"):
+                    status_color = Colors.RED
+                else:
+                    status_color = Colors.BLUE
+
+                print(f"{status_color}📈 Status {status_code}:{Colors.NC} {count} responses ({percentage:.1f}%)")
+
+                # Show first few timestamps for each status code
+                for i, response in enumerate(responses[:3]):  # Show up to 3 examples
+                    print(f"   {Colors.CYAN}└─ {response['timestamp']} - {response['method']} {response['path']}{Colors.NC}")
+
+                if len(responses) > 3:
+                    print(f"   {Colors.BLUE}└─ ... and {len(responses) - 3} more{Colors.NC}")
+                print()
+        else:
+            print(f"{Colors.YELLOW}⚠️  Found requests but no corresponding responses{Colors.NC}")
+            print(f"{Colors.BLUE}💡 This might indicate incomplete request cycles or connection issues{Colors.NC}")
+            print()
+
+            # Show some example requests
+            print(f"{Colors.BLUE}📋 Example requests found:{Colors.NC}")
+            for i, (corr_id, req) in enumerate(list(requests_found.items())[:5]):
+                print(f"   {Colors.CYAN}• {req['timestamp']} - {req['method']} {req['path']}{Colors.NC}")
+
+            if len(requests_found) > 5:
+                print(f"   {Colors.BLUE}• ... and {len(requests_found) - 5} more{Colors.NC}")
+
+    def _parse_since_time(self, since_str: str):
+        """Parse various time formats for the --since parameter"""
+        import re
+        from datetime import datetime, timedelta
+
+        now = datetime.now()
+
+        # Handle relative times like "1h ago", "30m ago", "2d ago"
+        relative_match = re.match(r"(\d+)([hmsd])\s*ago", since_str.lower())
+        if relative_match:
+            amount, unit = relative_match.groups()
+            amount = int(amount)
+
+            if unit == "m":
+                return now - timedelta(minutes=amount)
+            elif unit == "h":
+                return now - timedelta(hours=amount)
+            elif unit == "d":
+                return now - timedelta(days=amount)
+            elif unit == "s":
+                return now - timedelta(seconds=amount)
+
+        # Handle "today"
+        if since_str.lower() == "today":
+            return now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        # Handle "yesterday"
+        if since_str.lower() == "yesterday":
+            yesterday = now - timedelta(days=1)
+            return yesterday.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        # Try to parse various datetime formats
+        formats = ["%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%Y-%m-%d", "%m-%d %H:%M", "%H:%M:%S", "%H:%M"]
+
+        for fmt in formats:
+            try:
+                parsed_time = datetime.strptime(since_str, fmt)
+                # If only time is provided, assume today
+                if fmt in ["%H:%M:%S", "%H:%M"]:
+                    parsed_time = parsed_time.replace(year=now.year, month=now.month, day=now.day)
+                # If month-day is provided, assume current year
+                elif fmt == "%m-%d %H:%M":
+                    parsed_time = parsed_time.replace(year=now.year)
+
+                return parsed_time
+            except ValueError:
+                continue
+
+        print(f"{Colors.YELLOW}⚠️  Could not parse time format: {since_str}{Colors.NC}")
+        print(f"{Colors.BLUE}💡 Supported formats: 'today', '1h ago', '30m ago', '2025-08-22 10:00', etc.{Colors.NC}")
+        return None
+
     def cmd_test(self, args):
         """Test server command"""
         # Get API key
@@ -1101,6 +1305,8 @@ Examples:
         print("   mockctl logs                     # Get recent logs")
         print("   mockctl logs --lines 100         # Get last 100 lines")
         print("   mockctl logs --filter /login     # Filter by endpoint")
+        print("   mockctl search /api/users        # Search for endpoint requests")
+        print("   mockctl search /items --since 1h # Search recent requests")
         print("   mockctl test --port 8000         # Test API endpoints")
         print("   mockctl success detailed         # Success analysis")
         print()
@@ -1117,6 +1323,7 @@ Examples:
         print(f"  {Colors.YELLOW}stop{Colors.NC}       - Stop running mock servers")
         print(f"  {Colors.YELLOW}list{Colors.NC}       - List all running servers")
         print(f"  {Colors.YELLOW}logs{Colors.NC}       - View server logs")
+        print(f"  {Colors.YELLOW}search{Colors.NC}     - Search logs for requests to specific paths")
         print(f"  {Colors.YELLOW}test{Colors.NC}       - Test server endpoints")
         print(f"  {Colors.YELLOW}success{Colors.NC}    - Generate success reports")
         print()
@@ -1128,6 +1335,8 @@ Examples:
         print("  mockctl start basic --port 8080   # Start basic config on port 8080")
         print("  mockctl stop --all                # Stop all servers")
         print("  mockctl logs --filter /api/users  # Filter logs by endpoint")
+        print("  mockctl search /api/users         # Search for endpoint requests")
+        print("  mockctl search /items --since 1h  # Search recent requests")
         print()
         print("For detailed configuration help, use: mockctl config-help")
 
