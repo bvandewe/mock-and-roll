@@ -306,7 +306,7 @@ The mock server includes a unified Python CLI application that provides comprehe
 | `list` | List running servers | `./mockctl list` |
 | `logs` | View server logs with filtering | `./mockctl logs --filter /api/users` |
 | `search` | Search logs for requests to specific paths | `./mockctl search /api/users --config basic` |
-| `test` | Test server endpoints | `./mockctl test --port 8000` |
+| `test` | Test server endpoints | `./mockctl test vmanage --port 8000` |
 | `success` | Generate success rate reports | `./mockctl success detailed` |
 | `config-help` | Show configuration guide | `./mockctl config-help` |
 | `help` | Show detailed help | `./mockctl help` |
@@ -447,6 +447,66 @@ If the search command reports "Log file not found", it will automatically:
 
 📈 Status 400: 1 responses (6.7%)
    └─ 2025-08-22 14:27:01,678 - POST /api/users
+```
+
+#### 🧪 Test Command Details
+
+The `test` command provides configuration-specific endpoint testing to validate your mock server functionality:
+
+**Basic Usage:**
+```bash
+# Auto-detect configuration and run appropriate tests
+./mockctl test
+
+# Test specific configuration
+./mockctl test vmanage
+./mockctl test basic
+
+# Test with specific port
+./mockctl test vmanage --port 8080
+```
+
+**Configuration-Specific Testing:**
+
+**vManage Configuration:**
+When testing the vManage configuration, the command runs a comprehensive API test flow that includes:
+- Authentication via `/j_security_check` endpoint
+- CSRF token retrieval from `/dataservice/client/token`
+- Device monitoring API calls (`/dataservice/device/monitor`)
+- Interface statistics (`/dataservice/device/interface`) 
+- Control connections (`/dataservice/device/control/connections`)
+- Configuration operations (device templates and site lists)
+- Proper logout sequence
+
+**Basic/Persistence Configurations:**
+For basic and persistence configurations, the command tests:
+- System logging endpoint (`/system/logging/logs`)
+- API authentication with system admin keys
+- Response validation and log entry counting
+
+**Features:**
+- **Auto-detection**: Automatically detects running servers and their configurations
+- **Configuration-aware**: Runs appropriate tests based on the server configuration
+- **Comprehensive Testing**: vManage tests cover the full authentication and API workflow
+- **Error Handling**: Clear error messages for connection issues or test failures
+- **Integration**: Uses the existing test scripts in `configs/{config}/test_*.py`
+
+**Output Example:**
+```
+🧪 Testing vManage API mock server
+📍 URL: http://localhost:8000
+⚙️  Configuration: vmanage
+
+🔐 Authenticating as user1...
+✅ Authentication successful
+🎫 Getting CSRF token...
+✅ CSRF token obtained: mock-csrf-token-abc
+
+📊 Getting device monitor data...
+✅ Device monitor data retrieved
+[JSON response data...]
+
+✅ vManage API tests completed successfully!
 ```
 
 ### Features

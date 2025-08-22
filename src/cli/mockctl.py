@@ -361,7 +361,9 @@ Examples:
   %(prog)s search /items --config basic    # Search basic config logs for /items
   %(prog)s search /auth --all-logs   # Search all log files for /auth
   %(prog)s search /data --since 1h   # Search for /data requests in last hour
-  %(prog)s test --port 8000          # Test API endpoints on port 8000
+  %(prog)s test                      # Test endpoints (auto-detect config)
+  %(prog)s test vmanage              # Test vManage API endpoints
+  %(prog)s test basic --port 8000    # Test basic config on port 8000
   %(prog)s success detailed          # Detailed success analysis
 
 📂 Available configurations: basic, persistence, vmanage
@@ -404,9 +406,9 @@ Examples:
 
         # Test command
         test_parser = subparsers.add_parser("test", help="Test server endpoints")
-        test_parser.add_argument("--port", type=int, required=True, help="Server port")
+        test_parser.add_argument("config", nargs="?", help="Configuration to test (vmanage, basic, etc.)")
+        test_parser.add_argument("--port", type=int, help="Server port (auto-detect if omitted)")
         test_parser.add_argument("--host", default="localhost", help="Server host")
-        test_parser.add_argument("--config", default="configs/basic", help="Configuration directory")
         test_parser.add_argument("--api-key", help="System API key (auto-detected if not provided)")
         test_parser.set_defaults(func=self.cmd_test)
 
@@ -1234,6 +1236,89 @@ Examples:
 
     def cmd_test(self, args):
         """Test server command"""
+        config = args.config
+
+        # Auto-detect configuration and port if not provided
+        if not config:
+            self.state.cleanup_dead_processes()
+            servers = self.state.get_all_servers()
+            if servers:
+                config = servers[0]["config"]
+                if not args.port:
+                    args.port = servers[0]["port"]
+            else:
+                print(f"{Colors.RED}❌ No running servers found and no config specified{Colors.NC}")
+                print(f"{Colors.YELLOW}💡 Usage: mockctl test [config] [--port PORT]{Colors.NC}")
+                print(f"{Colors.YELLOW}💡 Available configs: basic, persistence, vmanage{Colors.NC}")
+                return
+
+        # Auto-detect port if not provided
+        if not args.port:
+            self.state.cleanup_dead_processes()
+            servers = self.state.get_all_servers()
+            matching_servers = [s for s in servers if s["config"] == config]
+            if matching_servers:
+                args.port = matching_servers[0]["port"]
+            else:
+                print(f"{Colors.RED}❌ No running server found for config '{config}'{Colors.NC}")
+                print(f"{Colors.YELLOW}💡 Start a server first: mockctl start {config}{Colors.NC}")
+                return
+
+        # Handle vmanage-specific testing
+        if config == "vmanage":
+            return self._test_vmanage(args)
+        else:
+            return self._test_generic(args)
+
+    def _test_vmanage(self, args):
+        """Run vmanage-specific API tests"""
+        base_url = f"http://{args.host}:{args.port}"
+
+        print("🧪 Testing vManage API mock server")
+        print(f"📍 URL: {base_url}")
+        print("⚙️  Configuration: vmanage")
+        print()
+
+        if not HAS_REQUESTS:
+            print(f"{Colors.RED}❌ Requests library not available. Cannot test endpoints.{Colors.NC}")
+            print(f"{Colors.YELLOW}💡 Install requests: pip install requests{Colors.NC}")
+            return
+
+        # Import and run the vmanage test
+        try:
+            import importlib.util
+
+            # Get the path to the vmanage test script
+            vmanage_test_path = Path("configs/vmanage/test_vmanage_api.py")
+            if not vmanage_test_path.exists():
+                print(f"{Colors.RED}❌ vManage test script not found at {vmanage_test_path}{Colors.NC}")
+                return
+
+            # Load the test module
+            spec = importlib.util.spec_from_file_location("test_vmanage_api", vmanage_test_path)
+            if spec is None or spec.loader is None:
+                print(f"{Colors.RED}❌ Failed to load vManage test module{Colors.NC}")
+                return
+
+            test_module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(test_module)
+
+            # Run the test
+            test = test_module.VManageAPITest(base_url)
+            success = test.run_full_test()
+
+            if success:
+                print(f"\n{Colors.GREEN}✅ vManage API tests completed successfully!{Colors.NC}")
+            else:
+                print(f"\n{Colors.RED}❌ vManage API tests failed!{Colors.NC}")
+
+        except ImportError as e:
+            print(f"{Colors.RED}❌ Failed to import vManage test module: {e}{Colors.NC}")
+        except Exception as e:
+            print(f"{Colors.RED}❌ Error running vManage tests: {e}{Colors.NC}")
+
+    def _test_generic(self, args):
+        """Run generic API tests for basic/persistence configs"""
         # Get API key
         api_key = args.api_key
         if not api_key:
@@ -1259,25 +1344,22 @@ Examples:
 
         try:
             print("🚀 Making GET request...")
-            if HAS_REQUESTS:
-                response = requests.get(url, headers=headers, timeout=10)
+            response = requests.get(url, headers=headers, timeout=10)
 
-                print(f"📈 Response Status: {response.status_code}")
+            print(f"📈 Response Status: {response.status_code}")
 
-                if response.status_code == 200:
-                    try:
-                        data = response.json()
-                        print(f"{Colors.GREEN}✅ Success! Response received{Colors.NC}")
-                        logs_count = len(data.get("logs", []))
-                        print(f"📊 Log entries returned: {logs_count}")
-                    except json.JSONDecodeError:
-                        print(f"{Colors.GREEN}✅ Success! Response received (text){Colors.NC}")
-                        print(f"Response: {response.text}")
-                else:
-                    print(f"{Colors.RED}❌ Failed with status {response.status_code}{Colors.NC}")
+            if response.status_code == 200:
+                try:
+                    data = response.json()
+                    print(f"{Colors.GREEN}✅ Success! Response received{Colors.NC}")
+                    logs_count = len(data.get("logs", []))
+                    print(f"📊 Log entries returned: {logs_count}")
+                except json.JSONDecodeError:
+                    print(f"{Colors.GREEN}✅ Success! Response received (text){Colors.NC}")
                     print(f"Response: {response.text}")
             else:
-                print(f"{Colors.RED}❌ Requests library not available{Colors.NC}")
+                print(f"{Colors.RED}❌ Failed with status {response.status_code}{Colors.NC}")
+                print(f"Response: {response.text}")
 
         except Exception as e:
             if "ConnectionError" in str(type(e)):
