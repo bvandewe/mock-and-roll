@@ -5,17 +5,6 @@
 
 set -e
 
-echo "🏔️  Setting up Mock API Server on Alpine Linux..."
-
-# Get the project root directory (parent of setup directory)
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
-
-# Change to project directory
-cd "$PROJECT_DIR"
-
-print_status "📍 Project directory: $PROJECT_DIR"
-
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -39,6 +28,17 @@ print_warning() {
 print_error() {
     echo -e "${RED}$1${NC}"
 }
+
+echo "🏔️  Setting up Mock API Server on Alpine Linux..."
+
+# Get the project root directory (parent of setup directory)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+
+# Change to project directory
+cd "$PROJECT_DIR"
+
+print_status "📍 Project directory: $PROJECT_DIR"
 
 # Check if we're on Alpine
 if [ ! -f /etc/alpine-release ]; then
