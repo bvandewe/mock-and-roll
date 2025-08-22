@@ -635,6 +635,11 @@ curl -sSL https://install.python-poetry.org | python3 -
 git clone <repository-url>
 cd mock-and-roll
 
+# 🚀 Quick Setup (Recommended for Alpine)
+# Use the automated setup script for Alpine Linux
+./setup_alpine.sh
+
+# Or manual setup:
 # Install dependencies with Poetry
 poetry install
 
@@ -757,7 +762,26 @@ curl http://localhost:8000/
    # Start Redis if needed (see platform-specific instructions above)
    ```
 
-5. **Alpine Linux - Command not found errors**
+5. **Alpine Linux - externally-managed-environment error**
+   ```bash
+   # If you see "externally-managed-environment" when trying to install packages:
+   
+   # Option 1: Use the automated setup script (recommended)
+   ./setup_alpine.sh
+   
+   # Option 2: Manual virtual environment setup
+   python3 -m venv .venv
+   source .venv/bin/activate
+   pip install -r requirements.txt
+   
+   # Option 3: Use Poetry (if available)
+   poetry config virtualenvs.in-project true
+   poetry install
+   
+   # The mockctl script will automatically detect and use the virtual environment
+   ```
+
+6. **Alpine Linux - Command not found errors**
    ```bash
    # If you see "command not found" for ps, kill, lsof, etc.
    # Install the required system tools:
@@ -769,7 +793,7 @@ curl http://localhost:8000/
    lsof -v
    ```
 
-6. **Alpine Linux - BusyBox compatibility issues**
+7. **Alpine Linux - BusyBox compatibility issues**
    ```bash
    # Some Alpine BusyBox tools behave differently than GNU versions
    # The server management automatically handles these differences

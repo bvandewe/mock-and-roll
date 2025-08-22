@@ -12,12 +12,51 @@ if [ ! -f "$PYTHON_CLI" ]; then
     exit 1
 fi
 
-# Check if Python 3 is available
-if ! command -v python3 >/dev/null 2>&1; then
-    echo "❌ Error: Python 3 is required but not found"
-    echo "💡 Please install Python 3 to use this tool"
+# Function to find the best Python executable
+find_python() {
+    # Check for Poetry first
+    if command -v poetry >/dev/null 2>&1 && [ -f "$SCRIPT_DIR/pyproject.toml" ]; then
+        # Check if Poetry environment is working
+        if poetry env info >/dev/null 2>&1; then
+            echo "poetry" "run" "python"
+            return
+        fi
+    fi
+    
+    # Check for local virtual environment
+    if [ -f "$SCRIPT_DIR/.venv/bin/python" ]; then
+        echo "$SCRIPT_DIR/.venv/bin/python"
+        return
+    fi
+    
+    # Check if Python 3 is available
+    if command -v python3 >/dev/null 2>&1; then
+        echo "python3"
+        return
+    fi
+    
+    # Fallback to python
+    if command -v python >/dev/null 2>&1; then
+        echo "python"
+        return
+    fi
+    
+    echo ""
+}
+
+# Get the Python command
+PYTHON_CMD=$(find_python)
+
+if [ -z "$PYTHON_CMD" ]; then
+    echo "❌ Error: No suitable Python interpreter found"
+    echo "💡 Please install Python 3 or run './setup_alpine.sh' to set up the environment"
     exit 1
 fi
 
 # Execute the Python CLI with all arguments
-exec python3 "$PYTHON_CLI" "$@"
+if [ "$PYTHON_CMD" = "poetry run python" ]; then
+    cd "$SCRIPT_DIR"
+    exec poetry run python "$PYTHON_CLI" "$@"
+else
+    exec $PYTHON_CMD "$PYTHON_CLI" "$@"
+fi

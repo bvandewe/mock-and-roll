@@ -656,19 +656,64 @@ Examples:
         if args.reload:
             cmd.append("--reload")
 
+        # Try different approaches to run the server
+        poetry_available = False
+        venv_available = False
+
         try:
             # Check if Poetry is available
             result = subprocess.run(["poetry", "--version"], capture_output=True, text=True)
             if result.returncode == 0:
-                print(f"{Colors.BLUE}🔧 Using Poetry environment...{Colors.NC}")
+                poetry_available = True
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            pass
+
+        # Check if there's a local .venv directory (Poetry in-project virtual environment)
+        venv_path = self.project_root / ".venv"
+        if venv_path.exists():
+            venv_available = True
+
+        if poetry_available:
+            print(f"{Colors.BLUE}🔧 Using Poetry environment...{Colors.NC}")
+            try:
                 # Configure Poetry for local virtual environment
                 subprocess.run(["poetry", "config", "virtualenvs.in-project", "true"], check=True)
                 # Install dependencies
-                subprocess.run(["poetry", "install", "--only=main"], check=True)
+                result = subprocess.run(["poetry", "install", "--only=main"], check=True)
                 # Run with Poetry
                 cmd = ["poetry", "run"] + cmd
-        except (subprocess.CalledProcessError, FileNotFoundError):
+            except subprocess.CalledProcessError as e:
+                print(f"{Colors.YELLOW}⚠️  Poetry install failed: {e}{Colors.NC}")
+                if venv_available:
+                    print(f"{Colors.BLUE}🔧 Falling back to direct virtual environment...{Colors.NC}")
+                    # Use the .venv directly
+                    venv_python = venv_path / "bin" / "python"
+                    if venv_python.exists():
+                        cmd = [str(venv_python), "-m", "uvicorn", "src.main:app", "--host", args.host, "--port", str(port)]
+                        if args.reload:
+                            cmd.append("--reload")
+                    else:
+                        print(f"{Colors.YELLOW}⚠️  Virtual environment Python not found, using system Python{Colors.NC}")
+                else:
+                    print(f"{Colors.BLUE}🔧 Using system Python...{Colors.NC}")
+        elif venv_available:
+            print(f"{Colors.BLUE}🔧 Using local virtual environment...{Colors.NC}")
+            # Use the .venv directly
+            venv_python = venv_path / "bin" / "python"
+            if venv_python.exists():
+                cmd = [str(venv_python), "-m", "uvicorn", "src.main:app", "--host", args.host, "--port", str(port)]
+                if args.reload:
+                    cmd.append("--reload")
+            else:
+                print(f"{Colors.YELLOW}⚠️  Virtual environment Python not found, using system Python{Colors.NC}")
+        else:
             print(f"{Colors.BLUE}🔧 Using system Python...{Colors.NC}")
+            # Try to install dependencies if we have pip
+            try:
+                print(f"{Colors.BLUE}📦 Attempting to install dependencies...{Colors.NC}")
+                subprocess.run([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"], check=True)
+            except subprocess.CalledProcessError:
+                print(f"{Colors.YELLOW}⚠️  Could not install dependencies. Server may fail to start.{Colors.NC}")
 
         print(f"{Colors.BLUE}🔄 Starting server...{Colors.NC}")
 
