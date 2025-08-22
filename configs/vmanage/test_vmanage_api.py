@@ -16,7 +16,7 @@ class VManageAPITest:
         self.session = requests.Session()
         self.csrf_token = None
 
-    def authenticate(self, username="admin", password="admin"):
+    def authenticate(self, username="user1", password="password1"):
         """Authenticate with vManage mock server"""
         print(f"🔐 Authenticating as {username}...")
 
