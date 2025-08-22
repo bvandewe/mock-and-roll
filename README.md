@@ -72,6 +72,23 @@ poetry install && poetry shell
 - **Interactive Docs**: http://localhost:8001/docs
 - **OpenAPI Schema**: http://localhost:8001/openapi.json
 
+### 🏔️ Alpine Linux Quick Setup
+
+For Alpine Linux systems (VMs or containers), use our automated setup scripts:
+
+```bash
+# Full setup (installs Poetry, system packages, adds mockctl to PATH)
+setup/alpine.sh
+
+# Minimal setup (no admin privileges required, adds mockctl to PATH)
+setup/alpine_minimal.sh
+
+# Add mockctl to PATH for existing installations
+setup/add_to_path.sh
+```
+
+After setup, `mockctl` will be available globally from any directory!
+
 ### 🎯 Simple Management Commands
 
 ```bash
@@ -465,12 +482,10 @@ The `logs` command provides comprehensive log viewing capabilities:
 
 ```
 mock-and-roll/
-├── src/                          # Main application source
-│   ├── main.py                   # FastAPI application and core logic
-│   ├── app/                      # Application modules
-│   ├── auth/                     # Authentication handlers
-│   ├── config/                   # Configuration loaders
-│   └── routes/                   # API route handlers
+├── setup/                        # Setup and installation scripts
+│   ├── alpine.sh                 # Full Alpine Linux setup (with admin privileges)
+│   ├── alpine_minimal.sh         # Minimal Alpine Linux setup (no admin required)
+│   └── add_to_path.sh            # Add mockctl to PATH for existing installations
 ├── configs/                      # Configuration sets
 │   ├── basic/                    # Simple REST API configuration
 │   │   ├── api.json
@@ -636,8 +651,13 @@ git clone <repository-url>
 cd mock-and-roll
 
 # 🚀 Quick Setup (Recommended for Alpine)
-# Use the automated setup script for Alpine Linux
-./setup_alpine.sh
+# Use the automated setup scripts for Alpine Linux
+
+# Full setup (installs Poetry, system packages, creates venv, adds mockctl to PATH)
+setup/alpine.sh
+
+# Or minimal setup (only user-level, no admin privileges required, adds mockctl to PATH)
+setup/alpine_minimal.sh
 
 # Or manual setup:
 # Install dependencies with Poetry
@@ -766,10 +786,13 @@ curl http://localhost:8000/
    ```bash
    # If you see "externally-managed-environment" when trying to install packages:
    
-   # Option 1: Use the automated setup script (recommended)
-   ./setup_alpine.sh
+   # Option 1: Full automated setup (installs Poetry, system packages)
+   setup/alpine.sh
    
-   # Option 2: Manual virtual environment setup
+   # Option 2: Minimal setup (no admin privileges required)
+   setup/alpine_minimal.sh
+   
+   # Option 3: Manual virtual environment setup
    python3 -m venv .venv
    source .venv/bin/activate
    pip install -r requirements.txt

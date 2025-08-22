@@ -3,7 +3,14 @@
 # Convenience wrapper for the Python CLI
 # This allows calling "mockctl" directly instead of "python3 mockctl.py"
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Resolve symlinks to get the actual script location
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+    SCRIPT_DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+    SOURCE="$(readlink "$SOURCE")"
+    [[ $SOURCE != /* ]] && SOURCE="$SCRIPT_DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+done
+SCRIPT_DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
 PYTHON_CLI="$SCRIPT_DIR/src/cli/mockctl.py"
 
 # Check if Python CLI exists
@@ -14,19 +21,21 @@ fi
 
 # Function to find the best Python executable
 find_python() {
-    # Check for Poetry first
-    if command -v poetry >/dev/null 2>&1 && [ -f "$SCRIPT_DIR/pyproject.toml" ]; then
-        # Check if Poetry environment is working
-        if poetry env info >/dev/null 2>&1; then
-            echo "poetry" "run" "python"
-            return
-        fi
-    fi
-    
-    # Check for local virtual environment
+    # Check for local virtual environment first (faster)
     if [ -f "$SCRIPT_DIR/.venv/bin/python" ]; then
         echo "$SCRIPT_DIR/.venv/bin/python"
         return
+    fi
+    
+    # Check for Poetry
+    if command -v poetry >/dev/null 2>&1 && [ -f "$SCRIPT_DIR/pyproject.toml" ]; then
+        # Change to the script directory for Poetry operations
+        cd "$SCRIPT_DIR"
+        # Quick check if Poetry can find environment (avoid hanging)
+        if [ -d ".venv" ] && poetry env info --path >/dev/null 2>&1; then
+            echo "poetry" "run" "python"
+            return
+        fi
     fi
     
     # Check if Python 3 is available
