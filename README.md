@@ -305,7 +305,7 @@ The mock server includes a unified Python CLI application that provides comprehe
 | `stop` | Stop running servers | `./mockctl stop --all` |
 | `list` | List running servers | `./mockctl list` |
 | `logs` | View server logs with filtering | `./mockctl logs --filter /api/users` |
-| `search` | Search logs for requests to specific paths | `./mockctl search /api/users --port 8000` |
+| `search` | Search logs for requests to specific paths | `./mockctl search /api/users --config basic` |
 | `test` | Test server endpoints | `./mockctl test --port 8000` |
 | `success` | Generate success rate reports | `./mockctl success detailed` |
 | `config-help` | Show configuration guide | `./mockctl config-help` |
@@ -337,6 +337,8 @@ The mock server includes a unified Python CLI application that provides comprehe
 ./mockctl search /items --port 8001 # Search specific server
 ./mockctl search /auth --since "1h ago" # Search last hour
 ./mockctl search /products --since "today" # Search today's logs
+./mockctl search /data --config basic    # Search all basic config logs
+./mockctl search /auth --all-logs   # Search across all log files
 ```
 
 #### 📋 Logs Command Details
@@ -381,6 +383,12 @@ The `search` command provides powerful log analysis capabilities to find request
 # Search specific server by port
 ./mockctl search /items --port 8001
 
+# Search across all logs for a configuration
+./mockctl search /auth --config basic
+
+# Search across all available log files
+./mockctl search /data --all-logs
+
 # Limit search to recent log entries
 ./mockctl search /auth --lines 5000
 ```
@@ -407,9 +415,11 @@ The `search` command provides powerful log analysis capabilities to find request
 - **Response Analysis**: Group responses by HTTP status code with counts and percentages
 - **Request Correlation**: Match requests with their corresponding responses using correlation IDs
 - **Time Filtering**: Search logs from specific time periods using flexible time formats
+- **Multi-file Search**: Search across all logs for a configuration or all available logs
 - **Auto-detection**: Automatically finds the server and log file if port not specified
 - **Smart Matching**: Uses partial path matching (e.g., `/api` matches `/api/users/123`)
 - **Log File Recovery**: Automatically finds correct log files even if server state is inconsistent
+- **Timestamp-based Naming**: Log files use predictable timestamp prefixes for easy identification
 
 **Troubleshooting:**
 If the search command reports "Log file not found", it will automatically:

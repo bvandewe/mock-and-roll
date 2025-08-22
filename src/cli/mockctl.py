@@ -7,7 +7,6 @@ A unified Python CLI tool that manages mock server instances.
 import argparse
 import json
 import os
-import secrets
 import subprocess
 import sys
 import time
@@ -256,9 +255,9 @@ class ServerState:
         # Remove any existing entries for this config/port
         servers = [s for s in servers if s.get("config") != config_name and s.get("port") != port]
 
-        # Generate unique log file path with random prefix
-        random_prefix = secrets.token_hex(4)  # 8 character hex string
-        log_file = f"logs/{random_prefix}_{config_name}_{port}.logs"
+        # Generate unique log file path with timestamp prefix
+        timestamp_prefix = datetime.now().strftime("%Y%m%d_%H%M%S")
+        log_file = f"logs/{timestamp_prefix}_{config_name}_{port}.logs"
 
         new_server = {"config": config_name, "port": port, "pid": pid, "host": host, "started_at": datetime.now(timezone.utc).isoformat(), "status": "running", "log_file": log_file}
 
@@ -359,7 +358,9 @@ Examples:
   %(prog)s list                      # Show running servers
   %(prog)s logs --lines 100          # Show last 100 log lines
   %(prog)s search /api/users         # Search for requests to /api/users
-  %(prog)s search /items --since 1h  # Search for /items requests in last hour
+  %(prog)s search /items --config basic    # Search basic config logs for /items
+  %(prog)s search /auth --all-logs   # Search all log files for /auth
+  %(prog)s search /data --since 1h   # Search for /data requests in last hour
   %(prog)s test --port 8000          # Test API endpoints on port 8000
   %(prog)s success detailed          # Detailed success analysis
 
@@ -424,8 +425,10 @@ Examples:
         search_parser = subparsers.add_parser("search", help="Search server logs for requests to specific paths")
         search_parser.add_argument("path", help="Path to search for in logs (e.g., '/api/users', '/items')")
         search_parser.add_argument("--port", type=int, help="Server port (auto-detect if omitted)")
-        search_parser.add_argument("--lines", type=int, default=10000, help="Number of log lines to analyze (default: 10000)")
+        search_parser.add_argument("--config", help="Configuration name to search logs for")
+        search_parser.add_argument("--lines", type=int, default=10000, help="Number of log lines to analyze per file (default: 10000)")
         search_parser.add_argument("--since", help="Search logs since date/time (e.g., '2025-08-22 10:00', 'today', '1h ago')")
+        search_parser.add_argument("--all-logs", action="store_true", help="Search all log files, not just current server")
         search_parser.set_defaults(func=self.cmd_search)
 
         # Help command
@@ -650,9 +653,9 @@ Examples:
         # Start server
         os.chdir(self.project_root)
 
-        # Generate unique log file path with random prefix
-        random_prefix = secrets.token_hex(4)  # 8 character hex string
-        log_file = f"logs/{random_prefix}_{config_name}_{port}.logs"
+        # Generate unique log file path with timestamp prefix
+        timestamp_prefix = datetime.now().strftime("%Y%m%d_%H%M%S")
+        log_file = f"logs/{timestamp_prefix}_{config_name}_{port}.logs"
 
         # Ensure logs directory exists
         os.makedirs("logs", exist_ok=True)
@@ -999,76 +1002,67 @@ Examples:
                 print(f"{Colors.RED}❌ Error fetching logs: {e}{Colors.NC}")
 
     def cmd_search(self, args):
-        """Search logs for requests to specific paths"""
+        """Search logs for requests to specific paths across multiple log files"""
         # Import required modules for date parsing
         import re
         from collections import defaultdict
         from datetime import datetime
 
-        # Auto-detect port if not provided
-        port = args.port
-        if not port:
+        logs_dir = self.project_root / "logs"
+        if not logs_dir.exists():
+            print(f"{Colors.RED}❌ Logs directory not found: {logs_dir}{Colors.NC}")
+            return
+
+        # Determine which log files to search
+        log_files_to_search = []
+
+        if args.all_logs:
+            # Search all log files
+            log_files_to_search = list(logs_dir.glob("*.logs"))
+            print(f"{Colors.BLUE}🔍 Searching ALL log files for requests to path: {args.path}{Colors.NC}")
+        elif args.config:
+            # Search by config name (optionally with port)
+            if args.port:
+                pattern = f"*_{args.config}_{args.port}.logs"
+            else:
+                pattern = f"*_{args.config}_*.logs"
+            log_files_to_search = list(logs_dir.glob(pattern))
+            print(f"{Colors.BLUE}🔍 Searching {args.config} config logs for requests to path: {args.path}{Colors.NC}")
+        elif args.port:
+            # Search by port (across all configs)
+            pattern = f"*_{args.port}.logs"
+            log_files_to_search = list(logs_dir.glob(pattern))
+            print(f"{Colors.BLUE}🔍 Searching port {args.port} logs for requests to path: {args.path}{Colors.NC}")
+        else:
+            # Auto-detect from running servers
             self.state.cleanup_dead_processes()
             servers = self.state.get_all_servers()
             if servers:
-                port = servers[0]["port"]
-                print(f"{Colors.BLUE}📍 Auto-detected server on port {port}{Colors.NC}")
+                # Search all running servers' configs/ports
+                configs_ports = [(s.get("config"), s.get("port")) for s in servers]
+                for config, port in configs_ports:
+                    pattern = f"*_{config}_{port}.logs"
+                    log_files_to_search.extend(logs_dir.glob(pattern))
+                print(f"{Colors.BLUE}� Auto-detected servers, searching their logs for requests to path: {args.path}{Colors.NC}")
             else:
-                print(f"{Colors.RED}❌ No servers are currently running{Colors.NC}")
-                print(f"{Colors.YELLOW}💡 Start a server with: ./mockctl start{Colors.NC}")
-                return
+                # No running servers, search all log files
+                log_files_to_search = list(logs_dir.glob("*.logs"))
+                print(f"{Colors.BLUE}🔍 No running servers found, searching ALL log files for requests to path: {args.path}{Colors.NC}")
 
-        # Get server info
-        server = self.state.get_server_by_port(port)
-        if not server:
-            print(f"{Colors.RED}❌ No server found running on port {port}{Colors.NC}")
+        if not log_files_to_search:
+            print(f"{Colors.RED}❌ No log files found to search{Colors.NC}")
+            print(f"{Colors.BLUE}💡 Available log files in logs/:{Colors.NC}")
+            for log_file in logs_dir.glob("*.logs"):
+                print(f"   {log_file.name}")
             return
 
-        # Get log file path
-        log_file_path = self.project_root / server.get("log_file", f"logs/server_{port}.logs")
+        # Remove duplicates and sort by modification time (newest first)
+        log_files_to_search = list(set(log_files_to_search))
+        log_files_to_search.sort(key=lambda f: f.stat().st_mtime, reverse=True)
 
-        if not log_file_path.exists():
-            # Fallback: try to find the correct log file by searching the logs directory
-            logs_dir = self.project_root / "logs"
-            if logs_dir.exists():
-                config_name = server.get("config", "unknown")
-                # Look for log files matching the pattern: *_{config_name}_{port}.logs
-                pattern = f"*_{config_name}_{port}.logs"
-                matching_files = list(logs_dir.glob(pattern))
-
-                print(f"{Colors.BLUE}🔍 Expected log file: {log_file_path}{Colors.NC}")
-                print(f"{Colors.BLUE}🔍 Searching pattern: {pattern} in {logs_dir}{Colors.NC}")
-                print(f"{Colors.BLUE}🔍 Found {len(matching_files)} matching files{Colors.NC}")
-
-                if matching_files:
-                    # Use the most recently modified log file
-                    log_file_path = max(matching_files, key=lambda f: f.stat().st_mtime)
-                    print(f"{Colors.YELLOW}⚠️  State log file not found, using: {log_file_path.name}{Colors.NC}")
-
-                    # Update the server state with the correct log file path
-                    try:
-                        servers = self.state.get_all_servers()
-                        for i, srv in enumerate(servers):
-                            if srv.get("port") == port:
-                                servers[i]["log_file"] = str(log_file_path.relative_to(self.project_root))
-                                self.state._save_servers(servers)
-                                print(f"{Colors.BLUE}💡 Updated server state with correct log file path{Colors.NC}")
-                                break
-                    except Exception as e:
-                        print(f"{Colors.YELLOW}⚠️  Could not update server state: {e}{Colors.NC}")
-                else:
-                    print(f"{Colors.RED}❌ No log files found matching pattern: {pattern}{Colors.NC}")
-                    print(f"{Colors.BLUE}💡 Available log files in logs/:{Colors.NC}")
-                    for log_file in logs_dir.glob("*.logs"):
-                        print(f"   {log_file.name}")
-                    return
-            else:
-                print(f"{Colors.RED}❌ Log file not found: {log_file_path}{Colors.NC}")
-                print(f"{Colors.RED}❌ Logs directory not found: {logs_dir}{Colors.NC}")
-                return
-
-        print(f"{Colors.BLUE}🔍 Searching logs for requests to path: {args.path}{Colors.NC}")
-        print(f"{Colors.BLUE}📂 Log file: {log_file_path}{Colors.NC}")
+        print(f"{Colors.BLUE}� Searching {len(log_files_to_search)} log file(s){Colors.NC}")
+        for log_file in log_files_to_search:
+            print(f"   {Colors.CYAN}• {log_file.name}{Colors.NC}")
 
         # Parse time filter if provided
         since_datetime = None
@@ -1079,68 +1073,78 @@ Examples:
 
         print()
 
-        # Parse log file and search for requests
+        # Parse log files and search for requests
         request_pattern = re.compile(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}).*?\[([a-f0-9]+)\] REQUEST: (\w+) http://[^/]+(/[^\s]*)")
         response_pattern = re.compile(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}).*?\[([a-f0-9]+)\] RESPONSE: (\d+) for (\w+) http://[^/]+(/[^\s]*)")
 
-        requests_found = {}
-        responses_found = defaultdict(list)
+        all_requests_found = {}
+        all_responses_found = defaultdict(list)
+        total_files_searched = 0
+        total_lines_processed = 0
 
-        try:
-            with open(log_file_path, "r") as f:
-                lines = f.readlines()
-                # Process last N lines if specified
-                if args.lines and len(lines) > args.lines:
-                    lines = lines[-args.lines :]
+        for log_file in log_files_to_search:
+            try:
+                with open(log_file, "r") as f:
+                    lines = f.readlines()
+                    total_files_searched += 1
 
-                for line in lines:
-                    # Check if this line is within our time filter
-                    if since_datetime:
-                        try:
-                            log_time_str = line.split(" - ")[0].strip()
-                            log_time = datetime.strptime(log_time_str, "%Y-%m-%d %H:%M:%S,%f")
-                            if log_time < since_datetime:
+                    # Process last N lines if specified
+                    if args.lines and len(lines) > args.lines:
+                        lines = lines[-args.lines :]
+
+                    total_lines_processed += len(lines)
+
+                    for line in lines:
+                        # Check if this line is within our time filter
+                        if since_datetime:
+                            try:
+                                log_time_str = line.split(" - ")[0].strip()
+                                log_time = datetime.strptime(log_time_str, "%Y-%m-%d %H:%M:%S,%f")
+                                if log_time < since_datetime:
+                                    continue
+                            except (ValueError, IndexError):
                                 continue
-                        except (ValueError, IndexError):
-                            continue
 
-                    # Search for REQUEST entries
-                    request_match = request_pattern.search(line)
-                    if request_match:
-                        timestamp, correlation_id, method, path = request_match.groups()
-                        # Check if this path matches what we're searching for
-                        if args.path in path:
-                            requests_found[correlation_id] = {"timestamp": timestamp, "method": method, "path": path, "line": line.strip()}
+                        # Search for REQUEST entries
+                        request_match = request_pattern.search(line)
+                        if request_match:
+                            timestamp, correlation_id, method, path = request_match.groups()
+                            # Check if this path matches what we're searching for
+                            if args.path in path:
+                                all_requests_found[correlation_id] = {"timestamp": timestamp, "method": method, "path": path, "line": line.strip(), "log_file": log_file.name}
 
-                    # Search for RESPONSE entries
-                    response_match = response_pattern.search(line)
-                    if response_match:
-                        timestamp, correlation_id, status_code, method, path = response_match.groups()
-                        # Check if this path matches what we're searching for
-                        if args.path in path and correlation_id in requests_found:
-                            responses_found[status_code].append({"timestamp": timestamp, "correlation_id": correlation_id, "method": method, "path": path, "status_code": status_code, "request_time": requests_found[correlation_id]["timestamp"]})
+                        # Search for RESPONSE entries
+                        response_match = response_pattern.search(line)
+                        if response_match:
+                            timestamp, correlation_id, status_code, method, path = response_match.groups()
+                            # Check if this path matches what we're searching for and we have the request
+                            if args.path in path and correlation_id in all_requests_found:
+                                all_responses_found[status_code].append({"timestamp": timestamp, "correlation_id": correlation_id, "method": method, "path": path, "status_code": status_code, "request_time": all_requests_found[correlation_id]["timestamp"], "log_file": log_file.name})
 
-        except IOError as e:
-            print(f"{Colors.RED}❌ Error reading log file: {e}{Colors.NC}")
-            return
+            except IOError as e:
+                print(f"{Colors.YELLOW}⚠️  Error reading {log_file.name}: {e}{Colors.NC}")
+                continue
 
         # Display results
-        if not requests_found:
+        print(f"{Colors.BLUE}📊 Processed {total_lines_processed:,} lines from {total_files_searched} file(s){Colors.NC}")
+        print()
+
+        if not all_requests_found:
             print(f"{Colors.YELLOW}🔍 No requests found for path '{args.path}'{Colors.NC}")
             print(f"{Colors.BLUE}💡 Try a partial path match (e.g., '/api' instead of '/api/users/123'){Colors.NC}")
             return
 
-        print(f"{Colors.GREEN}✅ Found {len(requests_found)} request(s) to paths containing '{args.path}'{Colors.NC}")
+        print(f"{Colors.GREEN}✅ Found {len(all_requests_found)} request(s) to paths containing '{args.path}'{Colors.NC}")
 
-        if responses_found:
+        if all_responses_found:
             print(f"{Colors.GREEN}📊 Response Summary by Status Code:{Colors.NC}")
             print()
 
             # Group by status code and display
-            total_responses = sum(len(responses) for responses in responses_found.values())
+            total_responses = sum(len(responses) for responses in all_responses_found.values())
 
-            for status_code in sorted(responses_found.keys()):
-                responses = responses_found[status_code]
+            for status_code in sorted(all_responses_found.keys()):
+                responses = all_responses_found[status_code]
                 count = len(responses)
                 percentage = (count / total_responses) * 100
 
@@ -1156,9 +1160,9 @@ Examples:
 
                 print(f"{status_color}📈 Status {status_code}:{Colors.NC} {count} responses ({percentage:.1f}%)")
 
-                # Show first few timestamps for each status code
+                # Show first few timestamps for each status code with log file info
                 for i, response in enumerate(responses[:3]):  # Show up to 3 examples
-                    print(f"   {Colors.CYAN}└─ {response['timestamp']} - {response['method']} {response['path']}{Colors.NC}")
+                    print(f"   {Colors.CYAN}└─ {response['timestamp']} - {response['method']} {response['path']} ({response['log_file']}){Colors.NC}")
 
                 if len(responses) > 3:
                     print(f"   {Colors.BLUE}└─ ... and {len(responses) - 3} more{Colors.NC}")
@@ -1168,13 +1172,13 @@ Examples:
             print(f"{Colors.BLUE}💡 This might indicate incomplete request cycles or connection issues{Colors.NC}")
             print()
 
-            # Show some example requests
+            # Show some example requests with log file info
             print(f"{Colors.BLUE}📋 Example requests found:{Colors.NC}")
-            for i, (corr_id, req) in enumerate(list(requests_found.items())[:5]):
-                print(f"   {Colors.CYAN}• {req['timestamp']} - {req['method']} {req['path']}{Colors.NC}")
+            for i, (corr_id, req) in enumerate(list(all_requests_found.items())[:5]):
+                print(f"   {Colors.CYAN}• {req['timestamp']} - {req['method']} {req['path']} ({req['log_file']}){Colors.NC}")
 
-            if len(requests_found) > 5:
-                print(f"   {Colors.BLUE}• ... and {len(requests_found) - 5} more{Colors.NC}")
+            if len(all_requests_found) > 5:
+                print(f"   {Colors.BLUE}• ... and {len(all_requests_found) - 5} more{Colors.NC}")
 
     def _parse_since_time(self, since_str: str):
         """Parse various time formats for the --since parameter"""
