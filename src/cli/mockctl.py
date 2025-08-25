@@ -365,6 +365,8 @@ Examples:
   %(prog)s test vmanage              # Test vManage API endpoints
   %(prog)s test basic --port 8000    # Test basic config on port 8000
   %(prog)s success detailed          # Detailed success analysis
+  %(prog)s system auth key           # Show system API keys for all configs
+  %(prog)s system auth key --config basic  # Show keys for specific config
 
 📂 Available configurations: basic, persistence, vmanage
             """,
@@ -432,6 +434,19 @@ Examples:
         search_parser.add_argument("--since", help="Search logs since date/time (e.g., '2025-08-22 10:00', 'today', '1h ago')")
         search_parser.add_argument("--all-logs", action="store_true", help="Search all log files, not just current server")
         search_parser.set_defaults(func=self.cmd_search)
+
+        # System command with subcommands
+        system_parser = subparsers.add_parser("system", help="System administration commands")
+        system_subparsers = system_parser.add_subparsers(dest="system_command", help="System subcommands")
+        
+        # System auth command with subcommands
+        auth_parser = system_subparsers.add_parser("auth", help="Authentication management commands")
+        auth_subparsers = auth_parser.add_subparsers(dest="auth_command", help="Auth subcommands")
+        
+        # System auth key command
+        key_parser = auth_subparsers.add_parser("key", help="Show system API keys for all configurations")
+        key_parser.add_argument("--config", help="Show keys for specific configuration only")
+        key_parser.set_defaults(func=self.cmd_system_auth_key)
 
         # Help command
         help_parser = subparsers.add_parser("help", help="Show detailed help information")
@@ -1433,6 +1448,55 @@ Examples:
         print("   mockctl success detailed         # Success analysis")
         print()
 
+    def cmd_system_auth_key(self, args):
+        """Show system API keys for all configurations"""
+        print(f"{Colors.CYAN}🔑 System API Keys{Colors.NC}")
+        print(f"{Colors.BLUE}{'=' * 18}{Colors.NC}")
+        print()
+
+        configs = self.list_available_configs()
+        if not configs:
+            print(f"{Colors.RED}❌ No configurations found in '{self.configs_dir}'{Colors.NC}")
+            return
+
+        # Filter to specific config if requested
+        if args.config:
+            if args.config not in configs:
+                print(f"{Colors.RED}❌ Configuration '{args.config}' not found{Colors.NC}")
+                available = self.list_available_configs()
+                if available:
+                    print(f"{Colors.YELLOW}💡 Available configurations: {', '.join(available)}{Colors.NC}")
+                return
+            configs = [args.config]
+
+        for config_name in configs:
+            config_path = self.configs_dir / config_name
+            auth_file = config_path / "auth.json"
+            
+            print(f"{Colors.GREEN}📁 Configuration: {config_name}{Colors.NC}")
+            
+            try:
+                with open(auth_file, "r") as f:
+                    auth_config = json.load(f)
+
+                system_auth = auth_config.get("authentication_methods", {}).get("system_api_key", {})
+                valid_keys = system_auth.get("valid_keys", [])
+                description = system_auth.get("description", "")
+
+                if valid_keys:
+                    if description:
+                        print(f"   {Colors.CYAN}Description:{Colors.NC} {description}")
+                    print(f"   {Colors.YELLOW}Valid Keys:{Colors.NC}")
+                    for i, key in enumerate(valid_keys, 1):
+                        print(f"   {Colors.BLUE}  {i}.{Colors.NC} {key}")
+                else:
+                    print(f"   {Colors.YELLOW}⚠️  No system API keys found{Colors.NC}")
+                    
+            except (FileNotFoundError, json.JSONDecodeError, KeyError) as e:
+                print(f"   {Colors.RED}❌ Error reading auth.json: {e}{Colors.NC}")
+            
+            print()  # Empty line between configurations
+
     def cmd_help(self, args):
         """Detailed help command"""
         print(f"{Colors.CYAN}🚀 Mock Server Control CLI{Colors.NC}")
@@ -1448,6 +1512,11 @@ Examples:
         print(f"  {Colors.YELLOW}search{Colors.NC}     - Search logs for requests to specific paths")
         print(f"  {Colors.YELLOW}test{Colors.NC}       - Test server endpoints")
         print(f"  {Colors.YELLOW}success{Colors.NC}    - Generate success reports")
+        print(f"  {Colors.YELLOW}system{Colors.NC}     - System administration commands")
+        print()
+        print(f"{Colors.GREEN}System Commands:{Colors.NC}")
+        print(f"  {Colors.YELLOW}system auth key{Colors.NC}  - Show system API keys for all configurations")
+        print(f"    {Colors.CYAN}--config{Colors.NC}     - Show keys for specific configuration only")
         print()
         print(f"{Colors.GREEN}Configuration:{Colors.NC}")
         print(f"  Available configs: {', '.join(self.list_available_configs())}")
