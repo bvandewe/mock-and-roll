@@ -40,7 +40,87 @@ cd "$PROJECT_DIR"
 
 print_status "📍 Project directory: $PROJECT_DIR"
 
-print_status "📋 Minimal setup (no admin privileges required)..."
+print_status "📋 Minimal setup (with optional system package installation)..."
+
+# Check if we have admin privileges for system package installation
+HAVE_ADMIN=false
+if [ "$EUID" -eq 0 ] || sudo -n true 2>/dev/null; then
+    HAVE_ADMIN=true
+    print_success "✅ Admin privileges available - will install system packages"
+else
+    print_warning "⚠️  No admin privileges - will skip system package installation"
+fi
+
+# Install system packages if we have admin privileges
+if [ "$HAVE_ADMIN" = true ]; then
+    print_status "📦 Installing system dependencies..."
+    
+    # Define system packages needed for mock server operation
+    SYSTEM_PACKAGES=(
+        # Process and system tools
+        "procps"
+        "util-linux"
+        "coreutils"
+        "findutils"
+        # Networking tools
+        "net-tools"
+        "iproute2"
+        "lsof"
+        "curl"
+        "wget"
+        # Development tools
+        "bash"
+        "grep"
+        "sed"
+        "gawk"
+        "git"
+        # Build dependencies for Python packages
+        "gcc"
+        "musl-dev"
+        "linux-headers"
+        "jq"
+    )
+    
+    # Check which packages are missing
+    MISSING_PACKAGES=()
+    for package in "${SYSTEM_PACKAGES[@]}"; do
+        if ! apk info -q "$package" 2>/dev/null; then
+            MISSING_PACKAGES+=("$package")
+        fi
+    done
+    
+    if [ ${#MISSING_PACKAGES[@]} -gt 0 ]; then
+        print_status "🔧 Installing missing system packages: ${MISSING_PACKAGES[*]}"
+        
+        # Update package index
+        if apk update; then
+            print_success "✅ Package index updated"
+        else
+            print_error "❌ Failed to update package index"
+            exit 1
+        fi
+        
+        # Install missing packages
+        if apk add --no-cache "${MISSING_PACKAGES[@]}"; then
+            print_success "✅ System packages installed successfully"
+        else
+            print_error "❌ Failed to install system packages"
+            print_error "   Required packages: ${MISSING_PACKAGES[*]}"
+            exit 1
+        fi
+    else
+        print_success "✅ All required system packages are already installed"
+    fi
+else
+    print_warning "📋 System packages that should be installed by admin:"
+    print_status "   apk add --no-cache \\"
+    print_status "       procps util-linux coreutils findutils \\"
+    print_status "       net-tools iproute2 lsof curl wget \\"
+    print_status "       bash grep sed gawk git \\"
+    print_status "       gcc musl-dev linux-headers jq"
+    print_status ""
+    print_warning "💡 Some mockctl features may be limited without these packages"
+fi
 
 # Check for Python 3
 if command -v python3 >/dev/null 2>&1; then
@@ -176,12 +256,13 @@ if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
     print_status "📝 Added ~/.local/bin to current session PATH"
 fi
 
-print_success "🎉 Minimal setup complete!"
+print_success "🎉 Setup complete!"
 print_status ""
 print_status "📖 Usage:"
 print_status "  mockctl start <config_name>     # Start a mock server (global command)"
 print_status "  mockctl stop                    # Stop all servers"
 print_status "  mockctl list                    # List running servers"
+print_status "  mockctl search '/api/.*'        # Search logs for API requests"
 print_status "  mockctl --help                  # Show help"
 print_status ""
 print_status "  Or use local script:"
@@ -191,13 +272,24 @@ print_status "🔍 Example:"
 print_status "  mockctl start vmanage           # Start vManage mock server"
 print_status ""
 print_status "✨ Your environment is configured to use the local virtual environment"
-print_warning "💡 Note: Some advanced process management features may be limited"
-print_warning "     if system tools (ps, lsof, kill) are not available"
+
+if [ "$HAVE_ADMIN" = false ]; then
+    print_warning "💡 Note: Some advanced features may be limited without system packages"
+    print_warning "     Ask your admin to install missing packages for full functionality"
+fi
+
 print_status ""
 print_status "🔧 Environment Details:"
 print_status "   - Python: $(python3 --version)"
 print_status "   - Virtual Environment: .venv (ready)"
 print_status "   - mockctl: Available globally in PATH"
+
+if [ "$HAVE_ADMIN" = true ]; then
+    print_status "   - System packages: ✅ Installed"
+else
+    print_status "   - System packages: ⚠️  Manual installation needed"
+fi
+
 print_status ""
 
 if [ "$PATH_ADDED" = true ]; then
@@ -210,6 +302,10 @@ fi
 print_status ""
 print_success "🚀 Ready to start your mock server!"
 
-print_status ""
-print_status "📝 If you encounter issues with process management, ask your admin to install:"
-print_status "   apk add --no-cache procps util-linux lsof"
+if [ "$HAVE_ADMIN" = false ]; then
+    print_status ""
+    print_status "📝 If you encounter issues with process management, ask your admin to install:"
+    print_status "   apk add --no-cache procps util-linux coreutils findutils \\"
+    print_status "                      net-tools iproute2 lsof curl wget \\"
+    print_status "                      bash grep sed gawk git gcc musl-dev linux-headers jq"
+fi

@@ -92,7 +92,7 @@ app = create_application()
 @app.get("/", include_in_schema=False)
 async def root():
     """A simple root endpoint to confirm the server is running."""
-    return {"message": "Mock server is running. Check /docs for available endpoints."}
+    return {"message": "Mock server is running."}
 
 
 # For backward compatibility, expose the app instance

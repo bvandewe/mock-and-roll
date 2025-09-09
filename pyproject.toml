@@ -1,7 +1,7 @@
 
 [tool.poetry]
 name = "MockAndRoll"
-version = "0.1.0"
+version = "0.2.0"
 description = "A highly configurable and extensible mock REST API server built with FastAPI that allows to quickly create mock endpoints with various authentication methods, conditional responses, and dynamic path parameters."
 authors = ["Bruno van de Werve <bvandewe@cisco.com>"]
 license = "MIT"

@@ -23,7 +23,8 @@ RUN apk update && apk add --no-cache \
     # Build dependencies for Python packages
     gcc \
     musl-dev \
-    linux-headers
+    linux-headers \
+    jq
 
 # Set bash as default shell
 SHELL ["/bin/bash", "-c"]
