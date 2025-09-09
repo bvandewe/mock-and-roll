@@ -10,7 +10,7 @@ RUN pip install poetry
 RUN poetry config virtualenvs.create false && \
     poetry install --no-interaction --no-ansi
 
-COPY config/ /app/config/
+# COPY config/ /app/config/
 COPY src/ /app/src/
 
 RUN adduser -u 5678 --disabled-password --gecos "" appuser && chown -R appuser /app

@@ -44,8 +44,6 @@
 - [License](#-license)
 - [Troubleshooting](#-troubleshooting)
 
-
-
 ## 🚀 Quick Start
 
 Get up and running in under 2 minutes:

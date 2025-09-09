@@ -29,7 +29,7 @@ services:
     volumes:
       - ./src:/app/src
       - ./config:/app/config
-      # - ./tests/configs/vmanage-api/:/app/config # Mounts the test config directory...
+      # - ./configs/vmanage/:/app/config # Mounts the test config directory...
     depends_on:
       - redis
     networks:

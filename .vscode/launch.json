@@ -25,6 +25,10 @@
                 {
                     "localRoot": "${workspaceFolder}",
                     "remoteRoot": "/app"
+                },
+                {
+                    "localRoot": "${workspaceFolder}/configs/vmanage",
+                    "remoteRoot": "/app/config"
                 }
             ],
             "justMyCode": false

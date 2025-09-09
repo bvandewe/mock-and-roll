@@ -438,11 +438,11 @@ Examples:
         # System command with subcommands
         system_parser = subparsers.add_parser("system", help="System administration commands")
         system_subparsers = system_parser.add_subparsers(dest="system_command", help="System subcommands")
-        
+
         # System auth command with subcommands
         auth_parser = system_subparsers.add_parser("auth", help="Authentication management commands")
         auth_subparsers = auth_parser.add_subparsers(dest="auth_command", help="Auth subcommands")
-        
+
         # System auth key command
         key_parser = auth_subparsers.add_parser("key", help="Show system API keys for all configurations")
         key_parser.add_argument("--config", help="Show keys for specific configuration only")
@@ -1472,9 +1472,9 @@ Examples:
         for config_name in configs:
             config_path = self.configs_dir / config_name
             auth_file = config_path / "auth.json"
-            
+
             print(f"{Colors.GREEN}📁 Configuration: {config_name}{Colors.NC}")
-            
+
             try:
                 with open(auth_file, "r") as f:
                     auth_config = json.load(f)
@@ -1491,10 +1491,10 @@ Examples:
                         print(f"   {Colors.BLUE}  {i}.{Colors.NC} {key}")
                 else:
                     print(f"   {Colors.YELLOW}⚠️  No system API keys found{Colors.NC}")
-                    
+
             except (FileNotFoundError, json.JSONDecodeError, KeyError) as e:
                 print(f"   {Colors.RED}❌ Error reading auth.json: {e}{Colors.NC}")
-            
+
             print()  # Empty line between configurations
 
     def cmd_help(self, args):
