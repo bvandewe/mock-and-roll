@@ -1,0 +1,86 @@
+site_name: Mock-and-Roll
+site_description: A highly configurable and extensible mock REST API server built with FastAPI
+site_url: https://bvandewe.github.io/mock-and-roll/
+docs_dir: docs
+site_dir: site
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: installation.md
+    - Quick Start: quick-start.md
+    - Configuration: configuration.md
+  - User Guide:
+    - CLI Commands: user-guide/cli-commands.md
+  - Features:
+    - Search Functionality: features/search-functionality.md
+  - Architecture:
+    - Overview: architecture/overview.md
+    - CLI Design: architecture/cli-design.md
+  - Development:
+    - Contributing: development/contributing.md
+  - Examples:
+    - Basic Usage: examples/basic-usage.md
+  - Reference:
+    - API Reference: reference/api-reference.md
+    - Configuration Schema: reference/configuration-schema.md
+
+theme:
+  name: material
+  logo: assets/logo.png
+  favicon: assets/favicon.ico
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.footer
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+  palette:
+    - scheme: default
+      primary: blue
+      accent: light blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: blue
+      accent: light blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - codehilite:
+      guess_lang: false
+  - toc:
+      permalink: true
+      title: On this page
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+
+plugins:
+  - search:
+      separator: '[\s\-,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/bvandewe/mock-and-roll
+      name: GitHub Repository

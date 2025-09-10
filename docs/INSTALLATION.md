@@ -5,15 +5,18 @@ Complete installation instructions for Mock-and-Roll across different platforms.
 ## System Requirements
 
 **Supported Platforms:**
+
 - macOS 10.15+ (Catalina or later)
 - Linux (Ubuntu 18.04+, CentOS 7+, Debian 9+, etc.)
 - Windows 10+ (via WSL recommended)
 
 **Required Software:**
+
 - Python 3.11+ 
 - Git
 
 **Optional (Enhanced Features):**
+
 - Redis Server (for persistence configuration)
 - Docker & Docker Compose (for containerized deployment)
 
