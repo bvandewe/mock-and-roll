@@ -24,6 +24,7 @@ nav:
   - Reference:
     - API Reference: reference/api-reference.md
     - Configuration Schema: reference/configuration-schema.md
+    - Diagrams & Visualizations: reference/diagrams.md
   - Changelog: changelog.md
 
 theme:
@@ -65,7 +66,11 @@ markdown_extensions:
       permalink: true
       title: On this page
   - pymdownx.details
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.tabbed:
       alternate_style: true
   - pymdownx.highlight:
@@ -79,9 +84,15 @@ markdown_extensions:
 plugins:
   - search:
       separator: '[\s\-,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
+  - mermaid2:
+      arguments:
+        theme: auto
 
 extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/bvandewe/mock-and-roll
       name: GitHub Repository
+
+extra_css:
+  - stylesheets/extra.css

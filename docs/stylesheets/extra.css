@@ -1,0 +1,31 @@
+/* Custom styles for Mock-and-Roll documentation */
+
+/* Mermaid diagram styling */
+.mermaid {
+  text-align: center;
+  margin: 1em 0;
+}
+
+/* Dark mode support for Mermaid diagrams */
+[data-md-color-scheme="slate"] .mermaid {
+  background-color: transparent;
+}
+
+/* Ensure Mermaid diagrams are responsive */
+.mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Additional styling for better integration with Material theme */
+.md-content .mermaid {
+  background: var(--md-code-bg-color);
+  border-radius: 0.2rem;
+  padding: 1rem;
+  margin: 1.5em 0;
+}
+
+/* Fix for Mermaid in tabbed content */
+.tabbed-content .mermaid {
+  margin: 1em 0;
+}
