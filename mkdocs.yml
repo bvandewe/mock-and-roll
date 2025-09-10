@@ -24,10 +24,11 @@ nav:
   - Reference:
     - API Reference: reference/api-reference.md
     - Configuration Schema: reference/configuration-schema.md
+  - Changelog: changelog.md
 
 theme:
   name: material
-  logo: assets/logo.png
+  # logo: assets/logo.png
   favicon: assets/favicon.ico
   features:
     - navigation.tabs

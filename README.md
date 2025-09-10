@@ -12,17 +12,34 @@ A highly configurable and extensible mock REST API server built with FastAPI. Cr
 
 ## 📖 Table of Contents
 
-- [🚀 Quick Start](#-quick-start)
-- [✨ Key Features](#-key-features)
-- [🛠 Management CLI](#-management-cli)
-- [📂 Available Configurations](#-available-configurations)
-- [📦 Installation](#-installation)
-- [⚙️ Basic Configuration](#️-basic-configuration)
-- [🚀 Usage Examples](#-usage-examples)
-- [📚 Documentation](#-documentation)
-- [🐳 Docker Usage](#-docker-usage)
-- [🤝 Contributing](#-contributing)
-- [📄 License](#-license)
+- [REST API Mock Server](#rest-api-mock-server)
+  - [📖 Table of Contents](#-table-of-contents)
+  - [🚀 Quick Start](#-quick-start)
+  - [✨ Key Features](#-key-features)
+    - [🎯 Core Functionality](#-core-functionality)
+    - [🏗️ Architecture \& Management](#️-architecture--management)
+    - [🔧 Developer Experience](#-developer-experience)
+  - [🛠 Management CLI](#-management-cli)
+  - [📂 Available Configurations](#-available-configurations)
+  - [📦 Installation](#-installation)
+    - [Quick Installation](#quick-installation)
+    - [Docker Installation](#docker-installation)
+  - [⚙️ Basic Configuration](#️-basic-configuration)
+    - [Create a Simple Endpoint](#create-a-simple-endpoint)
+  - [🚀 Usage Examples](#-usage-examples)
+    - [Basic API Call](#basic-api-call)
+    - [With Persistence (Redis required)](#with-persistence-redis-required)
+    - [Advanced Search](#advanced-search)
+  - [📚 Documentation](#-documentation)
+  - [🐳 Docker Usage](#-docker-usage)
+    - [Quick Start with Docker](#quick-start-with-docker)
+    - [Environment Variables](#environment-variables)
+  - [🤝 Contributing](#-contributing)
+    - [Development Setup](#development-setup)
+    - [Running Tests](#running-tests)
+  - [📋 Changelog](#-changelog)
+    - [Recent Updates](#recent-updates)
+  - [📄 License](#-license)
 
 ## 🚀 Quick Start
 
@@ -268,10 +285,31 @@ poetry run pre-commit install
 ```
 
 ### Running Tests
+
 ```bash
 pytest tests/
 python tests/test_search_functionality.py
 ```
+
+## 📋 Changelog
+
+All notable changes to this project are documented in our [CHANGELOG.md](CHANGELOG.md).
+
+### Recent Updates
+
+**Version 0.2.0** (2024-09-10)
+- ✨ Advanced log search functionality with regex and time filtering
+- 🏗️ Clean architecture implementation with domain-driven design
+- 🔧 Enhanced CLI experience with JSON output mode
+- 📊 Request/response correlation and status code grouping
+
+**Version 0.1.0** (2024-08-XX)
+- 🚀 Initial release with core mock API server functionality
+- ⚙️ Configuration-driven endpoint development
+- 🔐 Multiple authentication methods
+- 🐳 Docker support and Redis persistence
+
+For detailed release notes, migration guides, and complete version history, see the [full changelog](CHANGELOG.md).
 
 ## 📄 License
 
@@ -279,4 +317,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Version 0.2.0** • [Changelog](docs/development/CLEANUP_SUMMARY.md) • [Issues](https://github.com/bvandewe/mock-and-roll/issues) • [Docs](docs/)
+**Version 0.2.0** • [Changelog](CHANGELOG.md) • [Issues](https://github.com/bvandewe/mock-and-roll/issues) • [Docs](https://bvandewe.github.io/mock-and-roll/)
