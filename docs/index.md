@@ -59,7 +59,7 @@ docker-compose up
 mockctl start basic
 
 # Search logs for authentication requests
-mockctl search "/auth" --json | jq .
+mockctl --json search "/auth" | jq .
 
 # List running servers
 mockctl list

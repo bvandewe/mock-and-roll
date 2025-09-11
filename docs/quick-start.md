@@ -99,7 +99,7 @@ curl http://localhost:8000/api/health
 
 ```bash
 # Search for API requests
-./mockctl search "/api" --json
+./mockctl --json search "/api"
 
 # Search for authentication requests
 ./mockctl search "/auth"
@@ -273,7 +273,7 @@ You're now ready to explore Mock-and-Roll! Here are some next steps:
 
 1. **Use JSON output for automation:**
    ```bash
-   ./mockctl search "/api" --json | jq '.total_requests'
+   ./mockctl --json search "/api" | jq '.total_requests'
    ```
 
 2. **Monitor multiple servers:**

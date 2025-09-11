@@ -106,9 +106,9 @@ mockctl list [OPTIONS]
 ```
 
 **Options:**
+
 | Option | Description | Default |
 |--------|-------------|---------|
-| `--json` | Output in JSON format | false |
 | `--verbose`, `-v` | Show detailed information | false |
 | `--config`, `-c` | Filter by configuration name | - |
 
@@ -137,25 +137,62 @@ mockctl --no-emoji list --verbose
 **Sample Output:**
 
 ```
-Running Mock Servers:
-┌────────┬──────┬──────┬─────────┬─────────────────────┬─────────────────────────────┐
-│ Config │ PID  │ Port │ Status  │ Started             │ Base URL                    │
-├────────┼──────┼──────┼─────────┼─────────────────────┼─────────────────────────────┤
-│ basic  │ 1234 │ 8000 │ ✅ running │ 2025-01-01 12:00:00 │ http://localhost:8000       │
-│ vmanage│ 5678 │ 8443 │ ✅ running │ 2025-01-01 12:05:00 │ https://localhost:8443      │
-└────────┴──────┴──────┴─────────┴─────────────────────┴─────────────────────────────┘
+# mockctl list
+
+🔍 Scanning for running Mock API Servers...
+
+📊 Found 3 tracked server(s):
+
+Config: vmanage
+Status: 🟢 Running
+PID: 33562
+Address: http://0.0.0.0:8001
+Started: 2025-09-11 21:54:45
+API Docs: http://0.0.0.0:8001/docs
+
+Config: persistence
+Status: 🟢 Running
+PID: 33710
+Address: http://0.0.0.0:8002
+Started: 2025-09-11 21:54:48
+API Docs: http://0.0.0.0:8002/docs
+
+Config: basic
+Status: 🟢 Running
+PID: 53472
+Address: http://0.0.0.0:8000
+Started: 2025-09-11 22:00:25
+API Docs: http://0.0.0.0:8000/docs
 ```
 
 **Sample Output with `--no-emoji`:**
 
 ```
-Running Mock Servers:
-┌────────┬──────┬──────┬─────────┬─────────────────────┬─────────────────────────────┐
-│ Config │ PID  │ Port │ Status  │ Started             │ Base URL                    │
-├────────┼──────┼──────┼─────────┼─────────────────────┼─────────────────────────────┤
-│ basic  │ 1234 │ 8000 │ running  │ 2025-01-01 12:00:00 │ http://localhost:8000       │
-│ vmanage│ 5678 │ 8443 │ running  │ 2025-01-01 12:05:00 │ https://localhost:8443      │
-└────────┴──────┴──────┴─────────┴─────────────────────┴─────────────────────────────┘
+# mockctl --no-emoji list     
+ Scanning for running Mock API Servers...
+
+ Found 3 tracked server(s):
+
+Config: vmanage
+Status:  Running
+PID: 33562
+Address: http://0.0.0.0:8001
+Started: 2025-09-11 21:54:45
+API Docs: http://0.0.0.0:8001/docs
+
+Config: persistence
+Status:  Running
+PID: 33710
+Address: http://0.0.0.0:8002
+Started: 2025-09-11 21:54:48
+API Docs: http://0.0.0.0:8002/docs
+
+Config: basic
+Status:  Running
+PID: 53472
+Address: http://0.0.0.0:8000
+Started: 2025-09-11 22:00:25
+API Docs: http://0.0.0.0:8000/docs
 ```
 
 ### `search` - Search Server Logs
@@ -173,7 +210,6 @@ mockctl search <pattern> [OPTIONS]
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `--json` | Output in JSON format | false |
 | `--config`, `-c` | Search ALL logs for specific config type | auto-detect latest |
 | `--port`, `-p` | Search logs for specific port | auto-detect |
 | `--since` | Search since timestamp (ISO 8601) | - |
@@ -355,9 +391,9 @@ mockctl status [OPTIONS]
 ```
 
 **Options:**
+
 | Option | Description | Default |
 |--------|-------------|---------|
-| `--json` | Output in JSON format | false |
 | `--config`, `-c` | Check specific config | all |
 | `--port`, `-p` | Check specific port | all |
 
@@ -371,7 +407,7 @@ mockctl status
 mockctl status --port 8000
 
 # JSON output
-mockctl status --json
+mockctl --json status
 ```
 
 ### `restart` - Restart Servers
@@ -414,10 +450,10 @@ mockctl validate <config_name> [OPTIONS]
 - `config_name` - Configuration profile to validate
 
 **Options:**
+
 | Option | Description | Default |
 |--------|-------------|---------|
 | `--strict` | Enable strict validation | false |
-| `--json` | Output in JSON format | false |
 
 **Examples:**
 
@@ -429,7 +465,7 @@ mockctl validate basic
 mockctl validate vmanage --strict
 
 # JSON output
-mockctl validate basic --json
+mockctl --json validate basic
 ```
 
 ### `test` - Test Server Endpoints
@@ -444,9 +480,9 @@ mockctl test [CONFIG] [OPTIONS]
 - `CONFIG` - Configuration name to test (optional, tests all running servers if omitted)
 
 **Options:**
+
 | Option | Description | Default |
 |--------|-------------|---------|
-| `--json` | Output in JSON format | false |
 
 **Tested Endpoints:**
 - `/` - Root endpoint
@@ -463,7 +499,7 @@ mockctl test
 mockctl test basic
 
 # JSON output for automation
-mockctl test vmanage --json
+mockctl --json test vmanage
 
 # Test results with different outcomes
 mockctl test persistence
@@ -505,9 +541,9 @@ mockctl version [OPTIONS]
 ```
 
 **Options:**
+
 | Option | Description | Default |
 |--------|-------------|---------|
-| `--json` | Output in JSON format | false |
 
 **Examples:**
 
@@ -516,7 +552,7 @@ mockctl version [OPTIONS]
 mockctl version
 
 # JSON output with detailed information
-mockctl version --json
+mockctl --json version
 
 # Using global flags (alternative syntax)
 mockctl --version         # Short version info
@@ -550,7 +586,7 @@ Use `mockctl` in scripts with JSON output:
 #!/bin/bash
 
 # Start server and get port
-PORT=$(mockctl start basic --json | jq -r '.server.port')
+PORT=$(mockctl --json start basic | jq -r '.server.port')
 
 # Wait for server to be ready
 while ! curl -s http://localhost:$PORT/api/health > /dev/null; do
@@ -583,13 +619,13 @@ done
 
 ```bash
 # Count requests by status code
-mockctl search ".*" --json | jq '.status_code_summary'
+mockctl --json search ".*" | jq '.status_code_summary'
 
 # Find slow requests
-mockctl search ".*" --json | jq '.matched_requests[] | select(.response_time_ms > 1000)'
+mockctl --json search ".*" | jq '.matched_requests[] | select(.response_time_ms > 1000)'
 
 # Extract request paths
-mockctl search ".*" --json | jq -r '.matched_requests[].path' | sort | uniq -c
+mockctl --json search ".*" | jq -r '.matched_requests[].path' | sort | uniq -c
 ```
 
 ## Configuration and Environment
@@ -688,7 +724,7 @@ mockctl start basic --port 8080
 npm test  # or pytest, etc.
 
 # Analyze results
-mockctl search ".*" --json > test_results.json
+mockctl --json search ".*" > test_results.json
 mockctl stop --all
 ```
 

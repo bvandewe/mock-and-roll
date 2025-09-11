@@ -24,6 +24,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Enhanced
 
+- **CLI Flag Architecture Refactoring**: Streamlined command-line interface with global flag support
+  - **Global Flags Only**: `--json` and `--no-emoji` flags are now exclusively global (top-level) flags
+  - **Simplified Syntax**: Use `mockctl --json [command]` instead of `mockctl [command] --json`
+  - **Consistent Interface**: All commands now use the same global flag pattern for uniformity
+  - **Improved Maintainability**: Eliminated redundant flag definitions across subparsers
+  - **Backward Compatibility**: Old syntax patterns are deprecated but examples updated throughout documentation
+
 - **Advanced Log Search Capabilities**: Comprehensive log file selection for enhanced search functionality
   - **Multi-file Search**: Search across multiple log files for specific configuration types
     - When using `--config`, searches ALL logs for that configuration type (e.g., all basic, persistence, or vmanage logs)
@@ -46,12 +53,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Works reliably in minimal container environments like Alpine Linux
   - Automatic port assignment starting from 8000 with fallback scanning
   - Improved reliability and reduced system requirements
+- **Documentation Updates**: Complete documentation overhaul to reflect CLI flag changes
+  - Updated all command examples to use global flag syntax (`mockctl --json [command]`)
+  - Corrected CLI reference documentation to remove deprecated command-specific flags
+  - Updated README.md, user guides, and example documentation for consistency
+  - Fixed incorrect syntax patterns in automation examples and CI/CD scripts
 
 ### Fixed
 
 - GitHub Pages deployment permissions and workflow configuration
 - Port detection failures in minimal container environments
 - Auto port assignment when no port is explicitly specified
+- Documentation inconsistencies between CLI implementation and documented examples
 
 ## [0.2.0] - 2024-09-10
 

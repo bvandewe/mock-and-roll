@@ -68,7 +68,7 @@ The new search command supports:
 ### Search Commands
 ```bash
 ./mockctl search ".*api.*"          # Search API requests
-./mockctl search "/users" --since "1h ago" --json
+./mockctl --json search "/users" --since "1h ago"
 ./mockctl search ".*" --config vmanage 
 ```
 

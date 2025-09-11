@@ -277,7 +277,7 @@ curl -H "X-API-Key: demo-api-key-123" http://localhost:8000/products/{id}
 ### Advanced Search
 ```bash
 # Find all user API calls from the last hour
-./mockctl search "/api/users" --since "1h ago" --json
+./mockctl --json search "/api/users" --since "1h ago"
 
 # Search across all configurations
 ./mockctl search "/auth" --all-logs

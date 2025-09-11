@@ -368,7 +368,7 @@ curl -H "X-API-Key: user-key-123" http://localhost:8000/api/protected
 ./mockctl search "401"
 
 # Get JSON output for processing
-./mockctl search "/api" --json > api_requests.json
+./mockctl --json search "/api" > api_requests.json
 
 # Analyze with jq
 cat api_requests.json | jq '.status_code_summary'
@@ -379,13 +379,13 @@ cat api_requests.json | jq '.matched_requests[] | select(.status_code >= 400)'
 
 ```bash
 # Find slow requests (if response time tracking is enabled)
-./mockctl search "/api" --json | jq '.matched_requests[] | select(.response_time_ms > 100)'
+./mockctl --json search "/api" | jq '.matched_requests[] | select(.response_time_ms > 100)'
 
 # Count requests by endpoint
-./mockctl search "/api" --json | jq -r '.matched_requests[].path' | sort | uniq -c
+./mockctl --json search "/api" | jq -r '.matched_requests[].path' | sort | uniq -c
 
 # Time-based analysis
-./mockctl search "/api" --since "2025-01-01T12:00:00Z" --json
+./mockctl --json search "/api" --since "2025-01-01T12:00:00Z"
 ```
 
 ## Example 6: CI/CD Integration
@@ -442,7 +442,7 @@ jobs:
           
       - name: Analyze Mock API Usage
         run: |
-          ./mockctl search "/api" --json > test_api_usage.json
+          ./mockctl --json search "/api" > test_api_usage.json
           
           # Upload as artifact for analysis
           echo "API Requests: $(jq '.total_requests' test_api_usage.json)"
@@ -510,7 +510,7 @@ pytest tests/integration/ --api-url=http://localhost:8080
 
 # Analyze results
 echo "Analyzing API usage..."
-./mockctl search "/api" --json | jq '{
+./mockctl --json search "/api" | jq '{
   total_requests: .total_requests,
   status_summary: .status_code_summary,
   error_rate: (.status_code_summary | to_entries | map(select(.key | tonumber >= 400)) | map(.value) | add // 0) / .total_requests * 100
@@ -567,7 +567,7 @@ curl -k -H "Authorization: Bearer test-token" \
   https://localhost:8443/api/devices
 
 # Compare behaviors
-./mockctl search "/api/health" --json | jq '{
+./mockctl --json search "/api/health" | jq '{
   dev: .matched_requests[] | select(.port == 8001),
   staging: .matched_requests[] | select(.port == 8002), 
   prod: .matched_requests[] | select(.port == 8443)
@@ -646,10 +646,10 @@ Use log analysis to understand usage patterns:
 
 ```bash
 # Monitor in real-time
-watch './mockctl search "/api" --json | jq .total_requests'
+watch './mockctl --json search "/api" | jq .total_requests'
 
 # Daily usage report
-./mockctl search "/api" --since "$(date -d yesterday -Iseconds)" --json > daily_report.json
+./mockctl --json search "/api" --since "$(date -d yesterday -Iseconds)" > daily_report.json
 ```
 
 This covers the most common usage patterns for Mock-and-Roll. Each example can be adapted and extended based on your specific testing needs.
