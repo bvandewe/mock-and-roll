@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **New Test Command**: `mockctl test [config]` command to validate server endpoints
+  - Tests root `/`, `/docs`, and `/openapi.json` endpoints for all running servers or a specific config
+  - Displays response status, response time, and content type information
+  - Supports JSON output mode for automation and integration
+  - Returns appropriate exit codes for CI/CD pipelines (0 for success, 1 for failures)
 - **Emoji-free Output Option**: New `--no-emoji` global flag for clean text output
   - Removes all Unicode emojis from CLI output for cleaner logs and scripts
   - Applies to all text output modes (ignored when using `--json`)

@@ -4,6 +4,7 @@ import argparse
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 from ..application.server_management import (
     GetConfigurationsUseCase,
@@ -284,3 +285,78 @@ class VersionCommand(CommandHandler):
 
         except Exception as e:
             self.presenter.show_error(f"Failed to read version: {str(e)}")
+
+
+class TestCommand(CommandHandler):
+    """Handler for test command."""
+
+    def execute(self, args: argparse.Namespace) -> None:
+        """Execute test command."""
+        import requests
+        from urllib.parse import urljoin
+
+        try:
+            # Get all running servers
+            servers = self.list_use_case.execute()
+
+            if not servers:
+                self.presenter.show_error("No running servers found")
+                return
+
+            # Filter servers by config if specified
+            if args.config:
+                servers = [s for s in servers if s.config_name == args.config]
+                if not servers:
+                    self.presenter.show_error(f"No running server found for config '{args.config}'")
+                    return
+
+            test_results = []
+
+            for server in servers:
+                base_url = f"http://{server.host}:{server.port}"
+                server_result = {"config": server.config_name, "base_url": base_url, "tests": []}
+
+                # Test endpoints: /, /docs, /openapi.json
+                endpoints = [{"path": "/", "description": "Root endpoint"}, {"path": "/docs", "description": "API documentation"}, {"path": "/openapi.json", "description": "OpenAPI schema"}]
+
+                for endpoint in endpoints:
+                    url = urljoin(base_url + "/", endpoint["path"])
+                    test_result: dict[str, Any] = {"endpoint": endpoint["path"], "url": url, "description": endpoint["description"]}
+
+                    try:
+                        response = requests.get(url, timeout=5)
+                        test_result["status"] = "success"
+                        test_result["status_code"] = response.status_code
+                        test_result["response_time_ms"] = int(response.elapsed.total_seconds() * 1000)
+                        test_result["content_type"] = response.headers.get("content-type", "unknown")
+
+                        if response.status_code >= 400:
+                            test_result["status"] = "warning"
+                            test_result["message"] = f"HTTP {response.status_code}"
+
+                    except requests.exceptions.Timeout:
+                        test_result["status"] = "error"
+                        test_result["message"] = "Request timeout (5s)"
+                    except requests.exceptions.ConnectionError:
+                        test_result["status"] = "error"
+                        test_result["message"] = "Connection failed"
+                    except Exception as e:
+                        test_result["status"] = "error"
+                        test_result["message"] = f"Request failed: {str(e)}"
+
+                    server_result["tests"].append(test_result)
+
+                test_results.append(server_result)
+
+            # Display results
+            self.presenter.show_test_results(test_results)
+
+            # Exit with error code if any tests failed
+            failed_tests = sum(1 for result in test_results for test in result["tests"] if test.get("status") == "error")
+
+            if failed_tests > 0:
+                sys.exit(1)
+
+        except Exception as e:
+            self.presenter.show_error(f"Test command failed: {str(e)}")
+            sys.exit(1)

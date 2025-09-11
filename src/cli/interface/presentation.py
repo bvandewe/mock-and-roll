@@ -337,3 +337,61 @@ class Presenter:
                 print(f"\n{Colors.YELLOW}   No matching requests found.{Colors.NC}")
 
             print()
+
+    def show_test_results(self, test_results: list[dict[str, Any]]) -> None:
+        """Display test results for server endpoints.
+
+        Args:
+            test_results: List of test results for each server
+        """
+        if self.json_mode:
+            self._output_json({"test_results": test_results})
+            return
+
+        print(self._format_output(f"{Colors.BLUE}🧪 Server Endpoint Tests{Colors.NC}\n"))
+
+        for server_result in test_results:
+            config_name = server_result["config"]
+            base_url = server_result["base_url"]
+
+            print(self._format_output(f"{Colors.CYAN}📊 Testing server: {config_name}{Colors.NC}"))
+            print(f"   Base URL: {base_url}")
+
+            for test in server_result["tests"]:
+                status = test["status"]
+                endpoint = test["endpoint"]
+                description = test["description"]
+
+                # Choose status indicator and color based on result
+                if status == "success":
+                    indicator = "✅"
+                    color = Colors.GREEN
+                elif status == "warning":
+                    indicator = "⚠️"
+                    color = Colors.YELLOW
+                else:  # error
+                    indicator = "❌"
+                    color = Colors.RED
+
+                print(f"\n   {self._format_output(indicator)} {color}{endpoint}{Colors.NC} - {description}")
+
+                if status in ["success", "warning"]:
+                    status_code = test.get("status_code")
+                    response_time = test.get("response_time_ms")
+                    content_type = test.get("content_type", "unknown")
+
+                    if status_code is not None:
+                        status_color = Colors.GREEN if status_code < 400 else Colors.RED
+                        print(f"      Status: {status_color}{status_code}{Colors.NC}")
+
+                    if response_time is not None:
+                        print(f"      Response time: {response_time}ms")
+
+                    print(f"      Content type: {content_type}")
+
+                if "message" in test:
+                    print(f"      {color}Error: {test['message']}{Colors.NC}")
+
+                print(f"      URL: {test['url']}")
+
+            print()  # Extra spacing between servers

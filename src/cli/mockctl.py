@@ -16,6 +16,7 @@ from src.cli.interface.commands import (  # noqa: E402
     SearchCommand,
     StartCommand,
     StopCommand,
+    TestCommand,
     VersionCommand,
 )
 from src.cli.interface.presentation import Colors  # noqa: E402
@@ -92,6 +93,7 @@ class MockServerCLI:
         list_command = ListCommand(self.project_root, json_mode, no_emoji)
         config_help_command = ConfigHelpCommand(self.project_root, json_mode, no_emoji)
         search_command = SearchCommand(self.project_root, json_mode, no_emoji)
+        test_command = TestCommand(self.project_root, json_mode, no_emoji)
         version_command = VersionCommand(self.project_root, json_mode, no_emoji)
 
         # Map commands to handlers
@@ -102,6 +104,7 @@ class MockServerCLI:
             "status": list_command.execute,  # alias for list
             "config-help": config_help_command.execute,
             "search": search_command.execute,
+            "test": test_command.execute,
             "version": version_command.execute,
         }
 
@@ -145,6 +148,9 @@ Examples:
   %(prog)s search "/api/.*"          # Search requests matching path pattern
   %(prog)s search "/users" --since "30m ago" # Search recent user requests
   %(prog)s --json search ".*" --config basic # Search all requests in JSON format
+  %(prog)s test                      # Test all running server endpoints
+  %(prog)s test basic                # Test basic configuration endpoints
+  %(prog)s --json test vmanage       # Test vManage server in JSON format
 
 📂 Available configurations: basic, persistence, vmanage
 💡 Use --json with any command for machine-readable output (no emojis)
@@ -198,6 +204,11 @@ Examples:
         search_parser.add_argument("--since", help="Filter logs since time (e.g., '30m ago', 'today', '2024-01-01 10:00')")
         search_parser.add_argument("--all-logs", action="store_true", help="Search all available log files")
         search_parser.add_argument("--json", action="store_true", help="Output in JSON format (no emojis)")
+
+        # Test command
+        test_parser = subparsers.add_parser("test", help="Test server endpoints")
+        test_parser.add_argument("config", nargs="?", help="Configuration name to test (tests all running servers if omitted)")
+        test_parser.add_argument("--json", action="store_true", help="Output in JSON format (no emojis)")
 
         # Version command
         version_parser = subparsers.add_parser("version", help="Show version information")

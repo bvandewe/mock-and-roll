@@ -417,6 +417,70 @@ mockctl validate vmanage --strict
 mockctl validate basic --json
 ```
 
+### `test` - Test Server Endpoints
+
+Test the health and availability of running mock servers by sending requests to their standard endpoints.
+
+```bash
+mockctl test [CONFIG] [OPTIONS]
+```
+
+**Arguments:**
+- `CONFIG` - Configuration name to test (optional, tests all running servers if omitted)
+
+**Options:**
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--json` | Output in JSON format | false |
+
+**Tested Endpoints:**
+- `/` - Root endpoint
+- `/docs` - Interactive API documentation
+- `/openapi.json` - OpenAPI schema
+
+**Examples:**
+
+```bash
+# Test all running servers
+mockctl test
+
+# Test specific configuration
+mockctl test basic
+
+# JSON output for automation
+mockctl test vmanage --json
+
+# Test results with different outcomes
+mockctl test persistence
+```
+
+**JSON Output Format:**
+```json
+{
+  "test_results": [
+    {
+      "config": "basic",
+      "base_url": "http://0.0.0.0:8000",
+      "tests": [
+        {
+          "endpoint": "/",
+          "url": "http://0.0.0.0:8000/",
+          "description": "Root endpoint",
+          "status": "success",
+          "status_code": 200,
+          "response_time_ms": 6,
+          "content_type": "application/json"
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Exit Codes:**
+- `0` - All tests passed
+- `1` - One or more tests failed or command error occurred
+
 ### `version` - Show Version Information
 
 Display version information for Mock-and-Roll.
