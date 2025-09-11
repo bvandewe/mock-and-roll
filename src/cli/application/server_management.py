@@ -47,24 +47,33 @@ class StartServerUseCase:
             if existing_pid:
                 raise ValueError(f"Port {port} is already in use by process {existing_pid}")
 
-        # Start server process
-        process = self._start_server_process(config, port, host, reload)
+        # Create server instance first to generate timestamped log file path
+        instance = ServerInstance(config_name=config_name, port=port, pid=0, host=host, status=ServerStatus.STARTING)
 
-        # Create server instance
-        instance = ServerInstance(config_name=config_name, port=port, pid=process.pid, host=host, status=ServerStatus.RUNNING)
+        # Ensure log file path is set
+        if instance.log_file is None:
+            raise RuntimeError("Failed to generate log file path for server instance")
+
+        # Start server process with the log file path
+        process = self._start_server_process(config, port, host, reload, instance.log_file)
+
+        # Update instance with actual PID and set as running
+        instance.pid = process.pid
+        instance.status = ServerStatus.RUNNING
 
         # Save to repository
         self.server_repo.save(instance)
 
         return instance
 
-    def _start_server_process(self, config: ServerConfig, port: int, host: str, reload: bool) -> subprocess.Popen:
-        """Start the actual server process."""
+    def _start_server_process(self, config: ServerConfig, port: int, host: str, reload: bool, log_file_path: str) -> subprocess.Popen:
+        """Start the actual server process with specified log file path."""
         import os
 
         # Prepare environment
         env = os.environ.copy()
         env["CONFIG_FOLDER"] = str(config.path)
+        env["LOG_FILE"] = log_file_path  # Pass the timestamped log file path
         env["PYTHONPATH"] = str(self.project_root / "src")
 
         # Build command
