@@ -246,3 +246,41 @@ class SearchCommand(CommandHandler):
                 continue
 
         raise ValueError(f"Could not parse time format: {since_str}")
+
+
+class VersionCommand(CommandHandler):
+    """Handler for version command."""
+
+    def execute(self, args: argparse.Namespace) -> None:
+        """Execute version command."""
+        import tomllib
+
+        try:
+            # Read version from pyproject.toml
+            pyproject_path = self.project_root / "pyproject.toml"
+
+            if not pyproject_path.exists():
+                self.presenter.show_error("pyproject.toml not found")
+                return
+
+            with open(pyproject_path, "rb") as f:
+                data = tomllib.load(f)
+
+            version = data.get("tool", {}).get("poetry", {}).get("version")
+
+            if not version:
+                self.presenter.show_error("Version not found in pyproject.toml")
+                return
+
+            # Display version
+            if self.presenter.json_mode:
+                # For JSON mode, output structured data
+                version_data = {"name": data.get("tool", {}).get("poetry", {}).get("name", "MockAndRoll"), "version": version, "description": data.get("tool", {}).get("poetry", {}).get("description", "")}
+                self.presenter._output_json(version_data)
+            else:
+                # For text mode, show simple version string
+                name = data.get("tool", {}).get("poetry", {}).get("name", "MockAndRoll")
+                self.presenter.show_info(f"{name} version {version}")
+
+        except Exception as e:
+            self.presenter.show_error(f"Failed to read version: {str(e)}")

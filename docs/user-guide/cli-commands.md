@@ -417,6 +417,50 @@ mockctl validate vmanage --strict
 mockctl validate basic --json
 ```
 
+### `version` - Show Version Information
+
+Display version information for Mock-and-Roll.
+
+```bash
+mockctl version [OPTIONS]
+```
+
+**Options:**
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--json` | Output in JSON format | false |
+
+**Examples:**
+
+```bash
+# Show version information
+mockctl version
+
+# JSON output with detailed information
+mockctl version --json
+
+# Using global flags (alternative syntax)
+mockctl --version         # Short version info
+mockctl -v               # Short version info  
+mockctl --json --version # JSON version info with global flags
+```
+
+**Sample Output (Text):**
+
+```
+ℹ️  MockAndRoll version 0.2.0
+```
+
+**Sample Output (JSON):**
+
+```json
+{
+  "name": "MockAndRoll",
+  "version": "0.2.0",
+  "description": "A highly configurable and extensible mock REST API server built with FastAPI that allows to quickly create mock endpoints with various authentication methods, conditional responses, and dynamic path parameters."
+}
+```
+
 ## Advanced Usage
 
 ### Scripting and Automation

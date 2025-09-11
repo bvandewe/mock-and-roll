@@ -108,6 +108,11 @@ The `mockctl` command provides comprehensive server management:
 ./mockctl config-help               # Configuration guide
 ./mockctl test vmanage              # Test endpoints
 
+# Version Information
+./mockctl version                   # Show version information
+./mockctl --version                 # Show version (global flag)
+./mockctl -v                        # Show version (short flag)
+
 # Output Formatting
 ./mockctl --no-emoji list           # Clean text output (removes emojis)
 ./mockctl --json config-help        # Machine-readable JSON output

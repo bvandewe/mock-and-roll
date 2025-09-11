@@ -16,6 +16,7 @@ from src.cli.interface.commands import (  # noqa: E402
     SearchCommand,
     StartCommand,
     StopCommand,
+    VersionCommand,
 )
 from src.cli.interface.presentation import Colors  # noqa: E402
 
@@ -74,6 +75,15 @@ class MockServerCLI:
         parser = self.create_parser()
         args = parser.parse_args()
 
+        # Handle --version flag (global option)
+        if getattr(args, "version", False):
+            # Create a minimal version command to handle the --version flag
+            json_mode = getattr(args, "json", False)
+            no_emoji = getattr(args, "no_emoji", False)
+            version_command = VersionCommand(self.project_root, json_mode, no_emoji)
+            version_command.execute(args)
+            return
+
         # Create command handlers with JSON mode and emoji handling based on args
         json_mode = getattr(args, "json", False)
         no_emoji = getattr(args, "no_emoji", False)
@@ -82,6 +92,7 @@ class MockServerCLI:
         list_command = ListCommand(self.project_root, json_mode, no_emoji)
         config_help_command = ConfigHelpCommand(self.project_root, json_mode, no_emoji)
         search_command = SearchCommand(self.project_root, json_mode, no_emoji)
+        version_command = VersionCommand(self.project_root, json_mode, no_emoji)
 
         # Map commands to handlers
         command_map = {
@@ -91,6 +102,7 @@ class MockServerCLI:
             "status": list_command.execute,  # alias for list
             "config-help": config_help_command.execute,
             "search": search_command.execute,
+            "version": version_command.execute,
         }
 
         if args.command in command_map:
@@ -125,11 +137,14 @@ Examples:
   %(prog)s start vmanage --port 8080 # Start vManage config on port 8080
   %(prog)s stop                      # Stop servers (auto-detect)
   %(prog)s list                      # Show running servers
-  %(prog)s list --json               # Show running servers in JSON format
+  %(prog)s --json list               # Show running servers in JSON format
+  %(prog)s --no-emoji list           # Show running servers without emojis
+  %(prog)s version                   # Show version information
+  %(prog)s --version                 # Show version (global flag)
   %(prog)s config-help --json        # Show configuration guide in JSON format
   %(prog)s search "/api/.*"          # Search requests matching path pattern
   %(prog)s search "/users" --since "30m ago" # Search recent user requests
-  %(prog)s search ".*" --config basic --json # Search all requests in JSON format
+  %(prog)s --json search ".*" --config basic # Search all requests in JSON format
 
 📂 Available configurations: basic, persistence, vmanage
 💡 Use --json with any command for machine-readable output (no emojis)
@@ -141,6 +156,9 @@ Examples:
 
         # Add global --no-emoji option
         parser.add_argument("--no-emoji", action="store_true", help="Remove emojis from text output (ignored when --json is used)")
+
+        # Add global --version/-v option
+        parser.add_argument("--version", "-v", action="store_true", help="Show version information")
 
         subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
@@ -180,6 +198,10 @@ Examples:
         search_parser.add_argument("--since", help="Filter logs since time (e.g., '30m ago', 'today', '2024-01-01 10:00')")
         search_parser.add_argument("--all-logs", action="store_true", help="Search all available log files")
         search_parser.add_argument("--json", action="store_true", help="Output in JSON format (no emojis)")
+
+        # Version command
+        version_parser = subparsers.add_parser("version", help="Show version information")
+        version_parser.add_argument("--json", action="store_true", help="Output in JSON format (no emojis)")
 
         return parser
 

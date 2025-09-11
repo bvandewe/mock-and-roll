@@ -74,10 +74,12 @@ curl http://localhost:8000/api/health
 # stop           - Stop servers  
 # list           - List running servers
 # search <pattern> - Search logs
+# version        - Show version information
 
 # Global options:
 # --json        - Output in JSON format
 # --no-emoji    - Remove emojis from output
+# --version/-v  - Show version information
 ```
 
 ### List Running Servers
