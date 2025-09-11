@@ -1,30 +1,24 @@
-# Example Dockerfile.alpine for the mock server with all required tools
+# Example Dockerfile.alpine for the mock server with minimal requirements
 FROM python:3.11-alpine
 
-# Install system dependencies and command-line tools
+# Install system dependencies (minimal set - no network tools needed for port detection)
 RUN apk update && apk add --no-cache \
-    # Process and system tools
+    # Process tools (for server process management)
     procps \
     util-linux \
-    coreutils \
-    findutils \
-    # Networking tools
-    net-tools \
-    iproute2 \
-    lsof \
-    curl \
-    wget \
     # Development tools
     bash \
-    grep \
-    sed \
-    awk \
     git \
+    jq \
+    curl \
     # Build dependencies for Python packages
     gcc \
     musl-dev \
-    linux-headers \
-    jq
+    linux-headers
+
+# Note: Port detection now uses Python's built-in socket module
+# No longer need: net-tools, iproute2, lsof (network tools)
+# No longer need: coreutils, findutils, grep, sed, awk (text processing)
 
 # Set bash as default shell
 SHELL ["/bin/bash", "-c"]

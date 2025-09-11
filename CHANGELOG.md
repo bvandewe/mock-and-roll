@@ -17,9 +17,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GitHub Pages deployment workflow
 - Professional documentation structure with navigation
 
+### Changed
+
+- **Simplified Port Detection**: Replaced complex OS-dependent port detection with simple socket-based approach
+  - Uses Python's built-in `socket` module for cross-platform compatibility
+  - Eliminates dependencies on `lsof`, `netstat`, `ss`, and other system utilities
+  - Works reliably in minimal container environments like Alpine Linux
+  - Automatic port assignment starting from 8000 with fallback scanning
+  - Improved reliability and reduced system requirements
+
 ### Fixed
 
 - GitHub Pages deployment permissions and workflow configuration
+- Port detection failures in minimal container environments
+- Auto port assignment when no port is explicitly specified
 
 ## [0.2.0] - 2024-09-10
 

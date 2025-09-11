@@ -92,7 +92,10 @@ class StartServerUseCase:
 
         # Check if process started successfully
         if process.poll() is not None:
-            raise RuntimeError("Failed to start server process")
+            # Capture stderr to show the actual error
+            stdout, stderr = process.communicate(timeout=1)
+            error_msg = stderr.decode("utf-8") if stderr else "Unknown error"
+            raise RuntimeError(f"Failed to start server process: {error_msg.strip()}")
 
         return process
 

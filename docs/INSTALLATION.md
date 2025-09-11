@@ -120,16 +120,12 @@ sudo systemctl enable redis
 
 ### Alpine Linux
 
-Alpine Linux requires additional system tools for proper operation:
+Alpine Linux now works out-of-the-box without additional system tools for port detection:
 
 ```bash
 # Essential package installation
 apk update
 apk add --no-cache python3 py3-pip git
-
-# Install command-line tools required by the server management
-apk add --no-cache procps util-linux coreutils findutils
-apk add --no-cache net-tools iproute2 lsof curl wget bash
 
 # Install Poetry (recommended)
 curl -sSL https://install.python-poetry.org | python3 -
@@ -158,24 +154,20 @@ pip install -r requirements.txt
 
 # Optional: Install Redis for persistence features
 apk add --no-cache redis
-rc-service redis start
-rc-update add redis
+redis-server &
 ```
 
-**Alpine Package Breakdown:**
-- `procps` - Provides `ps`, `top`, `pgrep`, `pkill` for process management
-- `util-linux` - Provides `kill`, `lscpu` for process termination
-- `coreutils` - Essential text processing tools (`grep`, `awk`, `cut`, `sort`)
-- `net-tools` - Network diagnostics (`netstat`, `ifconfig`)
-- `iproute2` - Modern networking tools (`ss`, `ip`)
-- `lsof` - List open files/ports for server detection
-- `bash` - Better shell compatibility for scripts
+**🎉 Simplified Requirements:**
+- **No system tools needed**: Port detection now uses Python's built-in `socket` module
+- **Cross-platform compatibility**: Works in minimal container environments
+- **Reduced dependencies**: No longer requires `lsof`, `netstat`, `ss`, or other system utilities
 
-**Minimal Alpine Installation:**
-For minimal setups, only these packages are essential:
-```bash
-apk add --no-cache procps lsof
-```
+**Legacy Alpine Requirements (No Longer Needed):**
+Previous versions required these packages for port detection, but they are no longer necessary:
+- ~~`net-tools`~~ - Network diagnostics (not needed)
+- ~~`iproute2`~~ - Modern networking tools (not needed)  
+- ~~`lsof`~~ - List open files/ports (not needed)
+- ~~`procps`~~ - Process tools (only needed for process management, not port detection)
 
 **Docker Alpine Usage:**
 Use the provided Alpine Dockerfile for containerized deployment:

@@ -165,7 +165,31 @@ docker-compose up --build
 # Or build manually
 docker build -t mock-server .
 docker run -p 8000:8000 mock-server
+
+# Alpine Linux (minimal image)
+docker build -f Dockerfile.alpine -t mock-server-alpine .
+docker run -p 8000:8000 mock-server-alpine
 ```
+
+### Cross-Platform Compatibility
+
+Mock-and-Roll is designed to work across different operating systems and container environments:
+
+**✅ Fully Supported Platforms:**
+- **macOS** (Intel & Apple Silicon)
+- **Ubuntu/Debian Linux**
+- **Alpine Linux** (Docker containers)
+- **CentOS/RHEL/Rocky Linux**
+- **Windows** (via WSL2 or native Python)
+
+**🔧 Port Detection Methods:**
+The CLI automatically detects available ports using a simple, reliable socket-based approach:
+- **Socket Binding Test**: Uses Python's built-in `socket` module to test port availability
+- **Cross-Platform**: Works on all platforms without external dependencies
+- **No OS Tools Required**: Doesn't rely on `lsof`, `netstat`, `ss`, or other system utilities
+- **Alpine Linux Ready**: Works out-of-the-box in minimal container environments
+
+This ensures reliable auto port detection on any platform where Python runs, without requiring additional system packages.
 
 📋 **Need detailed installation instructions?** See [Installation Guide](docs/INSTALLATION.md)
 

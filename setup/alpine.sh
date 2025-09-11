@@ -63,8 +63,9 @@ for package in "${REQUIRED_PACKAGES[@]}"; do
     fi
 done
 
-# Check for additional system tools needed for process management
-SYSTEM_TOOLS=("procps" "util-linux" "lsof")
+# Check for additional system tools needed for process management only
+# Note: Port detection now uses Python's built-in socket module
+SYSTEM_TOOLS=("procps" "util-linux")
 MISSING_TOOLS=()
 
 for tool in "${SYSTEM_TOOLS[@]}"; do
@@ -77,11 +78,6 @@ for tool in "${SYSTEM_TOOLS[@]}"; do
         "util-linux")
             if ! command -v kill >/dev/null 2>&1; then
                 MISSING_TOOLS+=("util-linux")
-            fi
-            ;;
-        "lsof")
-            if ! command -v lsof >/dev/null 2>&1; then
-                MISSING_TOOLS+=("lsof")
             fi
             ;;
     esac
@@ -126,12 +122,6 @@ else
     TOOLS_STATUS+=("❌ ps")
 fi
 
-if command -v lsof >/dev/null 2>&1; then
-    TOOLS_STATUS+=("✅ lsof")
-else
-    TOOLS_STATUS+=("❌ lsof")
-fi
-
 if command -v kill >/dev/null 2>&1; then
     TOOLS_STATUS+=("✅ kill")
 else
@@ -143,7 +133,8 @@ print_status "   Tools status: ${TOOLS_STATUS[*]}"
 # Warn if critical tools are missing
 if [[ "${TOOLS_STATUS[*]}" == *"❌"* ]]; then
     print_warning "⚠️  Some process management tools are missing. The server may have limited functionality."
-    print_warning "   Consider installing: apk add --no-cache procps util-linux lsof"
+    print_warning "   Consider installing: apk add --no-cache procps util-linux"
+    print_status "   Note: Port detection uses Python's socket module (no lsof/netstat needed)"
 fi
 
 # Check for Python 3
