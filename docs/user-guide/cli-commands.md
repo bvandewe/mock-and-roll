@@ -170,41 +170,56 @@ mockctl search <pattern> [OPTIONS]
 - `pattern` - Search pattern (supports regex)
 
 **Options:**
+
 | Option | Description | Default |
 |--------|-------------|---------|
 | `--json` | Output in JSON format | false |
-| `--config`, `-c` | Search logs for specific config | auto-detect |
+| `--config`, `-c` | Search ALL logs for specific config type | auto-detect latest |
 | `--port`, `-p` | Search logs for specific port | auto-detect |
 | `--since` | Search since timestamp (ISO 8601) | - |
+| `--all-logs` | Search ALL available log files | false |
 | `--limit`, `-l` | Limit number of results | 50 |
 | `--status` | Filter by HTTP status code | - |
+
+**Enhanced Search Capabilities:**
+
+- **Config-specific**: `--config basic` searches ALL basic configuration logs (multi-file)
+- **Latest log**: No config specified searches the most recent timestamped log file
+- **All logs**: `--all-logs` searches ALL server log files from all configurations
+- **Smart filtering**: Automatically excludes generic system logs, focuses on request/response logs
 
 **Examples:**
 
 ```bash
-# Search for authentication requests
+# Search latest log file for authentication requests
 mockctl search "/auth"
 
-# Search with regex pattern
+# Search ALL basic config logs (multi-file search)
+mockctl search "/api" --config basic
+
+# Search ALL available logs from all servers
+mockctl search ".*" --all-logs
+
+# Search with regex pattern in latest log
 mockctl search "POST.*login"
 
-# Search for errors (4xx/5xx status codes)
-mockctl search ".*" --status 4xx,5xx
+# Search for errors across all vmanage logs
+mockctl search ".*" --config vmanage --status 4xx,5xx
 
-# Search recent requests (last hour)
+# Search recent requests in latest log
 mockctl search "/api" --since "2025-01-01T11:00:00Z"
 
 # JSON output for processing
-mockctl --json search "/j_security_check"
+mockctl --json search "/j_security_check" --all-logs
 
 # Clean output without emojis
 mockctl --no-emoji search "/auth"
 
 # Search specific server logs
-mockctl search "/api" --config vmanage --port 8443
+mockctl search "/api" --port 8443
 
-# Limit results
-mockctl search "/.*" --limit 10
+# Limit results from multi-file search
+mockctl search "/.*" --config persistence --limit 10
 ```
 
 **Sample Output (Text):**

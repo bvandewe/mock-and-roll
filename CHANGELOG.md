@@ -22,6 +22,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GitHub Pages deployment workflow
 - Professional documentation structure with navigation
 
+### Enhanced
+
+- **Advanced Log Search Capabilities**: Comprehensive log file selection for enhanced search functionality
+  - **Multi-file Search**: Search across multiple log files for specific configuration types
+    - When using `--config`, searches ALL logs for that configuration type (e.g., all basic, persistence, or vmanage logs)
+    - Combines results from multiple files with merged status code summaries and chronological ordering
+  - **Smart Latest Log Selection**: When no config is specified, automatically selects the most recent timestamped log file
+    - Filters out generic system logs (`latest.logs`) to focus on actual request/response logs
+    - Prioritizes structured log files with correlation IDs and request tracking
+  - **Comprehensive All-Logs Mode**: `--all-logs` flag searches across ALL available server log files
+    - Aggregates results from every configuration type and server instance
+    - Provides complete historical view of all API interactions
+  - **Robust Error Handling**: Continues searching other files if individual log files are corrupted or inaccessible
+  - **Performance Optimized**: Single-file search when only one log file matches criteria
+  - **Backward Compatible**: Maintains all existing search functionality while adding multi-file capabilities
+
 ### Changed
 
 - **Simplified Port Detection**: Replaced complex OS-dependent port detection with simple socket-based approach

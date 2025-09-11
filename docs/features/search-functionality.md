@@ -7,16 +7,16 @@ The search command has been successfully implemented to return the list of reque
 ## Command Usage
 
 ```bash
-# Search with regex pattern
+# Search with regex pattern - searches latest log file
 mockctl search "/api/.*"
 
-# Search with time filter
+# Search with time filter - searches latest log file
 mockctl search "/users" --since "30m ago"
 
-# Search specific configuration logs
+# Search ALL logs for specific configuration type
 mockctl search ".*" --config basic
 
-# Search all available logs
+# Search ALL available log files from all servers
 mockctl search ".*" --all-logs
 
 # JSON output
@@ -25,6 +25,41 @@ mockctl --json search "/docs"
 # Clean output without emojis
 mockctl --no-emoji search "/api"
 ```
+
+## Enhanced Multi-File Search Capabilities
+
+The search functionality now supports comprehensive log file selection:
+
+### Configuration-Specific Search
+
+When using `--config`, the system searches **ALL** log files for that configuration type:
+
+- `--config basic` searches all basic configuration logs (multiple files)
+- `--config persistence` searches all persistence configuration logs
+- `--config vmanage` searches all vManage configuration logs
+- Results are combined with merged status summaries and chronological ordering
+
+### Smart Latest Log Selection
+
+When no config is specified, automatically selects the most recent timestamped log file:
+
+- Filters out generic system logs (`latest.logs`)
+- Focuses on structured request/response logs with correlation IDs
+- Provides efficient single-file search for recent activity
+
+### All-Logs Mode
+
+The `--all-logs` flag searches across **ALL** available server log files:
+
+- Aggregates results from every configuration type
+- Combines all server instances and historical data
+- Provides complete API interaction history
+
+### Robust Error Handling
+
+- Continues searching if individual log files are corrupted or inaccessible
+- Reports warnings for failed files but completes search of available files
+- Maintains search integrity across multiple file operations
 
 ## Command Options
 

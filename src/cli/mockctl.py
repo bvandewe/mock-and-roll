@@ -174,7 +174,6 @@ Examples:
         start_parser.add_argument("--port", type=int, help="Server port")
         start_parser.add_argument("--host", default="0.0.0.0", help="Server host")
         start_parser.add_argument("--reload", action="store_true", help="Enable auto-reload for development")
-        start_parser.add_argument("--json", action="store_true", help="Output in JSON format (no emojis)")
 
         # Stop command
         stop_parser = subparsers.add_parser("stop", help="Stop mock server")
@@ -182,19 +181,15 @@ Examples:
         stop_parser.add_argument("--port", type=int, help="Stop server on specific port")
         stop_parser.add_argument("--pid", type=int, help="Stop specific process ID")
         stop_parser.add_argument("--all", action="store_true", help="Stop all servers")
-        stop_parser.add_argument("--json", action="store_true", help="Output in JSON format (no emojis)")
 
         # List command
         list_parser = subparsers.add_parser("list", help="List running servers")
-        list_parser.add_argument("--json", action="store_true", help="Output in JSON format (no emojis)")
 
         # Status command (alias for list)
         status_parser = subparsers.add_parser("status", help="Show server status (alias for list)")
-        status_parser.add_argument("--json", action="store_true", help="Output in JSON format (no emojis)")
 
         # Config-help command
         config_help_parser = subparsers.add_parser("config-help", help="Show configuration guide")
-        config_help_parser.add_argument("--json", action="store_true", help="Output in JSON format (no emojis)")
 
         # Search command
         search_parser = subparsers.add_parser("search", help="Search logged requests/responses")
@@ -203,16 +198,13 @@ Examples:
         search_parser.add_argument("--port", type=int, help="Port number to search logs for")
         search_parser.add_argument("--since", help="Filter logs since time (e.g., '30m ago', 'today', '2024-01-01 10:00')")
         search_parser.add_argument("--all-logs", action="store_true", help="Search all available log files")
-        search_parser.add_argument("--json", action="store_true", help="Output in JSON format (no emojis)")
 
         # Test command
         test_parser = subparsers.add_parser("test", help="Test server endpoints")
         test_parser.add_argument("config", nargs="?", help="Configuration name to test (tests all running servers if omitted)")
-        test_parser.add_argument("--json", action="store_true", help="Output in JSON format (no emojis)")
 
         # Version command
         version_parser = subparsers.add_parser("version", help="Show version information")
-        version_parser.add_argument("--json", action="store_true", help="Output in JSON format (no emojis)")
 
         return parser
 
