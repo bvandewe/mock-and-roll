@@ -72,7 +72,7 @@ class FileSystemLogSearchRepository(LogSearchRepository):
         return None
 
     def list_available_log_files(self, config_name: Optional[str] = None) -> list[str]:
-        """List available log files."""
+        """List available log files, excluding generic log files like latest.logs."""
         if not self.logs_dir.exists():
             return []
 
@@ -82,6 +82,9 @@ class FileSystemLogSearchRepository(LogSearchRepository):
             pattern = "*.logs"
 
         log_files = list(self.logs_dir.glob(pattern))
+
+        # Filter out generic log files that don't contain request/response data
+        log_files = [f for f in log_files if f.name != "latest.logs"]
 
         # Sort by modification time (newest first)
         log_files.sort(key=lambda f: f.stat().st_mtime, reverse=True)
