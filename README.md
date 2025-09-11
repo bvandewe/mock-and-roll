@@ -97,6 +97,7 @@ The `mockctl` command provides comprehensive server management:
 ./mockctl start basic --port 8080   # Start specific config
 ./mockctl stop --all                # Stop all servers
 ./mockctl list                      # Show running servers
+./mockctl --json list               # JSON output for scripting
 
 # Monitoring & Logs
 ./mockctl logs --lines 100          # View recent logs
@@ -106,7 +107,18 @@ The `mockctl` command provides comprehensive server management:
 # Configuration & Testing
 ./mockctl config-help               # Configuration guide
 ./mockctl test vmanage              # Test endpoints
+
+# Output Formatting
+./mockctl --no-emoji list           # Clean text output (removes emojis)
+./mockctl --json config-help        # Machine-readable JSON output
+./mockctl --json search "/api"      # JSON search results for automation
 ```
+
+**Global Options:**
+- `--json`: Output results in JSON format for scripting and automation
+- `--no-emoji`: Remove emojis from text output for cleaner display (ignored when using `--json`)
+
+All commands support both `--json` and `--no-emoji` flags to customize output formatting.
 
 ## 📂 Available Configurations
 

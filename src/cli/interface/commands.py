@@ -25,9 +25,9 @@ from .presentation import Colors, Presenter
 class CommandHandler:
     """Base command handler."""
 
-    def __init__(self, project_root: Path, json_mode: bool = False):
+    def __init__(self, project_root: Path, json_mode: bool = False, no_emoji: bool = False):
         self.project_root = project_root
-        self.presenter = Presenter(json_mode=json_mode)
+        self.presenter = Presenter(json_mode=json_mode, no_emoji=no_emoji)
 
         # Initialize repositories
         self.server_repo = FileSystemServerInstanceRepository(project_root)

@@ -20,6 +20,7 @@ mockctl [COMMAND] [OPTIONS]
 | `--version`, `-v` | Show version information | - |
 | `--verbose` | Enable verbose output | false |
 | `--json` | Output in JSON format | false |
+| `--no-emoji` | Remove emojis from text output (ignored with --json) | false |
 
 ## Commands
 
@@ -121,10 +122,16 @@ mockctl list
 mockctl list --verbose
 
 # JSON output for scripting
-mockctl list --json
+mockctl --json list
+
+# Clean output without emojis
+mockctl --no-emoji list
 
 # Filter by configuration
 mockctl list --config basic
+
+# Combine global options for clean detailed output
+mockctl --no-emoji list --verbose
 ```
 
 **Sample Output:**
@@ -136,6 +143,18 @@ Running Mock Servers:
 ├────────┼──────┼──────┼─────────┼─────────────────────┼─────────────────────────────┤
 │ basic  │ 1234 │ 8000 │ ✅ running │ 2025-01-01 12:00:00 │ http://localhost:8000       │
 │ vmanage│ 5678 │ 8443 │ ✅ running │ 2025-01-01 12:05:00 │ https://localhost:8443      │
+└────────┴──────┴──────┴─────────┴─────────────────────┴─────────────────────────────┘
+```
+
+**Sample Output with `--no-emoji`:**
+
+```
+Running Mock Servers:
+┌────────┬──────┬──────┬─────────┬─────────────────────┬─────────────────────────────┐
+│ Config │ PID  │ Port │ Status  │ Started             │ Base URL                    │
+├────────┼──────┼──────┼─────────┼─────────────────────┼─────────────────────────────┤
+│ basic  │ 1234 │ 8000 │ running  │ 2025-01-01 12:00:00 │ http://localhost:8000       │
+│ vmanage│ 5678 │ 8443 │ running  │ 2025-01-01 12:05:00 │ https://localhost:8443      │
 └────────┴──────┴──────┴─────────┴─────────────────────┴─────────────────────────────┘
 ```
 
@@ -176,7 +195,10 @@ mockctl search ".*" --status 4xx,5xx
 mockctl search "/api" --since "2025-01-01T11:00:00Z"
 
 # JSON output for processing
-mockctl search "/j_security_check" --json
+mockctl --json search "/j_security_check"
+
+# Clean output without emojis
+mockctl --no-emoji search "/auth"
 
 # Search specific server logs
 mockctl search "/api" --config vmanage --port 8443
@@ -196,6 +218,37 @@ mockctl search "/.*" --limit 10
    401: 1 request
 
 📝 Request/Response Details:
+
+   [1] 2025-01-01T12:30:00Z
+       Method: POST
+       Path: /j_security_check
+       Status: 401
+       Correlation ID: req_12345
+       Response Time: 45.2ms
+       Request: {"username": "admin", "password": "wrong"}
+       Response: {"error": "Invalid credentials"}
+
+   [2] 2025-01-01T12:32:00Z
+       Method: POST  
+       Path: /j_security_check
+       Status: 200
+       Correlation ID: req_12346
+       Response Time: 23.1ms
+       Request: {"username": "admin", "password": "admin"}
+       Response: {"token": "abc123", "expires": 3600}
+```
+
+**Sample Output with `--no-emoji`:**
+
+```
+Search Results:
+   Total requests found: 3
+
+Status Code Summary:
+   200: 2 requests
+   401: 1 request
+
+Request/Response Details:
 
    [1] 2025-01-01T12:30:00Z
        Method: POST

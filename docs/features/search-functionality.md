@@ -20,7 +20,10 @@ mockctl search ".*" --config basic
 mockctl search ".*" --all-logs
 
 # JSON output
-mockctl search "/docs" --json
+mockctl --json search "/docs"
+
+# Clean output without emojis
+mockctl --no-emoji search "/api"
 ```
 
 ## Command Options
@@ -31,6 +34,7 @@ mockctl search "/docs" --json
 - `--since SINCE`: Filter logs since time (e.g., '30m ago', 'today', '2024-01-01 10:00')
 - `--all-logs`: Search all available log files
 - `--json`: Output in JSON format (no emojis)
+- `--no-emoji`: Remove emojis from text output (ignored with --json)
 
 ## Time Filter Formats
 

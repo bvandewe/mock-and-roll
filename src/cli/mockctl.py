@@ -27,18 +27,61 @@ class MockServerCLI:
         """Initialize CLI."""
         self.project_root = Path(__file__).resolve().parent.parent.parent
 
+    def _format_emoji_output(self, text: str, no_emoji: bool) -> str:
+        """Format emoji output similar to Presenter class.
+
+        Args:
+            text: Input text that may contain emojis
+            no_emoji: If True, removes emojis from text
+
+        Returns:
+            Text with emojis removed if no_emoji is True
+        """
+        if not no_emoji:
+            return text
+
+        import re
+
+        # Comprehensive emoji pattern that matches most Unicode emoji ranges
+        emoji_pattern = re.compile(
+            "["
+            "\U0001f600-\U0001f64f"  # emoticons
+            "\U0001f300-\U0001f5ff"  # symbols & pictographs
+            "\U0001f680-\U0001f6ff"  # transport & map symbols
+            "\U0001f1e0-\U0001f1ff"  # flags (iOS)
+            "\U00002702-\U000027b0"  # dingbats
+            "\U000024c2-\U0001f251"
+            "\U0001f900-\U0001f9ff"  # supplemental symbols and pictographs
+            "\U00002600-\U000026ff"  # miscellaneous symbols
+            "\U00002700-\U000027bf"  # dingbats
+            "\U0001f018-\U0001f270"  # various symbols
+            "\U0001f300-\U0001f6ff"  # miscellaneous symbols and pictographs
+            "\U0001f780-\U0001f7ff"  # geometric shapes extended
+            "\U0001f800-\U0001f8ff"  # supplemental arrows-c
+            "\U0001f900-\U0001f9ff"  # supplemental symbols and pictographs
+            "\U0001fa00-\U0001fa6f"  # chess symbols
+            "\U0001fa70-\U0001faff"  # symbols and pictographs extended-a
+            "\U00002000-\U0000206f"  # general punctuation
+            "\U0000fe00-\U0000fe0f"  # variation selectors
+            "]+",
+            flags=re.UNICODE,
+        )
+
+        return emoji_pattern.sub("", text).strip()
+
     def main(self):
         """Main entry point."""
         parser = self.create_parser()
         args = parser.parse_args()
 
-        # Create command handlers with JSON mode based on args
+        # Create command handlers with JSON mode and emoji handling based on args
         json_mode = getattr(args, "json", False)
-        start_command = StartCommand(self.project_root, json_mode)
-        stop_command = StopCommand(self.project_root, json_mode)
-        list_command = ListCommand(self.project_root, json_mode)
-        config_help_command = ConfigHelpCommand(self.project_root, json_mode)
-        search_command = SearchCommand(self.project_root, json_mode)
+        no_emoji = getattr(args, "no_emoji", False)
+        start_command = StartCommand(self.project_root, json_mode, no_emoji)
+        stop_command = StopCommand(self.project_root, json_mode, no_emoji)
+        list_command = ListCommand(self.project_root, json_mode, no_emoji)
+        config_help_command = ConfigHelpCommand(self.project_root, json_mode, no_emoji)
+        search_command = SearchCommand(self.project_root, json_mode, no_emoji)
 
         # Map commands to handlers
         command_map = {
@@ -55,13 +98,15 @@ class MockServerCLI:
                 command_map[args.command](args)
             except KeyboardInterrupt:
                 if not json_mode:
-                    print(f"\n{Colors.YELLOW}⚠️  Operation cancelled{Colors.NC}")
+                    formatted_msg = self._format_emoji_output(f"\n{Colors.YELLOW}⚠️  Operation cancelled{Colors.NC}", getattr(args, "no_emoji", False))
+                    print(formatted_msg)
                 else:
                     print('{"status": "cancelled", "message": "Operation cancelled"}')
                 sys.exit(1)
             except Exception as e:
                 if not json_mode:
-                    print(f"{Colors.RED}❌ Error: {e}{Colors.NC}")
+                    formatted_msg = self._format_emoji_output(f"{Colors.RED}❌ Error: {e}{Colors.NC}", getattr(args, "no_emoji", False))
+                    print(formatted_msg)
                 else:
                     print(f'{{"status": "error", "message": "{str(e)}"}}')
                 sys.exit(1)
@@ -93,6 +138,9 @@ Examples:
 
         # Add global --json option
         parser.add_argument("--json", action="store_true", help="Output in JSON format (no emojis)")
+
+        # Add global --no-emoji option
+        parser.add_argument("--no-emoji", action="store_true", help="Remove emojis from text output (ignored when --json is used)")
 
         subparsers = parser.add_subparsers(dest="command", help="Available commands")
 

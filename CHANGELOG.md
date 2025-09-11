@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Emoji-free Output Option**: New `--no-emoji` global flag for clean text output
+  - Removes all Unicode emojis from CLI output for cleaner logs and scripts
+  - Applies to all text output modes (ignored when using `--json`)
+  - Comprehensive Unicode emoji pattern matching for complete removal
 - Comprehensive MkDocs documentation with Material theme
 - GitHub Pages deployment workflow
 - Professional documentation structure with navigation

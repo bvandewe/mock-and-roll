@@ -74,12 +74,19 @@ curl http://localhost:8000/api/health
 # stop           - Stop servers  
 # list           - List running servers
 # search <pattern> - Search logs
+
+# Global options:
+# --json        - Output in JSON format
+# --no-emoji    - Remove emojis from output
 ```
 
 ### List Running Servers
 
 ```bash
 ./mockctl list
+
+# Clean output without emojis
+./mockctl --no-emoji list
 
 # Example output:
 # Running Mock Servers:
@@ -94,6 +101,9 @@ curl http://localhost:8000/api/health
 
 # Search for authentication requests
 ./mockctl search "/auth"
+
+# Clean search output without emojis
+./mockctl --no-emoji search "/auth"
 
 # Search with regex patterns
 ./mockctl search "POST.*login"
