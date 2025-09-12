@@ -99,16 +99,16 @@ curl http://localhost:8000/api/health
 
 ```bash
 # Search for API requests
-./mockctl --json search "/api"
+./mockctl --json search basic "/api"
 
 # Search for authentication requests
-./mockctl search "/auth"
+./mockctl search basic "/auth"
 
 # Clean search output without emojis
-./mockctl --no-emoji search "/auth"
+./mockctl --no-emoji search basic "/auth"
 
 # Search with regex patterns
-./mockctl search "POST.*login"
+./mockctl search basic "POST.*login"
 ```
 
 ## 📋 Configuration Profiles

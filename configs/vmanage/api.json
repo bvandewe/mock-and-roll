@@ -43,7 +43,8 @@
     "logging": {
         "enabled": true,
         "level": "DEBUG",
-        "file_path": "logs/latest.logs",
+        "console_enabled": true,
+        "file_enabled": true,
         "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         "max_file_size_mb": 10,
         "backup_count": 5,

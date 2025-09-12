@@ -193,7 +193,7 @@ class SearchCommand(CommandHandler):
             if args.since:
                 since_timestamp = self._parse_since_parameter(args.since)
 
-            # Execute search
+            # Execute search with new parameter structure
             result = self.search_use_case.execute(path_regex=args.path_regex, config_name=args.config, port=args.port, since_timestamp=since_timestamp, use_all_logs=args.all_logs)
 
             self.presenter.show_search_results(result)
@@ -292,8 +292,9 @@ class TestCommand(CommandHandler):
 
     def execute(self, args: argparse.Namespace) -> None:
         """Execute test command."""
-        import requests
         from urllib.parse import urljoin
+
+        import requests
 
         try:
             # Get all running servers

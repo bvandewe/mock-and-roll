@@ -359,16 +359,16 @@ curl -H "X-API-Key: user-key-123" http://localhost:8000/api/protected
 
 ```bash
 # Search for all API requests
-./mockctl search "/api"
+./mockctl search basic "/api"
 
 # Search for user-related requests
-./mockctl search "/api/users"
+./mockctl search basic "/api/users"
 
 # Search for authentication failures
-./mockctl search "401"
+./mockctl search basic "401"
 
 # Get JSON output for processing
-./mockctl --json search "/api" > api_requests.json
+./mockctl --json search basic "/api" > api_requests.json
 
 # Analyze with jq
 cat api_requests.json | jq '.status_code_summary'

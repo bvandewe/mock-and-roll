@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Air-gapped Swagger UI Support**: Complete offline documentation interface for secure environments
   - Local Swagger UI assets (CSS/JS) bundled with application - no CDN dependencies
+  - **Local Favicon Support**: FastAPI favicon served locally without internet dependency
   - Automatic air-gapped mode detection via configuration (`airgapped_mode: true`)
   - Direct static file routes serving local assets at `/static/swagger-ui/` endpoints
   - Custom Swagger UI title indicating air-gapped mode for environment awareness
@@ -32,32 +33,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Enhanced
 
-- **CLI Flag Architecture Refactoring**: Streamlined command-line interface with global flag support
-  - **Global Flags Only**: `--json` and `--no-emoji` flags are now exclusively global (top-level) flags
-  - **Simplified Syntax**: Use `mockctl --json [command]` instead of `mockctl [command] --json`
-  - **Consistent Interface**: All commands now use the same global flag pattern for uniformity
-  - **Improved Maintainability**: Eliminated redundant flag definitions across subparsers
-  - **Backward Compatibility**: Old syntax patterns are deprecated but examples updated throughout documentation
-
-- **JQ-Compatible JSON Output**: Improved JSON formatting for better automation integration
-  - **Status Code Keys**: Status codes in JSON output now use `"status_200"` format instead of `"200"`
-  - **JQ Accessibility**: Enables direct property access in JQ without quotes: `.status_code_summary.status_200`
-  - **Automation Friendly**: Simplifies parsing and filtering in shell scripts and CI/CD pipelines
-  - **Backward Compatibility**: Updated all tests and documentation examples to use new format
-
-- **Advanced Log Search Capabilities**: Comprehensive log file selection for enhanced search functionality
-  - **Multi-file Search**: Search across multiple log files for specific configuration types
-    - When using `--config`, searches ALL logs for that configuration type (e.g., all basic, persistence, or vmanage logs)
-    - Combines results from multiple files with merged status code summaries and chronological ordering
-  - **Smart Latest Log Selection**: When no config is specified, automatically selects the most recent timestamped log file
-    - Filters out generic system logs (`latest.logs`) to focus on actual request/response logs
-    - Prioritizes structured log files with correlation IDs and request tracking
-  - **Comprehensive All-Logs Mode**: `--all-logs` flag searches across ALL available server log files
-    - Aggregates results from every configuration type and server instance
-    - Provides complete historical view of all API interactions
-  - **Robust Error Handling**: Continues searching other files if individual log files are corrupted or inaccessible
-  - **Performance Optimized**: Single-file search when only one log file matches criteria
-  - **Backward Compatible**: Maintains all existing search functionality while adding multi-file capabilities
+- **Enhanced Search Command with Mandatory Config Parameter**: Redesigned search interface for better organization and control
+  - **New Command Signature**: Changed from `mockctl search [--config name] pattern` to `mockctl search <config_name> <pattern>`
+  - **Mandatory Config Parameter**: Config name is now required - use specific config ('basic', 'vmanage', 'persistence') or 'all'
+  - **"All" Config Mode**: `mockctl search all "/pattern"` searches most recent log file for each configuration type
+  - **Enhanced File Selection Logic**:
+    - Without `--all-logs`: Searches most recent log file for selected config(s)
+    - With `--all-logs`: Searches ALL historical log files for selected config(s)
+  - **Improved Output with File Tracking**:
+    - Text output shows "Log file processed" (single) or "Log files processed (N)" (multiple)
+    - JSON output includes `"log_files"` array with all processed file paths
+    - Each request includes `"log_file_source"` field indicating source file
+    - "Source" field displayed for each request when multiple files are searched
+  - **Better Error Messages**: Clear error messages when no logs found for specified config
+  - **Backward Compatibility**: `--all-logs` flag continues to work with enhanced config-specific scope
 
 ### Changed
 
@@ -74,6 +63,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Fixed incorrect syntax patterns in automation examples and CI/CD scripts
 
 ### Fixed
+
+- **Complete Logging System Overhaul**: Eliminated generic log files and ensured proper log file management
+  - **Removed latest.logs Usage**: Completely eliminated `latest.logs` references throughout the codebase
+  - **Mandatory LOG_FILE Environment Variable**: Server now requires LOG_FILE environment variable to start
+  - **Prevents Direct Server Startup**: Server refuses to start without proper log file configuration
+  - **Config-Specific Log Files**: All server logs use timestamped format `{timestamp}_{config}_{port}.logs`
+  - **Dedicated mockctl Logging**: CLI operations logged separately to `logs/mockctl.log`
+  - **Clean Log Directory**: Only proper config-specific server logs and mockctl.log are generated
+  - **Generic Server Log Prevention**: Eliminated fallback generic server log creation mechanism
 
 - GitHub Pages deployment permissions and workflow configuration
 - Port detection failures in minimal container environments
@@ -163,7 +161,7 @@ No breaking changes were introduced in this version. All existing configurations
 
 **New Features Available:**
 
-- Use `./mockctl search` for advanced log analysis
+- Use `./mockctl search <config> <pattern>` for advanced log analysis
 - JSON output mode: Add `--json` flag to most commands
 - Enhanced time filtering: Use `--since` with human-readable expressions
 

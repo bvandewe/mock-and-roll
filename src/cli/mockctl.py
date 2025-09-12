@@ -225,11 +225,11 @@ Examples:
 
         # Search command
         search_parser = subparsers.add_parser("search", help="Search logged requests/responses")
+        search_parser.add_argument("config", help="Configuration name ('all' for all configs, specific config name for that config)")
         search_parser.add_argument("path_regex", help="Regular expression to match request paths")
-        search_parser.add_argument("--config", help="Configuration name (auto-detect if omitted)")
-        search_parser.add_argument("--port", type=int, help="Port number to search logs for")
+        search_parser.add_argument("--port", type=int, help="Port number to search logs for (overrides config)")
         search_parser.add_argument("--since", help="Filter logs since time (e.g., '30m ago', 'today', '2024-01-01 10:00')")
-        search_parser.add_argument("--all-logs", action="store_true", help="Search all available log files")
+        search_parser.add_argument("--all-logs", action="store_true", help="Search all available log files for the selected config(s)")
 
         # Test command
         test_parser = subparsers.add_parser("test", help="Test server endpoints")

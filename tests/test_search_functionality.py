@@ -231,7 +231,7 @@ class TestSearchFunctionality(unittest.TestCase):
 
         # Mock the use case to avoid file system dependencies in this test
         with patch.object(command, "search_use_case") as mock_use_case:
-            mock_result = SearchResult(path_pattern="/items", log_file="test.logs", total_requests=2, matched_requests=[], status_code_summary={"status_200": 2}, search_duration_ms=10.0)
+            mock_result = SearchResult(path_pattern="/items", log_files=["test.logs"], total_requests=2, matched_requests=[], status_code_summary={"status_200": 2}, search_duration_ms=10.0)
             mock_use_case.execute.return_value = mock_result
 
             # Capture output
@@ -253,7 +253,7 @@ class TestSearchFunctionality(unittest.TestCase):
         # Create sample search result
         sample_request = RequestResponsePair(correlation_id="test123", method="GET", path="/test/path", status_code=200, timestamp=datetime.now(), response_time_ms=5.5, request_headers={"host": "localhost", "accept": "application/json"}, response_headers={"content-type": "application/json"}, request_body=None, response_body='{"result": "success"}')
 
-        result = SearchResult(path_pattern="/test", log_file="test.logs", total_requests=1, matched_requests=[sample_request], status_code_summary={"status_200": 1}, search_duration_ms=15.2)
+        result = SearchResult(path_pattern="/test", log_files=["test.logs"], total_requests=1, matched_requests=[sample_request], status_code_summary={"status_200": 1}, search_duration_ms=15.2)
 
         # Test JSON output
         json_presenter = Presenter(json_mode=True)

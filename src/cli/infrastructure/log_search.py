@@ -39,7 +39,7 @@ class FileSystemLogSearchRepository(LogSearchRepository):
         log_entries = self._parse_log_file(log_file, since_timestamp)
 
         # Find request/response pairs
-        request_response_pairs = self._match_requests_responses(log_entries)
+        request_response_pairs = self._match_requests_responses(log_entries, log_file_path)
 
         # Filter by path regex
         matched_pairs = self._filter_by_path_regex(request_response_pairs, path_regex)
@@ -52,7 +52,7 @@ class FileSystemLogSearchRepository(LogSearchRepository):
 
         search_duration = (time.time() - start_time) * 1000
 
-        return SearchResult(path_pattern=path_regex, log_file=log_file_path, total_requests=len(matched_pairs), matched_requests=matched_pairs, status_code_summary=status_summary, search_duration_ms=search_duration, since_timestamp=since_timestamp)
+        return SearchResult(path_pattern=path_regex, log_files=[log_file_path], total_requests=len(matched_pairs), matched_requests=matched_pairs, status_code_summary=status_summary, search_duration_ms=search_duration, since_timestamp=since_timestamp)
 
     def find_log_file_for_server(self, server: ServerInstance) -> Optional[str]:
         """Find the log file path for a server instance."""
@@ -109,7 +109,7 @@ class FileSystemLogSearchRepository(LogSearchRepository):
 
         return entries
 
-    def _match_requests_responses(self, log_entries: list[LogEntry]) -> list[RequestResponsePair]:
+    def _match_requests_responses(self, log_entries: list[LogEntry], log_file_path: str) -> list[RequestResponsePair]:
         """Match request and response log entries by correlation ID."""
         # Group all entries by correlation ID
         correlation_groups: dict[str, list[LogEntry]] = defaultdict(list)
@@ -143,6 +143,7 @@ class FileSystemLogSearchRepository(LogSearchRepository):
             if request_entry:
                 pair = RequestResponsePair.from_log_entries(request_entry, response_entry, request_headers_entry, response_headers_entry, response_body_entry)
                 if pair:
+                    pair.log_file_source = log_file_path  # Set the log file source
                     pairs.append(pair)
 
         return pairs

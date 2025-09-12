@@ -2,77 +2,92 @@
 
 ## Overview
 
-The search command has been successfully implemented to return the list of requests/responses per status_code (ordered newest first) for a given path regex, as requested.
+The search command has been successfully implemented with enhanced functionality to search across configurations and log files. The command now uses a mandatory config parameter for better organization and control.
 
 ## Command Usage
 
 ```bash
-# Search with regex pattern - searches latest log file
-mockctl search "/api/.*"
+# Search specific config (most recent log)
+mockctl search basic "/api/.*"
 
-# Search with time filter - searches latest log file
-mockctl search "/users" --since "30m ago"
+# Search all configs (most recent log per config)
+mockctl search all "/docs"
+
+# Search specific config with time filter
+mockctl search vmanage "/users" --since "30m ago"
 
 # Search ALL logs for specific configuration type
-mockctl search ".*" --config basic
+mockctl search basic --all-logs ".*"
 
-# Search ALL available log files from all servers
-mockctl search ".*" --all-logs
+# Search ALL available log files from all configs
+mockctl search all --all-logs ".*"
 
 # JSON output
-mockctl --json search "/docs"
+mockctl --json search basic "/docs"
 
 # Clean output without emojis
-mockctl --no-emoji search "/api"
+mockctl --no-emoji search all "/api"
 
 # JQ-friendly status codes (no quotes needed)
-mockctl --json search "/api" | jq '.status_code_summary.status_200'
+mockctl --json search all "/api" | jq '.status_code_summary.status_200'
 ```
 
-## Enhanced Multi-File Search Capabilities
+## Enhanced Multi-Config Search Capabilities
 
-The search functionality now supports comprehensive log file selection:
+The search functionality now requires a mandatory config parameter and supports advanced log file selection:
 
-### Configuration-Specific Search
+### Mandatory Config Parameter
 
-When using `--config`, the system searches **ALL** log files for that configuration type:
+The search command signature has been updated to:
 
-- `--config basic` searches all basic configuration logs (multiple files)
-- `--config persistence` searches all persistence configuration logs
-- `--config vmanage` searches all vManage configuration logs
-- Results are combined with merged status summaries and chronological ordering
+```bash
+mockctl search <config_name> <pattern> [OPTIONS]
+```
 
-### Smart Latest Log Selection
+- `<config_name>`: **Required** - Config name or 'all'
+- `<pattern>`: **Required** - Search pattern (supports regex)
 
-When no config is specified, automatically selects the most recent timestamped log file:
+### Config-Specific Search
 
-- Filters out generic system logs (`latest.logs`)
-- Focuses on structured request/response logs with correlation IDs
-- Provides efficient single-file search for recent activity
+- `mockctl search basic "/api"` searches the **most recent** log file for basic config
+- `mockctl search vmanage "/users"` searches the **most recent** log file for vmanage config
+- `mockctl search persistence "/docs"` searches the **most recent** log file for persistence config
 
-### All-Logs Mode
+### "All" Config Mode
 
-The `--all-logs` flag searches across **ALL** available server log files:
+- `mockctl search all "/pattern"` searches the **most recent log file for each config type**
+- Combines results from multiple configurations in a single search
+- Shows log file sources for each request when multiple files are processed
 
-- Aggregates results from every configuration type
-- Combines all server instances and historical data
-- Provides complete API interaction history
+### All-Logs Mode Enhancement
 
-### Robust Error Handling
+The `--all-logs` flag now works with the selected config(s):
 
-- Continues searching if individual log files are corrupted or inaccessible
-- Reports warnings for failed files but completes search of available files
-- Maintains search integrity across multiple file operations
+- `mockctl search basic --all-logs "/api"` searches **ALL** log files for basic config
+- `mockctl search all --all-logs "/docs"` searches **ALL** log files for **ALL** configs
+- Provides complete historical search across selected configuration scope
+
+### Enhanced Output with File Tracking
+
+**Text Output:**
+- Shows "Log file processed" (single file) or "Log files processed (N)" (multiple files)  
+- Displays "Source" field for each request when multiple log files are searched
+- Lists all processed log files in the main results section
+
+**JSON Output:**
+- Includes `"log_files"` array with all processed log file paths
+- Each request includes `"log_file_source"` field indicating its source file
+- Maintains full traceability for automation and analysis
 
 ## Command Options
 
+- `config_name` (required): Configuration name ('all' for all configs, specific config name for that config)
 - `path_regex` (required): Regular expression to match request paths
-- `--config CONFIG`: Configuration name (auto-detect if omitted)
-- `--port PORT`: Port number to search logs for
+- `--port PORT`: Port number to search logs for (overrides config)
 - `--since SINCE`: Filter logs since time (e.g., '30m ago', 'today', '2024-01-01 10:00')
-- `--all-logs`: Search all available log files
-- `--json`: Output in JSON format (no emojis)
-- `--no-emoji`: Remove emojis from text output (ignored with --json)
+- `--all-logs`: Search all available log files for the selected config(s)
+- `--json`: Output in JSON format (global flag)
+- `--no-emoji`: Remove emojis from text output (global flag, ignored with --json)
 
 ## Time Filter Formats
 
@@ -132,13 +147,18 @@ mockctl --json search "/api" | jq '.status_code_summary | to_entries | map(selec
 
 ### Text Format
 ```
+### Text Format
+
+```text
 🔍 Search Results:
-   Total requests found: 5
+   Total requests found: 3
+   Log files processed (2):
+     • 20250912_113314_basic_8001.logs
+     • 20250912_113306_vmanage_8000.logs
 
 📊 Status Code Summary:
-   200: 3 requests
-   403: 1 requests
-   404: 1 requests
+   status_200: 2 requests
+   status_403: 1 requests
 
 📝 Request/Response Details:
 
@@ -148,6 +168,35 @@ mockctl --json search "/api" | jq '.status_code_summary | to_entries | map(selec
        Status: 403
        Correlation ID: f81c05e3
        Response Time: 2.00ms
+       Source: 20250912_113314_basic_8001.logs
+```
+
+### JSON Format
+
+```json
+{
+  "total_requests": 3,
+  "log_files": [
+    "/path/to/logs/20250912_113314_basic_8001.logs",
+    "/path/to/logs/20250912_113306_vmanage_8000.logs"
+  ],
+  "status_code_summary": {
+    "status_200": 2,
+    "status_403": 1
+  },
+  "matched_requests": [
+    {
+      "timestamp": "2025-09-08T16:14:22.976000",
+      "correlation_id": "f81c05e3",
+      "method": "GET",
+      "path": "/system/logging/status",
+      "status_code": 403,
+      "response_time_ms": 2.0,
+      "log_file_source": "/path/to/logs/20250912_113314_basic_8001.logs"
+    }
+  ]
+}
+```
 ```
 
 ### JSON Format

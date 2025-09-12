@@ -200,73 +200,69 @@ API Docs: http://0.0.0.0:8000/docs
 Search server logs for specific patterns and requests.
 
 ```bash
-mockctl search <pattern> [OPTIONS]
+mockctl search <config_name> <pattern> [OPTIONS]
 ```
 
 **Arguments:**
+- `config_name` - Configuration name ('all' for all configs, or specific config like 'basic', 'vmanage', etc.)
 - `pattern` - Search pattern (supports regex)
 
 **Options:**
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `--config`, `-c` | Search ALL logs for specific config type | auto-detect latest |
-| `--port`, `-p` | Search logs for specific port | auto-detect |
-| `--since` | Search since timestamp (ISO 8601) | - |
-| `--all-logs` | Search ALL available log files | false |
-| `--limit`, `-l` | Limit number of results | 50 |
-| `--status` | Filter by HTTP status code | - |
+| `--port`, `-p` | Search logs for specific port (overrides config) | auto-detect |
+| `--since` | Search since timestamp (supports relative time) | - |
+| `--all-logs` | Search ALL available log files for selected config(s) | false |
 
 **Enhanced Search Capabilities:**
 
-- **Config-specific**: `--config basic` searches ALL basic configuration logs (multi-file)
-- **Latest log**: No config specified searches the most recent timestamped log file
-- **All logs**: `--all-logs` searches ALL server log files from all configurations
+- **Config-specific**: `basic`, `vmanage`, `persistence` searches most recent log for that config
+- **All configs**: `all` searches most recent log file for each configuration type
+- **All logs**: `--all-logs` searches ALL historical log files for selected config(s)
 - **Smart filtering**: Automatically excludes generic system logs, focuses on request/response logs
 
 **Examples:**
 
 ```bash
-# Search latest log file for authentication requests
-mockctl search "/auth"
+# Search most recent basic config logs
+mockctl search basic "/auth"
 
-# Search ALL basic config logs (multi-file search)
-mockctl search "/api" --config basic
+# Search most recent logs for all configs 
+mockctl search all "/api"
 
-# Search ALL available logs from all servers
-mockctl search ".*" --all-logs
+# Search ALL historical vmanage logs
+mockctl search vmanage --all-logs ".*"
 
-# Search with regex pattern in latest log
-mockctl search "POST.*login"
+# Search ALL historical logs for ALL configs
+mockctl search all --all-logs "/docs"
 
-# Search for errors across all vmanage logs
-mockctl search ".*" --config vmanage --status 4xx,5xx
+# Search with regex pattern in basic logs
+mockctl search basic "POST.*login"
 
-# Search recent requests in latest log
-mockctl search "/api" --since "2025-01-01T11:00:00Z"
+# Search recent requests with time filter
+mockctl search basic "/api" --since "2025-01-01T11:00:00Z"
 
 # JSON output for processing
-mockctl --json search "/j_security_check" --all-logs
+mockctl --json search all "/j_security_check"
 
 # Clean output without emojis
-mockctl --no-emoji search "/auth"
+mockctl --no-emoji search basic "/auth"
 
-# Search specific server logs
-mockctl search "/api" --port 8443
-
-# Limit results from multi-file search
-mockctl search "/.*" --config persistence --limit 10
+# Search specific server logs by port (overrides config)
+mockctl search basic "/api" --port 8443
 ```
 
 **Sample Output (Text):**
 
-```
+```text
 🔍 Search Results:
    Total requests found: 3
+   Log file processed: 20250912_113314_basic_8001.logs
 
 📊 Status Code Summary:
-   200: 2 requests
-   401: 1 request
+   status_200: 2 requests
+   status_401: 1 requests
 
 📝 Request/Response Details:
 
@@ -289,17 +285,21 @@ mockctl search "/.*" --config persistence --limit 10
        Response: {"token": "abc123", "expires": 3600}
 ```
 
-**Sample Output with `--no-emoji`:**
+**Sample Output with Multiple Files (all configs):**
 
-```
-Search Results:
-   Total requests found: 3
+```text
+🔍 Search Results:
+   Total requests found: 5
+   Log files processed (3):
+     • 20250912_113314_basic_8001.logs
+     • 20250912_113306_vmanage_8000.logs
+     • 20250912_113400_persistence_8002.logs
 
-Status Code Summary:
-   200: 2 requests
-   401: 1 request
+📊 Status Code Summary:
+   status_200: 3 requests
+   status_401: 2 requests
 
-Request/Response Details:
+📝 Request/Response Details:
 
    [1] 2025-01-01T12:30:00Z
        Method: POST
@@ -307,17 +307,7 @@ Request/Response Details:
        Status: 401
        Correlation ID: req_12345
        Response Time: 45.2ms
-       Request: {"username": "admin", "password": "wrong"}
-       Response: {"error": "Invalid credentials"}
-
-   [2] 2025-01-01T12:32:00Z
-       Method: POST  
-       Path: /j_security_check
-       Status: 200
-       Correlation ID: req_12346
-       Response Time: 23.1ms
-       Request: {"username": "admin", "password": "admin"}
-       Response: {"token": "abc123", "expires": 3600}
+       Source: 20250912_113314_basic_8001.logs
 ```
 
 **Sample Output (JSON):**
@@ -325,6 +315,9 @@ Request/Response Details:
 ```json
 {
   "total_requests": 2,
+  "log_files": [
+    "/path/to/logs/20250912_113314_basic_8001.logs"
+  ],
   "status_code_summary": {
     "status_200": 1,
     "status_401": 1
@@ -340,7 +333,8 @@ Request/Response Details:
       "request_body": "{\"username\": \"admin\", \"password\": \"admin\"}",
       "response_body": "{\"token\": \"abc123\", \"expires\": 3600}",
       "request_headers": {"Content-Type": "application/json"},
-      "response_headers": {"Content-Type": "application/json"}
+      "response_headers": {"Content-Type": "application/json"},
+      "log_file_source": "/path/to/logs/20250912_113314_basic_8001.logs"
     }
   ]
 }
@@ -610,7 +604,7 @@ while true; do
   mockctl list
   echo
   echo "=== Recent Activity ==="
-  mockctl search ".*" --limit 5 --since "$(date -d '1 minute ago' -Iseconds)"
+  mockctl search all ".*" --limit 5 --since "$(date -d '1 minute ago' -Iseconds)"
   sleep 10
 done
 ```
@@ -619,10 +613,10 @@ done
 
 ```bash
 # Count requests by status code
-mockctl --json search ".*" | jq '.status_code_summary'
+mockctl --json search all ".*" | jq '.status_code_summary'
 
 # Find slow requests
-mockctl --json search ".*" | jq '.matched_requests[] | select(.response_time_ms > 1000)'
+mockctl --json search all ".*" | jq '.matched_requests[] | select(.response_time_ms > 1000)'
 
 # Extract request paths
 mockctl --json search ".*" | jq -r '.matched_requests[].path' | sort | uniq -c
@@ -707,7 +701,7 @@ mockctl logs --follow
 curl http://localhost:8000/api/test
 
 # Search for specific requests
-mockctl search "/api/test"
+mockctl search basic "/api/test"
 
 # Stop when done
 mockctl stop

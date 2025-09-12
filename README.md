@@ -101,9 +101,10 @@ The `mockctl` command provides comprehensive server management:
 ./mockctl --json list               # JSON output for scripting
 
 # Monitoring & Logs
-./mockctl logs --lines 100          # View recent logs
-./mockctl search "/api/users"       # Search for endpoint requests
-./mockctl search "/items" --since "1h ago" # Time-filtered search
+./mockctl logs --lines 100                # View recent logs
+./mockctl search basic "/api/users"       # Search basic config logs
+./mockctl search all "/docs"              # Search all configs
+./mockctl search vmanage "/items" --since "1h ago" # Time-filtered search
 
 # Configuration & Testing
 ./mockctl config-help               # Configuration guide
@@ -277,12 +278,16 @@ curl -H "X-API-Key: demo-api-key-123" http://localhost:8000/products/{id}
 ```
 
 ### Advanced Search
-```bash
-# Find all user API calls from the last hour
-./mockctl --json search "/api/users" --since "1h ago"
 
-# Search across all configurations
-./mockctl search "/auth" --all-logs
+```bash
+# Find all user API calls from the last hour (most recent basic logs)
+./mockctl --json search basic "/api/users" --since "1h ago"
+
+# Search across all configurations (most recent log per config)
+./mockctl search all "/auth"
+
+# Search all historical logs for a specific config
+./mockctl search basic --all-logs "/docs"
 ```
 
 ### Air-gapped Environment

@@ -288,16 +288,30 @@ class Presenter:
         """Show search results for requests and responses."""
         if self.json_mode:
             # Convert SearchResult to JSON-serializable format
-            json_data = {"total_requests": result.total_requests, "status_code_summary": result.status_code_summary, "matched_requests": []}
+            json_data = {"total_requests": result.total_requests, "log_files": result.log_files, "status_code_summary": result.status_code_summary, "matched_requests": []}
 
             for req_resp in result.matched_requests:
-                json_data["matched_requests"].append({"timestamp": req_resp.timestamp.isoformat() if req_resp.timestamp else None, "correlation_id": req_resp.correlation_id, "method": req_resp.method, "path": req_resp.path, "status_code": req_resp.status_code, "response_time_ms": req_resp.response_time_ms, "request_body": req_resp.request_body, "response_body": req_resp.response_body, "request_headers": req_resp.request_headers, "response_headers": req_resp.response_headers})
+                request_data = {"timestamp": req_resp.timestamp.isoformat() if req_resp.timestamp else None, "correlation_id": req_resp.correlation_id, "method": req_resp.method, "path": req_resp.path, "status_code": req_resp.status_code, "response_time_ms": req_resp.response_time_ms, "request_body": req_resp.request_body, "response_body": req_resp.response_body, "request_headers": req_resp.request_headers, "response_headers": req_resp.response_headers}
+                # Add log file source to each request
+                if hasattr(req_resp, "log_file_source"):
+                    request_data["log_file_source"] = req_resp.log_file_source
+
+                json_data["matched_requests"].append(request_data)
 
             self._output_json(json_data)
         else:
             # Text output with colors
             print(self._format_output(f"\n{Colors.GREEN}🔍 Search Results:{Colors.NC}"))
             print(f"   Total requests found: {Colors.CYAN}{result.total_requests}{Colors.NC}")
+
+            # Show log files processed
+            if result.log_files:
+                if len(result.log_files) == 1:
+                    print(f"   Log file processed: {Colors.BLUE}{result.log_files[0].split('/')[-1]}{Colors.NC}")
+                else:
+                    print(f"   Log files processed ({len(result.log_files)}):")
+                    for log_file in result.log_files:
+                        print(f"     • {Colors.BLUE}{log_file.split('/')[-1]}{Colors.NC}")
 
             if result.status_code_summary:
                 print(self._format_output(f"\n{Colors.YELLOW}📊 Status Code Summary:{Colors.NC}"))
@@ -331,6 +345,10 @@ class Presenter:
 
                     if req_resp.response_time_ms:
                         print(f"       Response Time: {req_resp.response_time_ms:.2f}ms")
+
+                    # Show log file source for each request if multiple files were searched
+                    if len(result.log_files) > 1 and hasattr(req_resp, "log_file_source"):
+                        print(f"       Source: {Colors.BLUE}{req_resp.log_file_source.split('/')[-1]}{Colors.NC}")
 
                     if req_resp.request_headers:
                         print(f"       Request Headers: {req_resp.request_headers}")

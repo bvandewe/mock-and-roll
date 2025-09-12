@@ -239,6 +239,7 @@ class RequestResponsePair:
     response_headers: Optional[Union[dict[str, str], str]] = None
     request_body: Optional[str] = None
     response_body: Optional[str] = None
+    log_file_source: Optional[str] = None  # Track which log file this came from
 
     @classmethod
     def from_log_entries(cls, request_entry: "LogEntry", response_entry: Optional["LogEntry"] = None, request_headers_entry: Optional["LogEntry"] = None, response_headers_entry: Optional["LogEntry"] = None, response_body_entry: Optional["LogEntry"] = None) -> Optional["RequestResponsePair"]:
@@ -312,12 +313,17 @@ class SearchResult:
     """Domain entity representing search results."""
 
     path_pattern: str
-    log_file: str
+    log_files: list[str]  # Changed from log_file to log_files to support multiple files
     total_requests: int
     matched_requests: list[RequestResponsePair]
     status_code_summary: dict[str, int]  # status_code -> count (e.g., "status_200": 3)
     search_duration_ms: float
     since_timestamp: Optional[datetime] = None
+
+    @property
+    def log_file(self) -> str:
+        """Backward compatibility property - returns first log file."""
+        return self.log_files[0] if self.log_files else ""
 
     @property
     def success_rate(self) -> float:

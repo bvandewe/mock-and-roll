@@ -102,8 +102,8 @@ After setup, `mockctl` will be available globally from any directory!
 # Monitor activity
 ./mockctl logs                     # Recent logs
 ./mockctl success detailed         # Success analysis
-./mockctl search /api/users        # Search for requests to /api/users
-./mockctl search /items --since 1h # Search for /items requests in last hour
+./mockctl search basic "/api/users"     # Search for requests to /api/users
+./mockctl search basic "/items" --since "1h ago" # Search for /items requests in last hour
 
 # Get help
 ./mockctl help                     # All available scripts
@@ -303,7 +303,7 @@ The mock server includes a unified Python CLI application that provides comprehe
 | `stop` | Stop running servers | `./mockctl stop --all` |
 | `list` | List running servers | `./mockctl list` |
 | `logs` | View server logs with filtering | `./mockctl logs --filter /api/users` |
-| `search` | Search logs for requests to specific paths | `./mockctl search /api/users --config basic` |
+| `search` | Search logs for requests to specific paths | `./mockctl search basic "/api/users"` |
 | `test` | Test server endpoints | `./mockctl test vmanage --port 8000` |
 | `success` | Generate success rate reports | `./mockctl success detailed` |
 | `config-help` | Show configuration guide | `./mockctl config-help` |
@@ -331,12 +331,12 @@ The mock server includes a unified Python CLI application that provides comprehe
 ./mockctl logs --port 8000         # View logs from specific server
 
 # Search logs for specific endpoints
-./mockctl search /api/users        # Search for requests to /api/users
-./mockctl search /items --port 8001 # Search specific server
-./mockctl search /auth --since "1h ago" # Search last hour
-./mockctl search /products --since "today" # Search today's logs
-./mockctl search /data --config basic    # Search all basic config logs
-./mockctl search /auth --all-logs   # Search across all log files
+./mockctl search basic "/api/users"     # Search for requests to /api/users
+./mockctl search basic "/items" --port 8001 # Search specific server
+./mockctl search basic "/auth" --since "1h ago" # Search last hour
+./mockctl search basic "/products" --since "today" # Search today's logs
+./mockctl search all "/data"            # Search all configs
+./mockctl search basic --all-logs "/auth" # Search across all log files
 ```
 
 #### 📋 Logs Command Details
@@ -376,36 +376,36 @@ The `search` command provides powerful log analysis capabilities to find request
 **Basic Usage:**
 ```bash
 # Search for requests to a specific path
-./mockctl search /api/users
+./mockctl search basic "/api/users"
 
 # Search specific server by port
-./mockctl search /items --port 8001
+./mockctl search basic "/items" --port 8001
 
-# Search across all logs for a configuration
-./mockctl search /auth --config basic
+# Search across all configs
+./mockctl search all "/auth"
 
 # Search across all available log files
-./mockctl search /data --all-logs
+./mockctl search basic --all-logs "/data"
 
 # Limit search to recent log entries
-./mockctl search /auth --lines 5000
+./mockctl search basic "/auth" --lines 5000
 ```
 
 **Time-based Filtering:**
 ```bash
 # Search logs from the last hour
-./mockctl search /api/products --since "1h ago"
+./mockctl search basic "/api/products" --since "1h ago"
 
 # Search logs from today
-./mockctl search /auth/login --since "today"
+./mockctl search basic "/auth/login" --since "today"
 
 # Search logs since specific time
-./mockctl search /items --since "2025-08-22 10:00"
+./mockctl search basic "/items" --since "2025-08-22 10:00"
 
 # Other time formats supported
-./mockctl search /users --since "30m ago"   # 30 minutes ago
-./mockctl search /orders --since "2d ago"   # 2 days ago
-./mockctl search /data --since "yesterday"  # Yesterday
+./mockctl search basic "/users" --since "30m ago"   # 30 minutes ago
+./mockctl search basic "/orders" --since "2d ago"   # 2 days ago
+./mockctl search basic "/data" --since "yesterday"  # Yesterday
 ```
 
 **Features:**

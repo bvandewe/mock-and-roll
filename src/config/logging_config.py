@@ -31,7 +31,7 @@ def setup_logging(api_config: dict[str, Any], log_file_override: Optional[str] =
     log_level = getattr(logging, logging_config.get("level", "INFO").upper(), logging.INFO)
     log_format = logging_config.get("format", "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
-    # Use override if provided, otherwise use config, otherwise generate timestamped default
+    # Use override if provided, otherwise use config, otherwise fail
     if log_file_override:
         log_file_path = log_file_override
     else:
@@ -39,11 +39,8 @@ def setup_logging(api_config: dict[str, Any], log_file_override: Optional[str] =
         if "file_path" in logging_config:
             log_file_path = logging_config["file_path"]
         else:
-            # Generate default timestamped log file name
-            from datetime import datetime
-
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            log_file_path = f"/app/{timestamp}_server.logs"
+            # Don't create generic server logs - this indicates improper startup
+            raise ValueError("No log file specified and no default in config. Use mockctl to start servers properly.")
 
     max_file_size = logging_config.get("max_file_size_mb", 10) * 1024 * 1024  # Convert MB to bytes
     backup_count = logging_config.get("backup_count", 5)

@@ -236,23 +236,44 @@ class SearchLogsUseCase:
         """Determine which log files to search.
 
         Args:
-            config_name: Optional config name to filter logs for
+            config_name: Config name to filter logs for ('all' means all configs)
             port: Optional port to find specific server logs for
-            use_all_logs: If True, return all available log files
+            use_all_logs: If True, return all available log files for selected configs
 
         Returns:
             List of log file paths to search
         """
-        if use_all_logs:
-            # Return all available log files (all servers)
-            return self.log_search_repo.list_available_log_files()
+        if port:
+            # Port takes precedence - find the specific server's log file
+            server = self.server_repo.find_by_port(port)
+            if server:
+                log_file = self.log_search_repo.find_log_file_for_server(server)
+                if log_file:
+                    return [log_file]
+            raise ValueError(f"No log file found for port {port}")
 
-        # Try to find specific server first
-        if config_name:
-            # For specific config, return ALL logs for that config type
-            config_logs = self.log_search_repo.list_available_log_files(config_name)
-            if config_logs:
-                return config_logs
+        if config_name == "all":
+            # Handle "all" config - search across all configs
+            if use_all_logs:
+                # All log files for all configs
+                return self.log_search_repo.list_available_log_files()
+            else:
+                # Most recent log file for each config
+                return self._get_most_recent_logs_per_config()
+
+        elif config_name:
+            # Specific config name
+            if use_all_logs:
+                # All log files for this specific config
+                config_logs = self.log_search_repo.list_available_log_files(config_name)
+                if config_logs:
+                    return config_logs
+            else:
+                # Most recent log file for this specific config
+                config_logs = self.log_search_repo.list_available_log_files(config_name)
+                if config_logs:
+                    # Return only the most recent (first in the list)
+                    return [config_logs[0]]
 
             # Also check if there's a running server with this config
             server = self.server_repo.find_by_config(config_name)
@@ -261,28 +282,40 @@ class SearchLogsUseCase:
                 if log_file:
                     return [log_file]
 
-        if port:
-            # For specific port, find the server's log file
-            server = self.server_repo.find_by_port(port)
-            if server:
-                log_file = self.log_search_repo.find_log_file_for_server(server)
-                if log_file:
-                    return [log_file]
+            raise ValueError(f"No log files found for config '{config_name}'")
 
-        # Try to auto-detect from running servers
-        running_servers = [s for s in self.server_repo.find_all() if s.is_running]
-        if len(running_servers) == 1:
-            log_file = self.log_search_repo.find_log_file_for_server(running_servers[0])
-            if log_file:
-                return [log_file]
+        # This should not happen with the new mandatory config parameter
+        raise ValueError("Config name is required. Use 'all' to search all configs.")
 
-        # Fall back to latest log file if no config specified
-        available_logs = self.log_search_repo.list_available_log_files()
-        if available_logs:
-            # Return only the latest (first) log file when no specific config
-            return [available_logs[0]]
+    def _get_most_recent_logs_per_config(self) -> list[str]:
+        """Get the most recent log file for each config type.
 
-        return []
+        Returns:
+            List of most recent log file paths for each config
+        """
+        import re
+        from collections import defaultdict
+
+        all_logs = self.log_search_repo.list_available_log_files()
+        config_logs = defaultdict(list)
+
+        # Group log files by config name (extract from filename pattern)
+        log_pattern = re.compile(r"(\d{8}_\d{6})_([^_]+)_(\d+)\.logs")
+
+        for log_file in all_logs:
+            filename = log_file.split("/")[-1] if "/" in log_file else log_file
+            match = log_pattern.match(filename)
+            if match:
+                timestamp, config, port = match.groups()
+                config_logs[config].append(log_file)
+
+        # Return the first (most recent) log file for each config
+        most_recent_logs = []
+        for config, logs in config_logs.items():
+            if logs:
+                most_recent_logs.append(logs[0])  # logs are sorted by timestamp desc
+
+        return most_recent_logs
 
     def _search_multiple_log_files(self, log_file_paths: list[str], path_regex: str, since_timestamp: Optional[datetime] = None) -> SearchResult:
         """Search multiple log files and combine results.
@@ -311,7 +344,7 @@ class SearchLogsUseCase:
                 result = self.log_search_repo.search_logs(log_file_path, path_regex, since_timestamp)
                 all_matched_requests.extend(result.matched_requests)
                 total_requests += result.total_requests
-                log_files_searched.append(result.log_file)
+                log_files_searched.append(log_file_path)
 
                 # Combine status code summaries
                 for status_key, count in result.status_code_summary.items():
@@ -334,4 +367,4 @@ class SearchLogsUseCase:
         # Create combined result
         from ..domain.entities import SearchResult
 
-        return SearchResult(path_pattern=path_regex, log_file=f"Multiple files: {', '.join(log_files_searched)}", total_requests=total_requests, matched_requests=all_matched_requests, status_code_summary=dict(all_status_summary), search_duration_ms=search_duration_ms, since_timestamp=since_timestamp)
+        return SearchResult(path_pattern=path_regex, log_files=log_files_searched, total_requests=total_requests, matched_requests=all_matched_requests, status_code_summary=dict(all_status_summary), search_duration_ms=search_duration_ms, since_timestamp=since_timestamp)
