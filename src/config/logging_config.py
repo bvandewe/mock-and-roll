@@ -31,11 +31,19 @@ def setup_logging(api_config: dict[str, Any], log_file_override: Optional[str] =
     log_level = getattr(logging, logging_config.get("level", "INFO").upper(), logging.INFO)
     log_format = logging_config.get("format", "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
-    # Use override if provided, otherwise use config, otherwise default
+    # Use override if provided, otherwise use config, otherwise generate timestamped default
     if log_file_override:
         log_file_path = log_file_override
     else:
-        log_file_path = logging_config.get("file_path", "/app/latest.logs")
+        # Never use latest.logs - always use timestamped log files
+        if "file_path" in logging_config:
+            log_file_path = logging_config["file_path"]
+        else:
+            # Generate default timestamped log file name
+            from datetime import datetime
+
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            log_file_path = f"/app/{timestamp}_server.logs"
 
     max_file_size = logging_config.get("max_file_size_mb", 10) * 1024 * 1024  # Convert MB to bytes
     backup_count = logging_config.get("backup_count", 5)
@@ -141,12 +149,21 @@ def get_logging_status(api_config: dict[str, Any]) -> dict[str, Any]:
     """
     logging_config = api_config.get("logging", {})
 
+    # Generate timestamped default file path if needed
+    if "file_path" not in logging_config:
+        from datetime import datetime
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        default_file_path = f"/app/{timestamp}_server.logs"
+    else:
+        default_file_path = logging_config["file_path"]
+
     status = {
         "enabled": logging_config.get("enabled", True),
         "level": logging_config.get("level", "INFO"),
         "console_enabled": logging_config.get("console_enabled", True),
         "file_enabled": logging_config.get("file_enabled", True),
-        "file_path": logging_config.get("file_path", "/app/latest.logs"),
+        "file_path": default_file_path,
         "format": logging_config.get("format", "%(asctime)s - %(name)s - %(levelname)s - %(message)s"),
         "max_file_size_mb": logging_config.get("max_file_size_mb", 10),
         "backup_count": logging_config.get("backup_count", 5),

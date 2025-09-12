@@ -1,6 +1,8 @@
 #!"""Clean Architecture Mock Server CLI."""
 
 import argparse
+import logging
+import os
 import sys
 from pathlib import Path
 
@@ -8,6 +10,31 @@ from pathlib import Path
 _project_root = Path(__file__).resolve().parent.parent.parent
 if str(_project_root) not in sys.path:
     sys.path.insert(0, str(_project_root))
+
+
+# Setup mockctl logging
+def setup_mockctl_logging():
+    """Setup dedicated logging for mockctl to logs/mockctl.log."""
+    logs_dir = _project_root / "logs"
+    logs_dir.mkdir(exist_ok=True)
+
+    log_file = logs_dir / "mockctl.log"
+
+    # Configure logging handlers
+    handlers = [logging.FileHandler(log_file, encoding="utf-8")]
+
+    # Add console handler if DEBUG is set
+    if os.getenv("MOCKCTL_DEBUG"):
+        handlers.append(logging.StreamHandler())
+
+    # Configure logging
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s - mockctl - %(levelname)s - %(message)s", handlers=handlers)
+
+    return logging.getLogger("mockctl")
+
+
+# Setup logging early
+logger = setup_mockctl_logging()
 
 # Import after path setup
 from src.cli.interface.commands import (  # noqa: E402
@@ -109,9 +136,12 @@ class MockServerCLI:
         }
 
         if args.command in command_map:
+            logger.info(f"Executing command: {args.command} with args: {vars(args)}")
             try:
                 command_map[args.command](args)
+                logger.info(f"Command {args.command} completed successfully")
             except KeyboardInterrupt:
+                logger.warning(f"Command {args.command} cancelled by user")
                 if not json_mode:
                     formatted_msg = self._format_emoji_output(f"\n{Colors.YELLOW}⚠️  Operation cancelled{Colors.NC}", getattr(args, "no_emoji", False))
                     print(formatted_msg)
@@ -119,6 +149,7 @@ class MockServerCLI:
                     print('{"status": "cancelled", "message": "Operation cancelled"}')
                 sys.exit(1)
             except Exception as e:
+                logger.error(f"Command {args.command} failed: {e}", exc_info=True)
                 if not json_mode:
                     formatted_msg = self._format_emoji_output(f"{Colors.RED}❌ Error: {e}{Colors.NC}", getattr(args, "no_emoji", False))
                     print(formatted_msg)
@@ -126,6 +157,7 @@ class MockServerCLI:
                     print(f'{{"status": "error", "message": "{str(e)}"}}')
                 sys.exit(1)
         else:
+            logger.info("No command provided - showing help")
             parser.print_help()
 
     def create_parser(self) -> argparse.ArgumentParser:

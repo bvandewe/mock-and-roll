@@ -100,7 +100,15 @@ def add_logging_management_endpoints(app, api_config: dict[str, Any], auth_data:
             if log_file_override:
                 log_file_path = log_file_override
             else:
-                log_file_path = logging_config.get("file_path", "/app/latest.logs")
+                # Never use latest.logs - use environment LOG_FILE or generate timestamped default
+                import os
+
+                log_file_path = os.getenv("LOG_FILE")
+                if not log_file_path:
+                    from datetime import datetime
+
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    log_file_path = logging_config.get("file_path", f"/app/{timestamp}_server.logs")
 
             try:
                 with open(log_file_path, "r", encoding="utf-8") as f:
@@ -125,7 +133,13 @@ def add_logging_management_endpoints(app, api_config: dict[str, Any], auth_data:
             if not logging_config.get("allow_log_deletion", True):
                 raise HTTPException(status_code=403, detail="Log file deletion is disabled in the configuration")
 
-            log_file_path = logging_config.get("file_path", "/app/latest.logs")
+            # Never use latest.logs - use environment LOG_FILE or generate timestamped default
+            log_file_path = os.getenv("LOG_FILE")
+            if not log_file_path:
+                from datetime import datetime
+
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                log_file_path = logging_config.get("file_path", f"/app/{timestamp}_server.logs")
 
             try:
                 # Clear the file by opening it in write mode and immediately closing
