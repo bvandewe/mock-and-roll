@@ -2,9 +2,14 @@
 FastAPI application setup and OpenAPI customization.
 """
 
+from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI
+from fastapi.openapi.docs import (
+    get_swagger_ui_html,
+    get_swagger_ui_oauth2_redirect_html,
+)
 from fastapi.openapi.utils import get_openapi
 
 from config.loader import load_api_config
@@ -14,6 +19,8 @@ def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
     # Load API configuration first to set FastAPI attributes
     api_config = load_api_config()
+    swagger_config = api_config.get("swagger_ui", {})
+    airgapped_mode = swagger_config.get("airgapped_mode", False)
 
     # Configure FastAPI app with settings from api.json
     app_kwargs = {
@@ -21,6 +28,11 @@ def create_app() -> FastAPI:
         "description": api_config.get("description", "A configurable mock API server"),
         "version": api_config.get("version", "0.1.0"),
     }
+
+    # Disable default docs if using air-gapped mode
+    if airgapped_mode:
+        app_kwargs["docs_url"] = None  # Disable default docs
+        app_kwargs["redoc_url"] = None  # Disable redoc too
 
     # Add additional OpenAPI configuration if present
     if "support" in api_config:
@@ -60,36 +72,78 @@ def create_app() -> FastAPI:
 
     app = FastAPI(**app_kwargs)
 
-    # Configure Swagger UI to collapse all tags by default
-    from fastapi import Request
-    from fastapi.openapi.docs import get_swagger_ui_html
-    from fastapi.responses import HTMLResponse
+    # Setup custom Swagger UI for air-gapped mode
+    if airgapped_mode:
+        import logging
 
-    # Get Swagger UI configuration from api config
-    swagger_config = api_config.get("swagger_ui", {})
+        from fastapi import HTTPException
+        from fastapi.responses import FileResponse
 
-    async def custom_swagger_ui_html(req: Request) -> HTMLResponse:
-        # Default Swagger UI parameters that collapse all sections
-        default_params = {
-            "docExpansion": "none",  # Collapse all sections by default
-            "defaultModelsExpandDepth": -1,  # Don't expand models
-            "defaultModelExpandDepth": -1,  # Don't expand model details
-            "displayRequestDuration": True,  # Show request duration
-            "tryItOutEnabled": True,  # Enable try it out by default
-        }
+        logger = logging.getLogger(__name__)
+        logger.info("Air-gapped mode detected - setting up static file routes")
+        static_dir = Path(__file__).parent.parent / "static"
 
-        # Override with configured values
-        swagger_params = {}
-        swagger_params["docExpansion"] = swagger_config.get("doc_expansion", default_params["docExpansion"])
-        swagger_params["defaultModelsExpandDepth"] = swagger_config.get("default_models_expand_depth", default_params["defaultModelsExpandDepth"])
-        swagger_params["defaultModelExpandDepth"] = swagger_config.get("default_model_expand_depth", default_params["defaultModelExpandDepth"])
-        swagger_params["displayRequestDuration"] = swagger_config.get("display_request_duration", default_params["displayRequestDuration"])
-        swagger_params["tryItOutEnabled"] = swagger_config.get("try_it_out_enabled", default_params["tryItOutEnabled"])
+        # Create direct routes for static files instead of mounting StaticFiles
+        @app.get("/static/swagger-ui/swagger-ui.css", include_in_schema=False)
+        async def serve_swagger_css():
+            css_file = static_dir / "swagger-ui" / "swagger-ui.css"
+            if css_file.exists():
+                return FileResponse(css_file, media_type="text/css")
+            raise HTTPException(status_code=404, detail="File not found")
 
-        return get_swagger_ui_html(openapi_url=app.openapi_url or "/openapi.json", title=app.title + " - Swagger UI", swagger_ui_parameters=swagger_params)
+        @app.get("/static/swagger-ui/swagger-ui-bundle.js", include_in_schema=False)
+        async def serve_swagger_js():
+            js_file = static_dir / "swagger-ui" / "swagger-ui-bundle.js"
+            if js_file.exists():
+                return FileResponse(js_file, media_type="application/javascript")
+            raise HTTPException(status_code=404, detail="File not found")
 
-    # Override the default docs endpoint
-    app.get("/docs", include_in_schema=False)(custom_swagger_ui_html)
+        logger.info("Static file routes created for air-gapped mode")
+
+    # Setup custom Swagger UI for air-gapped mode
+    if airgapped_mode:
+
+        @app.get("/docs", include_in_schema=False)
+        async def airgapped_swagger_ui_html():
+            return get_swagger_ui_html(
+                openapi_url=app.openapi_url or "/openapi.json",
+                title=app.title + " - Swagger UI (Air-gapped)",
+                oauth2_redirect_url=app.swagger_ui_oauth2_redirect_url,
+                swagger_js_url="/static/swagger-ui/swagger-ui-bundle.js",
+                swagger_css_url="/static/swagger-ui/swagger-ui.css",
+            )
+
+        @app.get(app.swagger_ui_oauth2_redirect_url or "/docs/oauth2-redirect", include_in_schema=False)
+        async def swagger_ui_redirect():
+            return get_swagger_ui_oauth2_redirect_html()
+
+    else:
+        # Regular mode - use standard FastAPI docs with custom configuration
+        from fastapi import Request
+        from fastapi.responses import HTMLResponse
+
+        async def regular_swagger_ui_html(req: Request) -> HTMLResponse:
+            # Default Swagger UI parameters that collapse all sections
+            default_params = {
+                "docExpansion": "none",  # Collapse all sections by default
+                "defaultModelsExpandDepth": -1,  # Don't expand models
+                "defaultModelExpandDepth": -1,  # Don't expand model details
+                "displayRequestDuration": True,  # Show request duration
+                "tryItOutEnabled": True,  # Enable try it out by default
+            }
+
+            # Override with configured values
+            swagger_params = {}
+            swagger_params["docExpansion"] = swagger_config.get("doc_expansion", default_params["docExpansion"])
+            swagger_params["defaultModelsExpandDepth"] = swagger_config.get("default_models_expand_depth", default_params["defaultModelsExpandDepth"])
+            swagger_params["defaultModelExpandDepth"] = swagger_config.get("default_model_expand_depth", default_params["defaultModelExpandDepth"])
+            swagger_params["displayRequestDuration"] = swagger_config.get("display_request_duration", default_params["displayRequestDuration"])
+            swagger_params["tryItOutEnabled"] = swagger_config.get("try_it_out_enabled", default_params["tryItOutEnabled"])
+
+            return get_swagger_ui_html(openapi_url=app.openapi_url or "/openapi.json", title=app.title + " - Swagger UI", swagger_ui_parameters=swagger_params)
+
+        # Override the default docs endpoint
+        app.get("/docs", include_in_schema=False)(regular_swagger_ui_html)
 
     # Add request/response logging middleware if enabled
     logging_config = api_config.get("logging", {})

@@ -1228,7 +1228,8 @@ Customize the Swagger UI interface behavior and appearance:
         "default_models_expand_depth": -1,
         "default_model_expand_depth": -1,
         "display_request_duration": true,
-        "try_it_out_enabled": true
+        "try_it_out_enabled": true,
+        "airgapped_mode": false
     }
 }
 ```
@@ -1242,6 +1243,38 @@ Customize the Swagger UI interface behavior and appearance:
 - **`default_model_expand_depth`**: Individual model detail expansion (-1 = collapsed)
 - **`display_request_duration`**: Show request timing in UI (true/false)
 - **`try_it_out_enabled`**: Enable "Try it out" by default (true/false)
+- **`airgapped_mode`**: Enable air-gapped mode with local static assets (true/false)
+
+#### Air-gapped Mode Configuration
+
+For secure or offline environments, enable air-gapped mode to serve Swagger UI assets locally without CDN dependencies:
+
+```json
+{
+    "api_name": "Air-gapped Mock API",
+    "swagger_ui": {
+        "airgapped_mode": true,
+        "doc_expansion": "none",
+        "default_models_expand_depth": -1,
+        "default_model_expand_depth": -1,
+        "display_request_duration": true,
+        "try_it_out_enabled": true
+    }
+}
+```
+
+**Air-gapped Mode Features:**
+- ✅ **Local Swagger UI Assets**: CSS and JavaScript served from `/static/swagger-ui/` endpoints
+- ✅ **No CDN Dependencies**: Completely offline-capable Swagger UI interface
+- ✅ **Custom Title**: Swagger UI title indicates air-gapped mode for environment awareness
+- ✅ **Full Functionality**: Complete Swagger UI functionality including authentication testing
+- ✅ **Secure Environments**: Ideal for isolated networks, secure facilities, or compliance requirements
+
+**Usage:**
+1. Set `airgapped_mode: true` in your `api.json` configuration
+2. Start your server with the air-gapped configuration: `./mockctl start airgapped`
+3. Access the offline Swagger UI at `http://localhost:PORT/docs`
+4. All static assets (CSS/JS) are served locally without internet connectivity requirements
 
 This configuration creates a clean, professional interface where:
 - ✅ **All endpoint groups start collapsed** for better overview

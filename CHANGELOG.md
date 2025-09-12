@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Air-gapped Swagger UI Support**: Complete offline documentation interface for secure environments
+  - Local Swagger UI assets (CSS/JS) bundled with application - no CDN dependencies
+  - Automatic air-gapped mode detection via configuration (`airgapped_mode: true`)
+  - Direct static file routes serving local assets at `/static/swagger-ui/` endpoints
+  - Custom Swagger UI title indicating air-gapped mode for environment awareness
+  - New `airgapped` configuration profile for immediate deployment in isolated networks
+  - Fully functional Swagger UI interface with authentication testing in offline environments
+
 - **New Test Command**: `mockctl test [config]` command to validate server endpoints
   - Tests root `/`, `/docs`, and `/openapi.json` endpoints for all running servers or a specific config
   - Displays response status, response time, and content type information

@@ -82,6 +82,7 @@ curl http://localhost:8000/
 
 ### 🔧 Developer Experience
 - **Interactive Swagger UI**: Auto-generated API documentation with authentication testing
+- **Air-gapped Support**: Offline Swagger UI with local static assets (no CDN dependencies)
 - **Hot Reloading**: Development mode with automatic code updates
 - **Comprehensive Logging**: Request/response tracking with configurable verbosity
 - **Redis Persistence**: Optional data persistence with CRUD operations
@@ -132,6 +133,7 @@ All commands support both `--json` and `--no-emoji` flags to customize output fo
 | **basic** | Simple REST API | 1 | API key auth, basic CRUD |
 | **persistence** | Full-featured API | 12 | Redis persistence, advanced auth |
 | **vmanage** | Cisco SD-WAN API | 25+ | Multi-factor auth, realistic workflows |
+| **airgapped** | Offline REST API | 1 | Air-gapped Swagger UI, no CDN dependencies |
 
 Each configuration includes:
 - `api.json` - Server settings and metadata
@@ -281,6 +283,16 @@ curl -H "X-API-Key: demo-api-key-123" http://localhost:8000/products/{id}
 
 # Search across all configurations
 ./mockctl search "/auth" --all-logs
+```
+
+### Air-gapped Environment
+```bash
+# Start air-gapped server (no CDN dependencies)
+./mockctl start airgapped
+
+# Access offline Swagger UI at http://localhost:8000/docs
+# All assets (CSS/JS) served locally without internet connectivity
+curl -H "X-API-Key: my-secret-key" http://localhost:8000/items
 ```
 
 ## 📚 Documentation

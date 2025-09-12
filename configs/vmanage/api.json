@@ -29,7 +29,8 @@
         }
     ],
     "swagger_ui": {
-        "doc_expansion": "list",
+        "airgapped_mode": true,
+        "doc_expansion": "none",
         "default_models_expand_depth": -1,
         "default_model_expand_depth": -1,
         "display_request_duration": true,

@@ -22,8 +22,8 @@ def get_config_paths(filename: str) -> list[str]:
     """Get the list of config file paths to try in order of priority."""
     paths = []
 
-    # Check environment variable first
-    env_config_folder = os.environ.get("MOCK_CONFIG_FOLDER")
+    # Check environment variables first (MOCK_CONFIG_FOLDER takes precedence over CONFIG_FOLDER)
+    env_config_folder = os.environ.get("MOCK_CONFIG_FOLDER") or os.environ.get("CONFIG_FOLDER")
     if env_config_folder:
         env_path = os.path.join(env_config_folder, filename)
         paths.append(env_path)

@@ -1,0 +1,31 @@
+{
+    "endpoints": [
+        {
+            "method": "GET",
+            "path": "/items/{item_id}",
+            "tag": "Items",
+            "authentication": [
+                "api_key"
+            ],
+            "responses": [
+                {
+                    "body_conditions": null,
+                    "path_conditions": {
+                        "item_id": 123
+                    },
+                    "response": {
+                        "status_code": 200,
+                        "body": {
+                            "message": "Here is the item you requested.",
+                            "item_id": "123",
+                            "data": {
+                                "name": "A Mocked Item",
+                                "value": 123
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

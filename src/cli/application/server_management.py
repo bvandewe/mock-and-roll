@@ -72,7 +72,11 @@ class StartServerUseCase:
 
         # Prepare environment
         env = os.environ.copy()
-        env["CONFIG_FOLDER"] = str(config.path)
+        # Make sure config path is absolute
+        if config.path.is_absolute():
+            env["CONFIG_FOLDER"] = str(config.path)
+        else:
+            env["CONFIG_FOLDER"] = str(self.project_root / config.path)
         env["LOG_FILE"] = log_file_path  # Pass the timestamped log file path
         env["PYTHONPATH"] = str(self.project_root / "src")
 

@@ -64,7 +64,7 @@ package-lock.json
 .mypy_cache
 
 node_modules
-static
+/static/
 *.dtmp
 *.drawio.bkp
 
