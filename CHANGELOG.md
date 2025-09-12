@@ -64,6 +64,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Air-gapped Static Routes**: Fixed missing `/static/swagger-ui/swagger-ui-standalone-preset.js` endpoint
+  - Added missing static file route for swagger-ui-standalone-preset.js in air-gapped mode
+  - Resolves 404 errors when accessing Swagger UI in air-gapped environments
+  - Ensures complete air-gapped functionality without external dependencies
 - **Complete Logging System Overhaul**: Eliminated generic log files and ensured proper log file management
   - **Removed latest.logs Usage**: Completely eliminated `latest.logs` references throughout the codebase
   - **Mandatory LOG_FILE Environment Variable**: Server now requires LOG_FILE environment variable to start
