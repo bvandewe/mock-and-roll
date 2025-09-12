@@ -24,6 +24,9 @@ mockctl --json search "/docs"
 
 # Clean output without emojis
 mockctl --no-emoji search "/api"
+
+# JQ-friendly status codes (no quotes needed)
+mockctl --json search "/api" | jq '.status_code_summary.status_200'
 ```
 
 ## Enhanced Multi-File Search Capabilities
@@ -101,13 +104,29 @@ The implementation follows clean architecture principles:
 ## Key Features
 
 1. **Regex Path Matching**: Search requests using regular expressions
-2. **Status Code Summary**: Groups results by HTTP status codes
+2. **Status Code Summary**: Groups results by HTTP status codes with JQ-friendly keys
 3. **Time Filtering**: Filter results by timestamp
 4. **Multiple Log Sources**: Search specific config logs or all available logs
 5. **Correlation ID Tracking**: Matches requests with responses using correlation IDs
 6. **Performance Metrics**: Shows response times for each request
 7. **Dual Output**: Both human-readable and JSON formats
 8. **Ordered Results**: Results ordered newest first as requested
+9. **JQ Compatibility**: Status codes formatted as `"status_200"` for easy JQ access without quotes
+
+## JQ Integration Examples
+
+The JSON output uses status codes in a format that's easy to work with in JQ:
+
+```bash
+# Access status code counts directly (no quotes needed)
+mockctl --json search "/api" | jq '.status_code_summary.status_200'
+
+# Filter by status code ranges  
+mockctl --json search "/api" | jq '.status_code_summary | keys[] | select(ltrimstr("status_") | tonumber >= 400)'
+
+# Calculate error rate
+mockctl --json search "/api" | jq '.status_code_summary | to_entries | map(select(.key | ltrimstr("status_") | tonumber >= 400)) | map(.value) | add // 0'
+```
 
 ## Example Output
 
@@ -136,9 +155,9 @@ The implementation follows clean architecture principles:
 {
   "total_requests": 5,
   "status_code_summary": {
-    "200": 3,
-    "403": 1,
-    "404": 1
+    "status_200": 3,
+    "status_403": 1,
+    "status_404": 1
   },
   "matched_requests": [
     {

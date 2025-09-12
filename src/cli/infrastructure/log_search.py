@@ -161,11 +161,12 @@ class FileSystemLogSearchRepository(LogSearchRepository):
 
         return matched_pairs
 
-    def _calculate_status_summary(self, pairs: list[RequestResponsePair]) -> dict[int, int]:
+    def _calculate_status_summary(self, pairs: list[RequestResponsePair]) -> dict[str, int]:
         """Calculate status code summary from request/response pairs."""
         status_summary = defaultdict(int)
 
         for pair in pairs:
-            status_summary[pair.status_code] += 1
+            status_key = f"status_{pair.status_code}"
+            status_summary[status_key] += 1
 
         return dict(status_summary)

@@ -149,8 +149,8 @@ class TestSearchFunctionality(unittest.TestCase):
 
             self.assertIsInstance(result, SearchResult, "Result should be SearchResult instance")
             self.assertEqual(result.total_requests, 1, "Should find 1 item request")
-            self.assertIn(200, result.status_code_summary, "Should have 200 status code")
-            self.assertEqual(result.status_code_summary[200], 1, "Should have 1 request with 200 status")
+            self.assertIn("status_200", result.status_code_summary, "Should have status_200 status code")
+            self.assertEqual(result.status_code_summary["status_200"], 1, "Should have 1 request with 200 status")
 
             # Test regex search
             api_result = repo.search_logs(temp_log_path, "/api.*")
@@ -159,8 +159,8 @@ class TestSearchFunctionality(unittest.TestCase):
             # Test all requests
             all_result = repo.search_logs(temp_log_path, ".*")
             self.assertEqual(all_result.total_requests, 3, "Should find all 3 requests")
-            self.assertIn(200, all_result.status_code_summary, "Should have 200 status codes")
-            self.assertIn(404, all_result.status_code_summary, "Should have 404 status code")
+            self.assertIn("status_200", all_result.status_code_summary, "Should have status_200 status codes")
+            self.assertIn("status_404", all_result.status_code_summary, "Should have status_404 status code")
 
             # Test time filtering
             since_time = datetime(2025, 9, 9, 10, 0, 0)  # After the first two requests
@@ -231,7 +231,7 @@ class TestSearchFunctionality(unittest.TestCase):
 
         # Mock the use case to avoid file system dependencies in this test
         with patch.object(command, "search_use_case") as mock_use_case:
-            mock_result = SearchResult(path_pattern="/items", log_file="test.logs", total_requests=2, matched_requests=[], status_code_summary={200: 2}, search_duration_ms=10.0)
+            mock_result = SearchResult(path_pattern="/items", log_file="test.logs", total_requests=2, matched_requests=[], status_code_summary={"status_200": 2}, search_duration_ms=10.0)
             mock_use_case.execute.return_value = mock_result
 
             # Capture output
@@ -253,7 +253,7 @@ class TestSearchFunctionality(unittest.TestCase):
         # Create sample search result
         sample_request = RequestResponsePair(correlation_id="test123", method="GET", path="/test/path", status_code=200, timestamp=datetime.now(), response_time_ms=5.5, request_headers={"host": "localhost", "accept": "application/json"}, response_headers={"content-type": "application/json"}, request_body=None, response_body='{"result": "success"}')
 
-        result = SearchResult(path_pattern="/test", log_file="test.logs", total_requests=1, matched_requests=[sample_request], status_code_summary={200: 1}, search_duration_ms=15.2)
+        result = SearchResult(path_pattern="/test", log_file="test.logs", total_requests=1, matched_requests=[sample_request], status_code_summary={"status_200": 1}, search_duration_ms=15.2)
 
         # Test JSON output
         json_presenter = Presenter(json_mode=True)

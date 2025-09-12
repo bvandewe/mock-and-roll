@@ -31,6 +31,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Improved Maintainability**: Eliminated redundant flag definitions across subparsers
   - **Backward Compatibility**: Old syntax patterns are deprecated but examples updated throughout documentation
 
+- **JQ-Compatible JSON Output**: Improved JSON formatting for better automation integration
+  - **Status Code Keys**: Status codes in JSON output now use `"status_200"` format instead of `"200"`
+  - **JQ Accessibility**: Enables direct property access in JQ without quotes: `.status_code_summary.status_200`
+  - **Automation Friendly**: Simplifies parsing and filtering in shell scripts and CI/CD pipelines
+  - **Backward Compatibility**: Updated all tests and documentation examples to use new format
+
 - **Advanced Log Search Capabilities**: Comprehensive log file selection for enhanced search functionality
   - **Multi-file Search**: Search across multiple log files for specific configuration types
     - When using `--config`, searches ALL logs for that configuration type (e.g., all basic, persistence, or vmanage logs)

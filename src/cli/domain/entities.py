@@ -315,7 +315,7 @@ class SearchResult:
     log_file: str
     total_requests: int
     matched_requests: list[RequestResponsePair]
-    status_code_summary: dict[int, int]  # status_code -> count
+    status_code_summary: dict[str, int]  # status_code -> count (e.g., "status_200": 3)
     search_duration_ms: float
     since_timestamp: Optional[datetime] = None
 
@@ -325,7 +325,17 @@ class SearchResult:
         if not self.total_requests:
             return 0.0
 
-        success_count = sum(count for status, count in self.status_code_summary.items() if 200 <= status < 300)
+        success_count = 0
+        for status_key, count in self.status_code_summary.items():
+            # Extract numeric status code from "status_XXX" format
+            if status_key.startswith("status_"):
+                try:
+                    status_code = int(status_key[7:])  # Remove "status_" prefix
+                    if 200 <= status_code < 300:
+                        success_count += count
+                except ValueError:
+                    continue
+
         return (success_count / self.total_requests) * 100
 
     def get_requests_by_status(self, status_code: int) -> list[RequestResponsePair]:

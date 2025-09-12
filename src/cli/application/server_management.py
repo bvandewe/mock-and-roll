@@ -310,8 +310,8 @@ class SearchLogsUseCase:
                 log_files_searched.append(result.log_file)
 
                 # Combine status code summaries
-                for status_code, count in result.status_code_summary.items():
-                    all_status_summary[status_code] += count
+                for status_key, count in result.status_code_summary.items():
+                    all_status_summary[status_key] += count
 
             except (FileNotFoundError, Exception) as e:
                 # Log the error but continue with other files

@@ -301,9 +301,19 @@ class Presenter:
 
             if result.status_code_summary:
                 print(self._format_output(f"\n{Colors.YELLOW}📊 Status Code Summary:{Colors.NC}"))
-                for status_code, count in sorted(result.status_code_summary.items()):
-                    color = Colors.GREEN if status_code < 400 else Colors.RED if status_code >= 400 else Colors.YELLOW
-                    print(f"   {color}{status_code}{Colors.NC}: {count} requests")
+                # Sort status codes numerically by extracting the numeric part
+                sorted_items = sorted(result.status_code_summary.items(), key=lambda x: int(x[0][7:]) if x[0].startswith("status_") else 0)
+
+                for status_key, count in sorted_items:
+                    # Extract numeric status code for color determination
+                    try:
+                        status_code = int(status_key[7:]) if status_key.startswith("status_") else 0
+                        color = Colors.GREEN if status_code < 400 else Colors.RED if status_code >= 400 else Colors.YELLOW
+                    except (ValueError, IndexError):
+                        color = Colors.YELLOW
+
+                    # Display using the string key directly (already has "status_" prefix)
+                    print(f"   {color}{status_key}{Colors.NC}: {count} requests")
 
             if result.matched_requests:
                 print(self._format_output(f"\n{Colors.BLUE}📝 Request/Response Details:{Colors.NC}"))

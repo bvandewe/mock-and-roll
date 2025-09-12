@@ -513,7 +513,7 @@ echo "Analyzing API usage..."
 ./mockctl --json search "/api" | jq '{
   total_requests: .total_requests,
   status_summary: .status_code_summary,
-  error_rate: (.status_code_summary | to_entries | map(select(.key | tonumber >= 400)) | map(.value) | add // 0) / .total_requests * 100
+  error_rate: (.status_code_summary | to_entries | map(select(.key | ltrimstr("status_") | tonumber >= 400)) | map(.value) | add // 0) / .total_requests * 100
 }'
 
 # Cleanup

@@ -326,8 +326,8 @@ Request/Response Details:
 {
   "total_requests": 2,
   "status_code_summary": {
-    "200": 1,
-    "401": 1
+    "status_200": 1,
+    "status_401": 1
   },
   "matched_requests": [
     {
