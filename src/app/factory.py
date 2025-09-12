@@ -98,6 +98,13 @@ def create_app() -> FastAPI:
                 return FileResponse(js_file, media_type="application/javascript")
             raise HTTPException(status_code=404, detail="File not found")
 
+        @app.get("/static/swagger-ui/swagger-ui-standalone-preset.js", include_in_schema=False)
+        async def serve_swagger_standalone_preset():
+            preset_file = static_dir / "swagger-ui" / "swagger-ui-standalone-preset.js"
+            if preset_file.exists():
+                return FileResponse(preset_file, media_type="application/javascript")
+            raise HTTPException(status_code=404, detail="File not found")
+
         @app.get("/static/favicon.png", include_in_schema=False)
         async def serve_favicon():
             favicon_file = static_dir / "favicon.png"
