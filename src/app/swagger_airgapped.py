@@ -78,7 +78,9 @@ def _format_swagger_parameters(params: dict[str, Any]) -> str:
 
     js_properties = []
     for key, value in params.items():
-        if isinstance(value, bool):
+        if value is None:
+            js_value = "null"
+        elif isinstance(value, bool):
             js_value = "true" if value else "false"
         elif isinstance(value, str):
             js_value = json.dumps(value)
@@ -102,7 +104,8 @@ def _get_fallback_template() -> str:
 <html>
 <head>
   <link type="text/css" rel="stylesheet" href="/static/swagger-ui/swagger-ui.css">
-  <link rel="shortcut icon" href="data:image/x-icon;base64,AAABAAEAEBAAAAAAAABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAA">
+  <link rel="shortcut icon" href="/static/favicon.png" type="image/png">
+  <link rel="icon" href="/static/favicon.png" type="image/png">
   <title>{{title}}</title>
 </head>
 

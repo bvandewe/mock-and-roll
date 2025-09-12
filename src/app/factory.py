@@ -98,20 +98,46 @@ def create_app() -> FastAPI:
                 return FileResponse(js_file, media_type="application/javascript")
             raise HTTPException(status_code=404, detail="File not found")
 
+        @app.get("/static/favicon.png", include_in_schema=False)
+        async def serve_favicon():
+            favicon_file = static_dir / "favicon.png"
+            if favicon_file.exists():
+                return FileResponse(favicon_file, media_type="image/png")
+            raise HTTPException(status_code=404, detail="File not found")
+
+        # Also serve favicon at traditional /favicon.ico path
+        @app.get("/favicon.ico", include_in_schema=False)
+        async def serve_favicon_ico():
+            favicon_file = static_dir / "favicon.png"
+            if favicon_file.exists():
+                return FileResponse(favicon_file, media_type="image/x-icon")
+            raise HTTPException(status_code=404, detail="File not found")
+
         logger.info("Static file routes created for air-gapped mode")
 
     # Setup custom Swagger UI for air-gapped mode
     if airgapped_mode:
+        from app.swagger_airgapped import get_swagger_ui_html_airgapped
 
         @app.get("/docs", include_in_schema=False)
         async def airgapped_swagger_ui_html():
-            return get_swagger_ui_html(
-                openapi_url=app.openapi_url or "/openapi.json",
-                title=app.title + " - Swagger UI (Air-gapped)",
-                oauth2_redirect_url=app.swagger_ui_oauth2_redirect_url,
-                swagger_js_url="/static/swagger-ui/swagger-ui-bundle.js",
-                swagger_css_url="/static/swagger-ui/swagger-ui.css",
-            )
+            # Air-gapped Swagger UI parameters with no external validator
+            swagger_params = {"docExpansion": "none", "defaultModelsExpandDepth": -1, "defaultModelExpandDepth": -1, "displayRequestDuration": True, "tryItOutEnabled": True, "validatorUrl": None, "oauth2RedirectUrl": app.swagger_ui_oauth2_redirect_url or "/docs/oauth2-redirect"}  # Disable external validator
+
+            # Load swagger configuration if available
+            swagger_config = api_config.get("swagger", {})
+            if swagger_config:
+                swagger_params.update(
+                    {
+                        "docExpansion": swagger_config.get("doc_expansion", swagger_params["docExpansion"]),
+                        "defaultModelsExpandDepth": swagger_config.get("default_models_expand_depth", swagger_params["defaultModelsExpandDepth"]),
+                        "defaultModelExpandDepth": swagger_config.get("default_model_expand_depth", swagger_params["defaultModelExpandDepth"]),
+                        "displayRequestDuration": swagger_config.get("display_request_duration", swagger_params["displayRequestDuration"]),
+                        "tryItOutEnabled": swagger_config.get("try_it_out_enabled", swagger_params["tryItOutEnabled"]),
+                    }
+                )
+
+            return get_swagger_ui_html_airgapped(openapi_url=app.openapi_url or "/openapi.json", title=app.title + " - Swagger UI (Air-gapped)", swagger_ui_parameters=swagger_params)
 
         @app.get(app.swagger_ui_oauth2_redirect_url or "/docs/oauth2-redirect", include_in_schema=False)
         async def swagger_ui_redirect():
