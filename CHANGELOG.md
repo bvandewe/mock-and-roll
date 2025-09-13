@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2025-09-12
+
 ### Added
 
 - **Air-gapped Swagger UI Support**: Complete offline documentation interface for secure environments
