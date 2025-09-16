@@ -7,9 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+_No changes yet._
+
+## [0.4.0] - 2025-09-16
+
 ### Overview
 
-Focus on test stability, documentation clarity for the enhanced search command, and housekeeping utilities.
+Feature and tooling release adding environment housekeeping command and test/documentation improvements.
 
 ### Added
 
@@ -28,7 +32,7 @@ Focus on test stability, documentation clarity for the enhanced search command, 
 
 ### Maintenance
 
-* General test suite stabilization ahead of 0.3.1 patch release (logging environment consistency, assertion hygiene)
+* General test suite stabilization (logging environment consistency, assertion hygiene)
 
 
 ## [0.3.0] - 2025-09-12

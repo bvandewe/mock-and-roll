@@ -2610,6 +2610,12 @@ curl -X POST "http://localhost:8000/system/logging/config" \
 - **Data Fixtures**: Pre-populated datasets for complex scenarios
 - **Request Recording**: Capture and replay real API interactions
 
+### Version 0.4.0 - Housekeeping & Stability 🧹
+- **Clean-up Command**: `mockctl clean-up` for stopping servers and purging logs
+- **Log Environment Fixture**: Centralized test fixture for consistent logging setup
+- **Search Documentation Clarity**: Mandatory `config_name` and `all` mode usage formalized
+- **Assertion-based Tests**: Replaced boolean-return tests with proper pytest assertions
+
 ## 🧪 Development
 
 ### 🧪 Running Tests
