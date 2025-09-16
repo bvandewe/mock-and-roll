@@ -5,11 +5,19 @@ Test script to verify template functionality
 
 import os
 import sys
+from datetime import datetime
+
+# Ensure a log file is defined for tests before importing main (logging requires it)
+if "LOG_FILE" not in os.environ:
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    os.makedirs("logs", exist_ok=True)
+    os.environ["LOG_FILE"] = f"logs/test_templates_{timestamp}.logs"
 
 # Add the src directory to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 
-from main import (
+# Import helper functions from their actual module implementations
+from processing.templates import (
     generate_realistic_timestamp,
     process_response_body,
     substitute_timestamp_templates,

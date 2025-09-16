@@ -5,7 +5,7 @@ Test script to verify system authentication middleware works correctly.
 
 from unittest.mock import MagicMock
 
-from src.middleware.system_auth import SystemAuthMiddleware
+from middleware.system_auth import SystemAuthMiddleware
 
 
 def test_system_auth_middleware():
@@ -53,7 +53,13 @@ def test_system_auth_middleware():
     middleware_disabled = SystemAuthMiddleware(app, api_config_disabled, auth_config)
     print(f"\nProtection disabled test: {not middleware_disabled.protection_enabled}")
 
-    return True
+    # Assertions replacing boolean return
+    # Ensure protection enabled state matches config
+    assert middleware.protection_enabled is True
+    # Ensure at least one valid key loaded
+    assert len(middleware.valid_keys) >= 2
+    # Protection disabled middleware should reflect config
+    assert middleware_disabled.protection_enabled is False
 
 
 if __name__ == "__main__":

@@ -3,16 +3,15 @@
 Test script to verify log deletion configuration works correctly.
 """
 
-import asyncio
 import os
 import tempfile
 
 from fastapi import FastAPI, HTTPException
 
-from src.routes.logging_management import add_logging_management_endpoints
+from routes.logging_management import add_logging_management_endpoints
 
 
-async def test_log_deletion_controls():
+def test_log_deletion_controls():
     """Test that log deletion is properly controlled by configuration."""
 
     # Create temporary log file
@@ -24,7 +23,7 @@ async def test_log_deletion_controls():
         # Test case 1: Deletion allowed (default behavior)
         print("Test 1: Log deletion allowed")
         app1 = FastAPI()
-        api_config_allowed = {"logging": {"enabled": true, "file_path": temp_log_path, "allow_log_deletion": true}}  # Explicitly allowed
+        api_config_allowed = {"logging": {"enabled": True, "file_path": temp_log_path, "allow_log_deletion": True}}  # Explicitly allowed
 
         add_logging_management_endpoints(app1, api_config_allowed)
 
@@ -97,7 +96,7 @@ async def test_log_deletion_controls():
 
 
 if __name__ == "__main__":
-    success = asyncio.run(test_log_deletion_controls())
+    success = test_log_deletion_controls()
     if success:
         print("\n🎉 All log deletion control tests passed!")
     else:

@@ -29,7 +29,7 @@ A highly configurable and extensible mock REST API server built with FastAPI. Cr
   - [🚀 Usage Examples](#-usage-examples)
     - [Basic API Call](#basic-api-call)
     - [With Persistence (Redis required)](#with-persistence-redis-required)
-    - [Advanced Search](#advanced-search)
+  - [Advanced Search (Mandatory config_name Argument)](#advanced-search-mandatory-config_name-argument)
   - [📚 Documentation](#-documentation)
   - [🐳 Docker Usage](#-docker-usage)
     - [Quick Start with Docker](#quick-start-with-docker)
@@ -99,6 +99,7 @@ The `mockctl` command provides comprehensive server management:
 ./mockctl stop --all                # Stop all servers
 ./mockctl list                      # Show running servers
 ./mockctl --json list               # JSON output for scripting
+./mockctl clean-up                  # Stop all servers & purge logs
 
 # Monitoring & Logs
 ./mockctl logs --lines 100                # View recent logs
@@ -114,6 +115,7 @@ The `mockctl` command provides comprehensive server management:
 ./mockctl version                   # Show version information
 ./mockctl --version                 # Show version (global flag)
 ./mockctl -v                        # Show version (short flag)
+./mockctl clean-up                  # Clean logs & stop instances
 
 # Output Formatting
 ./mockctl --no-emoji list           # Clean text output (removes emojis)
@@ -277,17 +279,18 @@ curl -X POST http://localhost:8000/products \
 curl -H "X-API-Key: demo-api-key-123" http://localhost:8000/products/{id}
 ```
 
-### Advanced Search
+### Advanced Search (Mandatory config_name Argument)
 
 ```bash
 # Find all user API calls from the last hour (most recent basic logs)
 ./mockctl --json search basic "/api/users" --since "1h ago"
 
-# Search across all configurations (most recent log per config)
+# Search across all configurations (most recent log per config). The first
+# positional argument is ALWAYS the configuration name or 'all'.
 ./mockctl search all "/auth"
 
 # Search all historical logs for a specific config
-./mockctl search basic --all-logs "/docs"
+./mockctl search basic --all-logs "/docs"  # --all-logs searches all historical logs for that config
 ```
 
 ### Air-gapped Environment

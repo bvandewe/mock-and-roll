@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Overview
+
+Focus on test stability, documentation clarity for the enhanced search command, and housekeeping utilities.
+
+### Added
+
+* **Clean-up Command**: New `mockctl clean-up` (alias `mockctl cleanup`) command for environment housekeeping
+  * Gracefully stops all tracked running mock server instances
+  * Deletes timestamped server log files (`logs/*.logs`) while preserving `logs/mockctl.log`
+  * Truncates `logs/mockctl.log` to keep file for ongoing CLI logging
+  * JSON mode provides structured summary including stopped instances and deleted files
+  * Useful before packaging, between integration test runs, or reclaiming disk space
+* Shared pytest session fixture for automatic `LOG_FILE` provisioning (`tests/conftest.py`)
+
+### Changed
+
+* Converted legacy tests that returned boolean values into pytest assertion style (removes warning noise)
+* Clarified mandatory `config_name` positional argument and `all` mode behavior in search command documentation
+
+### Maintenance
+
+* General test suite stabilization ahead of 0.3.1 patch release (logging environment consistency, assertion hygiene)
+
+
 ## [0.3.0] - 2025-09-12
 
 ### Added

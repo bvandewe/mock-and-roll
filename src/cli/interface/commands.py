@@ -361,3 +361,90 @@ class TestCommand(CommandHandler):
         except Exception as e:
             self.presenter.show_error(f"Test command failed: {str(e)}")
             sys.exit(1)
+
+
+class CleanUpCommand(CommandHandler):
+    """Handler for clean-up command.
+
+    Removes all timestamped server log files, truncates the main mockctl log,
+    and stops any currently running server instances.
+    """
+
+    def execute(self, args: argparse.Namespace) -> None:  # noqa: D401
+        """Execute clean-up command performing orderly shutdown and log removal.
+
+        Steps:
+            1. Stop all running server instances (if any)
+            2. Delete all server log files matching pattern logs/*.logs (except mockctl.log)
+            3. Truncate (or recreate) logs/mockctl.log
+            4. Provide JSON or human readable summary
+        """
+        import glob
+        import os
+        from datetime import datetime
+
+        try:
+            # 1. Stop all running servers
+            servers = self.list_use_case.execute()
+            stopped = []
+            for server in servers:
+                try:
+                    result = self.stop_use_case.execute_by_pid(server.pid)
+                    stopped.append({"config": server.config_name, "pid": server.pid, "stopped": result})
+                except Exception as e:  # pragma: no cover - defensive
+                    stopped.append({"config": server.config_name, "pid": server.pid, "stopped": False, "error": str(e)})
+
+            # 2. Delete server log files (timestamped) except mockctl.log
+            logs_dir = self.project_root / "logs"
+            deleted_logs: list[str] = []
+            if logs_dir.exists():
+                pattern = str(logs_dir / "*.logs")
+                for path in glob.glob(pattern):
+                    # Ensure not deleting mockctl log (different extension) but safeguard anyway
+                    if os.path.basename(path) == "mockctl.log":
+                        continue
+                    try:
+                        os.remove(path)
+                        deleted_logs.append(os.path.basename(path))
+                    except OSError as e:  # pragma: no cover - edge case
+                        deleted_logs.append(f"FAILED:{os.path.basename(path)}:{e}")
+
+            # 3. Truncate or recreate mockctl.log
+            mockctl_log_path = logs_dir / "mockctl.log"
+            mockctl_log_truncated = False
+            try:
+                if mockctl_log_path.exists():
+                    with open(mockctl_log_path, "w", encoding="utf-8"):
+                        pass  # truncates
+                    mockctl_log_truncated = True
+                else:
+                    logs_dir.mkdir(exist_ok=True)
+                    mockctl_log_path.touch()
+                    mockctl_log_truncated = True
+            except OSError as e:  # pragma: no cover - edge case
+                self.presenter.show_warning(f"Could not truncate mockctl.log: {e}")
+
+            summary = {
+                "action": "clean-up",
+                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "stopped_instances": stopped,
+                "deleted_log_files": deleted_logs,
+                "mockctl_log_truncated": mockctl_log_truncated,
+            }
+
+            if self.presenter.json_mode:
+                self.presenter._output_json({"status": "success", **summary})
+            else:
+                self.presenter.show_success("Clean-up completed")
+                if stopped:
+                    running_stopped = [s for s in stopped if s.get("stopped")]
+                    if running_stopped:
+                        self.presenter.show_info(f"Stopped {len(running_stopped)} server instance(s)")
+                if deleted_logs:
+                    self.presenter.show_info(f"Removed {len(deleted_logs)} log file(s)")
+                if mockctl_log_truncated:
+                    self.presenter.show_info("mockctl.log truncated")
+
+        except Exception as e:  # pragma: no cover - catch-all
+            self.presenter.show_error(f"Clean-up failed: {e}")
+            sys.exit(1)

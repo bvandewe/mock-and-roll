@@ -200,8 +200,19 @@ class TestSearchFunctionality(unittest.TestCase):
 
             use_case = SearchLogsUseCase(log_search_repo, server_repo, config_repo)
 
-            # Test use case execution with all logs
-            result = use_case.execute(path_regex="/items", config_name=None, port=None, since_timestamp=None, use_all_logs=True)
+            # Monkeypatch repository to return our temp log file
+            original_list = log_search_repo.list_available_log_files
+
+            def _fake_list(config_name: str | None = None):  # type: ignore
+                return [temp_log_path]
+
+            log_search_repo.list_available_log_files = _fake_list  # type: ignore
+
+            # Test use case execution with all logs (config 'all')
+            result = use_case.execute(path_regex="/items", config_name="all", port=None, since_timestamp=None, use_all_logs=True)
+
+            # Restore original method
+            log_search_repo.list_available_log_files = original_list  # type: ignore
 
             self.assertIsInstance(result, SearchResult, "Use case should return SearchResult")
             self.assertGreaterEqual(result.total_requests, 0, "Should return valid request count")

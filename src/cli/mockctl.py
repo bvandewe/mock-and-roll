@@ -38,6 +38,7 @@ logger = setup_mockctl_logging()
 
 # Import after path setup
 from src.cli.interface.commands import (  # noqa: E402
+    CleanUpCommand,
     ConfigHelpCommand,
     ListCommand,
     SearchCommand,
@@ -122,6 +123,7 @@ class MockServerCLI:
         search_command = SearchCommand(self.project_root, json_mode, no_emoji)
         test_command = TestCommand(self.project_root, json_mode, no_emoji)
         version_command = VersionCommand(self.project_root, json_mode, no_emoji)
+        clean_up_command = CleanUpCommand(self.project_root, json_mode, no_emoji)
 
         # Map commands to handlers
         command_map = {
@@ -133,6 +135,8 @@ class MockServerCLI:
             "search": search_command.execute,
             "test": test_command.execute,
             "version": version_command.execute,
+            "clean-up": clean_up_command.execute,
+            "cleanup": clean_up_command.execute,  # alias without hyphen
         }
 
         if args.command in command_map:
@@ -237,6 +241,10 @@ Examples:
 
         # Version command
         version_parser = subparsers.add_parser("version", help="Show version information")
+
+        # Clean-up command
+        subparsers.add_parser("clean-up", help="Stop all servers and remove log files")
+        subparsers.add_parser("cleanup", help="Alias for clean-up command")
 
         return parser
 

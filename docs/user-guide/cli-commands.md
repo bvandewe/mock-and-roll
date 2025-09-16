@@ -165,6 +165,66 @@ Started: 2025-09-11 22:00:25
 API Docs: http://0.0.0.0:8000/docs
 ```
 
+### `clean-up` - Stop All Servers & Purge Logs
+
+Perform a full housekeeping operation:
+
+- Gracefully stops all tracked running mock server instances
+- Deletes all timestamped server log files in `./logs/*.logs` (e.g. `20250916_120000_basic_8000.logs`)
+- Preserves and truncates `logs/mockctl.log` (clears its contents but keeps the file)
+- Provides structured JSON output when used with `--json`
+
+```bash
+mockctl clean-up
+mockctl cleanup        # alias
+mockctl --json clean-up
+```
+
+**When to Use:**
+
+- Before packaging or archiving the project
+- To reclaim disk space after heavy testing
+- To reset environment between integration test runs
+
+**Examples:**
+
+```bash
+# Standard clean-up with human readable output
+mockctl clean-up
+
+# JSON output for automation scripts
+mockctl --json clean-up | jq '.deleted_log_files'
+
+# Combined with search workflow (prior to re-running tests)
+mockctl clean-up && mockctl start basic && mockctl search basic "/api"
+```
+
+**Sample JSON Output:**
+
+```json
+{
+  "status": "success",
+  "action": "clean-up",
+  "timestamp": "2025-09-16T12:34:56Z",
+  "stopped_instances": [
+    {"config": "basic", "pid": 34567, "stopped": true},
+    {"config": "vmanage", "pid": 34572, "stopped": true}
+  ],
+  "deleted_log_files": [
+    "20250916_120000_basic_8000.logs",
+    "20250916_120010_vmanage_8001.logs"
+  ],
+  "mockctl_log_truncated": true
+}
+```
+
+**Safety Notes:**
+
+- Only affects files within the `./logs` directory
+- Does not remove configuration or data persistence stores (e.g. Redis)
+- Non-fatal errors during individual file deletions are reported but do not abort the operation
+
+
 **Sample Output with `--no-emoji`:**
 
 ```
@@ -197,7 +257,11 @@ API Docs: http://0.0.0.0:8000/docs
 
 ### `search` - Search Server Logs
 
-Search server logs for specific patterns and requests.
+Search server logs for specific patterns and requests. The first positional
+argument (`config_name`) is mandatory and must be either a specific
+configuration profile (e.g. `basic`, `vmanage`, `persistence`, a custom
+profile) or the literal `all` to search across the most recent log of each
+available configuration.
 
 ```bash
 mockctl search <config_name> <pattern> [OPTIONS]
@@ -228,7 +292,7 @@ mockctl search <config_name> <pattern> [OPTIONS]
 # Search most recent basic config logs
 mockctl search basic "/auth"
 
-# Search most recent logs for all configs 
+# Search most recent logs for all configs (use 'all' explicitly)
 mockctl search all "/api"
 
 # Search ALL historical vmanage logs
@@ -243,7 +307,7 @@ mockctl search basic "POST.*login"
 # Search recent requests with time filter
 mockctl search basic "/api" --since "2025-01-01T11:00:00Z"
 
-# JSON output for processing
+# JSON output for processing (always include config_name)
 mockctl --json search all "/j_security_check"
 
 # Clean output without emojis

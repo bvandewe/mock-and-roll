@@ -6,131 +6,79 @@ Test the updated system authentication integration without requiring a server re
 import os
 import sys
 
-# Add the src directory to the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
+# Ensure project root src directory on path BEFORE other imports
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+SRC_DIR = os.path.join(PROJECT_ROOT, "src")
+if SRC_DIR not in sys.path:
+    sys.path.insert(0, SRC_DIR)
 
-from auth.security import (
-    configure_system_security_scheme,
-    create_system_auth_dependency,
-    get_system_api_key,
-)
-from config.loader import load_api_config, load_auth_config
+from auth.security import create_system_auth_dependency
+from auth.security import system_api_key as system_api_key_header  # noqa: E402
+from config.loader import load_api_config, load_auth_config  # noqa: E402
 
 
 def test_security_scheme_integration():
-    """Test that the security scheme integration works correctly."""
+    """Test that the system auth dependency and API key config are consistent.
 
-    print("🔧 Testing Security Scheme Integration")
+    The original test referenced a removed helper (configure_system_security_scheme). We now
+    validate that the exported system API key model matches the configuration and that a
+    dependency callable can be created for the configured auth method.
+    """
+
+    print("🔧 Testing Security Scheme Integration (updated)")
     print("=" * 50)
 
-    # Load the actual configurations
+    # Load configurations
     auth_data = load_auth_config()
     api_config = load_api_config()
 
-    # Get system configuration
     system_config = api_config.get("system", {})
     auth_method = system_config.get("auth_method", "system_api_key")
-
     print(f"Auth method from config: {auth_method}")
 
-    # Test the configuration
-    configure_system_security_scheme(auth_data, auth_method)
+    # Obtain system API key model (should be pre-configured at import time if applicable)
+    system_api_key = system_api_key_header
+    assert system_api_key, "System API key object not initialized"
 
-    # Check the configured security scheme
-    system_api_key = get_system_api_key()
-    print(f"System API Key scheme name: {system_api_key.model.name}")
-    print(f"System API Key scheme description: {system_api_key.model.description}")
+    print(f"System API Key scheme name: {getattr(system_api_key.model, 'name', 'N/A')}")
+    print(f"System API Key scheme description: {getattr(system_api_key.model, 'description', 'N/A')}")
 
-    # Verify it matches the auth.json configuration
+    # Compare with configuration
     auth_methods = auth_data.get("authentication_methods", {})
     method_config = auth_methods.get(auth_method, {})
-
     expected_name = method_config.get("name", "X-API-Key")
     expected_description = method_config.get("description", "")
 
-    if system_api_key.model.name == expected_name:
-        print("✅ Security scheme name matches auth.json")
-    else:
-        print(f"❌ Security scheme name mismatch: got {system_api_key.model.name}, expected {expected_name}")
-        return False
+    assert getattr(system_api_key.model, "name", None) == expected_name, f"Security scheme name mismatch: got {getattr(system_api_key.model, 'name', None)}, expected {expected_name}"
 
-    if expected_description in system_api_key.model.description:
-        print("✅ Security scheme description contains auth.json description")
-    else:
-        print(f"❌ Security scheme description mismatch: got '{system_api_key.model.description}', expected to contain '{expected_description}'")
-        return False
+    assert expected_description in getattr(system_api_key.model, "description", ""), f"Security scheme description mismatch: got '{getattr(system_api_key.model, 'description', '')}', expected to contain '{expected_description}'"
 
-    # Test creating the dependency
+    # Validate dependency creation
     get_system_auth = create_system_auth_dependency(auth_data, auth_method)
+    assert get_system_auth, "Failed to create system auth dependency"
 
-    if get_system_auth:
-        print("✅ System auth dependency created successfully")
-    else:
-        print("❌ Failed to create system auth dependency")
-        return False
-
-    # Test that the dependency uses the shared security scheme
-    # This is more complex to test directly, but we can verify the configuration is consistent
-    print("✅ All security scheme integration tests passed")
-
-    return True
+    print("✅ All security scheme integration checks passed")
+    # Success if assertions did not fail
+    assert True
 
 
 def test_configuration_loading():
     """Test that the configuration loading works correctly."""
+    auth_data = load_auth_config()
+    api_config = load_api_config()
 
-    print("\n📁 Testing Configuration Loading")
-    print("=" * 50)
+    auth_methods = auth_data.get("authentication_methods", {})
+    assert "system_api_key" in auth_methods, "system_api_key not found in auth configuration"
+    system_auth_config = auth_methods["system_api_key"]
+    print("✅ System API key config loaded:")
+    print(f"   Type: {system_auth_config.get('type')}")
+    print(f"   Name: {system_auth_config.get('name')}")
+    print(f"   Location: {system_auth_config.get('location')}")
+    print(f"   Valid keys: {len(system_auth_config.get('valid_keys', []))} keys")
 
-    try:
-        auth_data = load_auth_config()
-        api_config = load_api_config()
-
-        # Check that system API key configuration exists
-        auth_methods = auth_data.get("authentication_methods", {})
-        if "system_api_key" not in auth_methods:
-            print("❌ system_api_key not found in auth configuration")
-            return False
-
-        system_auth_config = auth_methods["system_api_key"]
-        print(f"✅ System API key config loaded:")
-        print(f"   Type: {system_auth_config.get('type')}")
-        print(f"   Name: {system_auth_config.get('name')}")
-        print(f"   Location: {system_auth_config.get('location')}")
-        print(f"   Valid keys: {len(system_auth_config.get('valid_keys', []))} keys")
-
-        # Check API configuration
-        system_config = api_config.get("system", {})
-        if not system_config:
-            print("❌ System configuration not found in API config")
-            return False
-
-        print(f"✅ System config loaded:")
-        print(f"   Protection enabled: {system_config.get('protect_endpoints')}")
-        print(f"   Auth method: {system_config.get('auth_method')}")
-
-        return True
-
-    except Exception as e:
-        print(f"❌ Configuration loading failed: {e}")
-        return False
-
-
-if __name__ == "__main__":
-    print("🧪 System Authentication Integration Tests")
-    print("Testing configuration and security scheme integration")
-    print("=" * 60)
-
-    test1_passed = test_configuration_loading()
-    test2_passed = test_security_scheme_integration()
-
-    print("\n" + "=" * 60)
-    if test1_passed and test2_passed:
-        print("🎉 SUCCESS: System authentication is properly integrated with auth_data!")
-        print("✅ Configuration loading works correctly")
-        print("✅ Security schemes use centralized configuration")
-        print("✅ No separate authentication objects detected")
-        print("\nNote: Server restart may be required to see changes in OpenAPI documentation")
-    else:
-        print("💥 FAILED: Issues found with integration")
-        sys.exit(1)
+    system_config = api_config.get("system", {})
+    assert system_config, "System configuration not found in API config"
+    print("✅ System config loaded:")
+    print(f"   Protection enabled: {system_config.get('protect_endpoints')}")
+    print(f"   Auth method: {system_config.get('auth_method')}")
+    assert True

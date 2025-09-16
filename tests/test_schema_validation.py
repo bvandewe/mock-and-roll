@@ -5,13 +5,29 @@ This script demonstrates request body schema validation with both valid and inva
 """
 
 import json
+import socket
 from urllib.parse import urljoin
 
 import requests
 
 
+def _server_running(host: str = "localhost", port: int = 8000) -> bool:
+    try:
+        with socket.create_connection((host, port), timeout=0.5):
+            return True
+    except OSError:
+        return False
+
+
 def test_schema_validation(base_url="http://localhost:8000"):
     """Test request schema validation with various payloads"""
+    if not _server_running():
+        print("⚠️  Server not running on localhost:8000 - skipping schema validation test")
+        # Skipped scenario - express via pytest skip rather than boolean return
+        import pytest
+
+        pytest.skip("Server not running on localhost:8000")
+
     session = requests.Session()
 
     print("🧪 Schema Validation Testing for vManage API")
@@ -26,9 +42,7 @@ def test_schema_validation(base_url="http://localhost:8000"):
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
     response = session.post(auth_url, data=valid_auth_data, headers=headers)
-    if response.status_code != 200:
-        print(f"❌ Authentication failed: {response.status_code}")
-        return False
+    assert response.status_code == 200, f"Authentication failed: {response.status_code}"
 
     print("✅ Authentication successful")
 
@@ -37,9 +51,7 @@ def test_schema_validation(base_url="http://localhost:8000"):
     token_url = urljoin(base_url, "/dataservice/client/token")
     response = session.get(token_url)
 
-    if response.status_code != 200:
-        print(f"❌ Failed to get CSRF token: {response.status_code}")
-        return False
+    assert response.status_code == 200, f"Failed to get CSRF token: {response.status_code}"
 
     csrf_token = response.text.strip('"')
     print(f"✅ CSRF token obtained: {csrf_token}")
@@ -118,7 +130,8 @@ def test_schema_validation(base_url="http://localhost:8000"):
         print(f"❌ Expected validation error, got: {response.text}")
 
     print("\n🎉 Schema validation testing completed!")
-    return True
+    # Final assertion ensures we reached end without earlier assertion failures
+    assert True
 
 
 def main():

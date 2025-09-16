@@ -32,11 +32,7 @@ def test_system_endpoints():
     print("\n1. Testing server connectivity...")
     try:
         response = requests.get(f"{base_url}/", timeout=5)
-        if response.status_code == 200:
-            print("✅ Server is running and accessible")
-        else:
-            print(f"❌ Server returned status code: {response.status_code}")
-            return False
+        assert response.status_code == 200, f"Server returned status code: {response.status_code}"
     except requests.exceptions.RequestException as e:
         print(f"❌ Cannot connect to server: {e}")
         return False
@@ -142,7 +138,7 @@ def test_system_endpoints():
         all_passed = False
 
     print("\n" + "=" * 60)
-    return all_passed
+    assert all_passed, "One or more system endpoint checks failed"
 
 
 def test_auth_integration():
@@ -193,7 +189,8 @@ def test_auth_integration():
         print(f"❌ Cache endpoint request failed: {e}")
         return False
 
-    return True
+    # If we got here without assertions failing, test passes
+    assert True
 
 
 if __name__ == "__main__":
