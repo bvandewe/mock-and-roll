@@ -130,6 +130,11 @@ class MockServerCLI:
             "start": start_command.execute,
             "stop": stop_command.execute,
             "list": list_command.execute,
+            "show": list_command.execute,  # alias for list
+            "sh": list_command.execute,  # alias for list
+            "l": list_command.execute,  # alias for list
+            "ls": list_command.execute,  # alias for list
+            "st": list_command.execute,  # alias for list
             "status": list_command.execute,  # alias for list
             "config-help": config_help_command.execute,
             "search": search_command.execute,
@@ -220,10 +225,7 @@ Examples:
         stop_parser.add_argument("--all", action="store_true", help="Stop all servers")
 
         # List command
-        list_parser = subparsers.add_parser("list", help="List running servers")
-
-        # Status command (alias for list)
-        status_parser = subparsers.add_parser("status", help="Show server status (alias for list)")
+        list_parser = subparsers.add_parser("list", help="List running servers", aliases=["show", "status", "sh", "st", "ls", "l"])
 
         # Config-help command
         config_help_parser = subparsers.add_parser("config-help", help="Show configuration guide")
