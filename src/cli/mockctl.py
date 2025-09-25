@@ -167,7 +167,8 @@ class MockServerCLI:
     def create_parser(self) -> argparse.ArgumentParser:
         """Create argument parser."""
         parser = argparse.ArgumentParser(
-            description="🚀 Mock API Server Management (Clean Architecture)",
+            prog="mockctl",
+            description="🚀 Mock API Server Management",
             formatter_class=argparse.RawDescriptionHelpFormatter,
             epilog="""
 Examples:
@@ -189,7 +190,7 @@ Examples:
   %(prog)s --json test vmanage       # Test vManage server in JSON format
 
 📂 Available configurations: basic, persistence, vmanage
-💡 Use --json with any command for machine-readable output (no emojis)
+💡 Use --json or --no-emoji with any command for machine-readable output (no emojis)
             """,
         )
 
