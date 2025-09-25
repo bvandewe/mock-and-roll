@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-_No changes yet._
+- Fix prog line in mockctl help
 
 ## [0.4.0] - 2025-09-16
 
