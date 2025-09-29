@@ -11,12 +11,21 @@ Welcome to the Mock-and-Roll documentation. This directory contains detailed doc
 
 ### ✨ Features
 
-- [Search Command Implementation](features/SEARCH_COMMAND_IMPLEMENTATION.md) - Advanced log search functionality
+Mock-and-Roll currently provides a **robust, production-ready mock API server** with comprehensive features for:
+
+- **Configuration-driven API development** with multiple profiles
+- **Multiple authentication methods** including advanced session management
+- **Dynamic response generation** with conditional logic and templates
+- **Data persistence** with Redis integration and CRUD operations
+- **Comprehensive logging** with powerful search and analysis capabilities
+- **Professional CLI tools** for server management and operations
+
+See [Features](./features.md).
 
 ### 🛠️ Development
 
-- [Cleanup Summary](development/CLEANUP_SUMMARY.md) - Recent code cleanup and version updates
-- [Demo Files Cleanup](development/DEMO_CLEANUP.md) - Removal of obsolete demo scripts
+- [Cleanup Summary](notes/CLEANUP_SUMMARY.md) - Recent code cleanup and version updates
+- [Demo Files Cleanup](notes/DEMO_CLEANUP.md) - Removal of obsolete demo scripts
 - [Documentation Organization](DOCUMENTATION_ORGANIZATION.md) - How the documentation is structured and organized
 
 ### 📦 Installation

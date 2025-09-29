@@ -72,3 +72,8 @@ logs/
 
 .server_state/
 site
+
+# Local Makefile customizations
+Makefile.local
+
+notes/

@@ -15,6 +15,7 @@ A highly configurable and extensible mock REST API server built with FastAPI. Cr
 - [REST API Mock Server](#rest-api-mock-server)
   - [📖 Table of Contents](#-table-of-contents)
   - [🚀 Quick Start](#-quick-start)
+  - [🛠 Development Makefile](#-development-makefile)
   - [✨ Key Features](#-key-features)
     - [🎯 Core Functionality](#-core-functionality)
     - [🏗️ Architecture \& Management](#️-architecture--management)
@@ -24,12 +25,14 @@ A highly configurable and extensible mock REST API server built with FastAPI. Cr
   - [📦 Installation](#-installation)
     - [Quick Installation](#quick-installation)
     - [Docker Installation](#docker-installation)
+    - [Cross-Platform Compatibility](#cross-platform-compatibility)
   - [⚙️ Basic Configuration](#️-basic-configuration)
     - [Create a Simple Endpoint](#create-a-simple-endpoint)
   - [🚀 Usage Examples](#-usage-examples)
     - [Basic API Call](#basic-api-call)
     - [With Persistence (Redis required)](#with-persistence-redis-required)
-  - [Advanced Search (Mandatory config_name Argument)](#advanced-search-mandatory-config_name-argument)
+    - [Advanced Search (Mandatory config_name Argument)](#advanced-search-mandatory-config_name-argument)
+    - [Air-gapped Environment](#air-gapped-environment)
   - [📚 Documentation](#-documentation)
   - [🐳 Docker Usage](#-docker-usage)
     - [Quick Start with Docker](#quick-start-with-docker)
@@ -63,9 +66,58 @@ curl http://localhost:8000/
 
 **That's it!** 🎉 Your mock API server is running with Swagger UI at `http://localhost:8000/docs`
 
+## 🛠 Development Makefile
+
+Mock-and-Roll includes a comprehensive Makefile for streamlined development workflows:
+
+```bash
+# Quick start
+make help                    # Show all available commands
+make setup                   # Complete project setup
+make dev                     # Start development server
+make test                    # Run all tests
+make docs-live               # Live documentation server
+
+# Development workflows
+make workflow-setup          # Complete dev environment setup
+make workflow-dev            # Start full development workflow (server + docs)
+make workflow-test           # Quick test workflow (format + lint + test)
+
+# Testing & Quality
+make test-coverage           # Run tests with coverage report
+make lint                    # Run all linters
+make format                  # Auto-format code
+make quality                 # Run all quality checks
+
+# Documentation
+make docs-build              # Build documentation
+make docs-serve              # Serve docs locally
+make docs-deploy             # Deploy to GitHub Pages
+
+# Docker operations
+make docker-dev              # Full Docker development environment
+make docker-up               # Start services in background
+make redis-up                # Start only Redis service
+
+# Utilities
+make clean                   # Clean temporary files
+make status                  # Show server status
+make logs                    # View server logs
+```
+
+**Examples:**
+
+```bash
+make setup && make workflow-dev    # Complete setup + start development
+make test-coverage                 # Run tests with HTML coverage report
+make docker-dev                    # Start with Docker + Redis
+make search-logs PATTERN="/api" CONFIG="basic"  # Search logs
+```
+
 ## ✨ Key Features
 
 ### 🎯 Core Functionality
+
 - **Dynamic Endpoint Configuration**: Create REST endpoints through JSON config files
 - **Multiple Authentication Methods**: API keys, Basic Auth, OIDC/OAuth2, sessions, CSRF tokens
 - **Request Schema Validation**: JSON Schema validation for request bodies
@@ -74,6 +126,7 @@ curl http://localhost:8000/
 - **Path Parameters**: Dynamic URL parameters with automatic substitution
 
 ### 🏗️ Architecture & Management
+
 - **Clean Architecture**: Domain-driven design with clear separation of concerns
 - **Unified CLI**: Comprehensive command-line interface for server management
 - **Log Search**: Advanced log analysis with regex filtering and time-based queries
@@ -81,6 +134,7 @@ curl http://localhost:8000/
 - **Configuration Profiles**: Pre-built configurations for different use cases
 
 ### 🔧 Developer Experience
+
 - **Interactive Swagger UI**: Auto-generated API documentation with authentication testing
 - **Air-gapped Support**: Offline Swagger UI with local static assets (no CDN dependencies)
 - **Hot Reloading**: Development mode with automatic code updates
@@ -124,6 +178,7 @@ The `mockctl` command provides comprehensive server management:
 ```
 
 **Global Options:**
+
 - `--json`: Output results in JSON format for scripting and automation
 - `--no-emoji`: Remove emojis from text output for cleaner display (ignored when using `--json`)
 
@@ -131,14 +186,15 @@ All commands support both `--json` and `--no-emoji` flags to customize output fo
 
 ## 📂 Available Configurations
 
-| Configuration | Description | Endpoints | Features |
-|---------------|-------------|-----------|----------|
-| **basic** | Simple REST API | 1 | API key auth, basic CRUD |
-| **persistence** | Full-featured API | 12 | Redis persistence, advanced auth |
-| **vmanage** | Cisco SD-WAN API | 25+ | Multi-factor auth, realistic workflows |
-| **airgapped** | Offline REST API | 1 | Air-gapped Swagger UI, no CDN dependencies |
+| Configuration   | Description       | Endpoints | Features                                   |
+| --------------- | ----------------- | --------- | ------------------------------------------ |
+| **basic**       | Simple REST API   | 1         | API key auth, basic CRUD                   |
+| **persistence** | Full-featured API | 12        | Redis persistence, advanced auth           |
+| **vmanage**     | Cisco SD-WAN API  | 25+       | Multi-factor auth, realistic workflows     |
+| **airgapped**   | Offline REST API  | 1         | Air-gapped Swagger UI, no CDN dependencies |
 
 Each configuration includes:
+
 - `api.json` - Server settings and metadata
 - `auth.json` - Authentication methods and keys
 - `endpoints.json` - API endpoint definitions
@@ -181,6 +237,7 @@ docker run -p 8000:8000 mock-server-alpine
 Mock-and-Roll is designed to work across different operating systems and container environments:
 
 **✅ Fully Supported Platforms:**
+
 - **macOS** (Intel & Apple Silicon)
 - **Ubuntu/Debian Linux**
 - **Alpine Linux** (Docker containers)
@@ -189,6 +246,7 @@ Mock-and-Roll is designed to work across different operating systems and contain
 
 **🔧 Port Detection Methods:**
 The CLI automatically detects available ports using a simple, reliable socket-based approach:
+
 - **Socket Binding Test**: Uses Python's built-in `socket` module to test port availability
 - **Cross-Platform**: Works on all platforms without external dependencies
 - **No OS Tools Required**: Doesn't rely on `lsof`, `netstat`, `ss`, or other system utilities
@@ -203,6 +261,7 @@ This ensures reliable auto port detection on any platform where Python runs, wit
 ### Create a Simple Endpoint
 
 **1. Create endpoint configuration (`my-config/endpoints.json`):**
+
 ```json
 {
   "endpoints": [
@@ -228,6 +287,7 @@ This ensures reliable auto port detection on any platform where Python runs, wit
 ```
 
 **2. Configure authentication (`my-config/auth.json`):**
+
 ```json
 {
   "authentication_methods": {
@@ -242,6 +302,7 @@ This ensures reliable auto port detection on any platform where Python runs, wit
 ```
 
 **3. Set server metadata (`my-config/api.json`):**
+
 ```json
 {
   "api": {
@@ -253,6 +314,7 @@ This ensures reliable auto port detection on any platform where Python runs, wit
 ```
 
 **4. Start your server:**
+
 ```bash
 ./mockctl start my-config
 ```
@@ -260,11 +322,13 @@ This ensures reliable auto port detection on any platform where Python runs, wit
 ## 🚀 Usage Examples
 
 ### Basic API Call
+
 ```bash
 curl -H "X-API-Key: my-secret-key" http://localhost:8000/users/123
 ```
 
 ### With Persistence (Redis required)
+
 ```bash
 # Start persistence configuration
 ./mockctl start persistence
@@ -294,6 +358,7 @@ curl -H "X-API-Key: demo-api-key-123" http://localhost:8000/products/{id}
 ```
 
 ### Air-gapped Environment
+
 ```bash
 # Start air-gapped server (no CDN dependencies)
 ./mockctl start airgapped
@@ -305,18 +370,19 @@ curl -H "X-API-Key: my-secret-key" http://localhost:8000/items
 
 ## 📚 Documentation
 
-| Document | Description |
-|----------|-------------|
-| [Installation Guide](docs/INSTALLATION.md) | Complete installation instructions for all platforms |
-| [Search Command](docs/features/SEARCH_COMMAND_IMPLEMENTATION.md) | Advanced log search functionality |
-| [Clean Architecture](docs/architecture/README_clean_architecture.md) | Architecture design and patterns |
-| [Development Guide](docs/development/CLEANUP_SUMMARY.md) | Development setup and maintenance |
+| Document                                                             | Description                                          |
+| -------------------------------------------------------------------- | ---------------------------------------------------- |
+| [Installation Guide](docs/INSTALLATION.md)                           | Complete installation instructions for all platforms |
+| [Search Command](docs/features/SEARCH_COMMAND_IMPLEMENTATION.md)     | Advanced log search functionality                    |
+| [Clean Architecture](docs/architecture/README_clean_architecture.md) | Architecture design and patterns                     |
+| [Development Guide](docs/development/CLEANUP_SUMMARY.md)             | Development setup and maintenance                    |
 
 📖 **Browse all documentation:** [docs/](docs/)
 
 ## 🐳 Docker Usage
 
 ### Quick Start with Docker
+
 ```bash
 # Start with default configuration
 docker-compose up
@@ -329,6 +395,7 @@ docker-compose -f docker-compose.yml up
 ```
 
 ### Environment Variables
+
 - `CONFIG_FOLDER`: Path to configuration directory
 - `REDIS_HOST`: Redis server hostname (default: localhost)
 - `REDIS_PORT`: Redis server port (default: 6379)
@@ -338,6 +405,7 @@ docker-compose -f docker-compose.yml up
 We welcome contributions! Please see our [contribution guidelines](CONTRIBUTING.md) for details.
 
 ### Development Setup
+
 ```bash
 git clone <repository-url>
 cd mock-and-roll
@@ -359,12 +427,14 @@ All notable changes to this project are documented in our [CHANGELOG.md](CHANGEL
 ### Recent Updates
 
 **Version 0.2.0** (2024-09-10)
+
 - ✨ Advanced log search functionality with regex and time filtering
 - 🏗️ Clean architecture implementation with domain-driven design
 - 🔧 Enhanced CLI experience with JSON output mode
 - 📊 Request/response correlation and status code grouping
 
 **Version 0.1.0** (2024-08-XX)
+
 - 🚀 Initial release with core mock API server functionality
 - ⚙️ Configuration-driven endpoint development
 - 🔐 Multiple authentication methods

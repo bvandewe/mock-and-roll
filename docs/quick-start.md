@@ -1,11 +1,12 @@
-# Quick Start Guide
+# Getting Started with Mock-and-Roll
 
-Get up and running with Mock-and-Roll in just a few minutes!
+Get up and running with Mock-and-Roll's highly configurable REST API server in just a few minutes!
 
 ## Prerequisites
 
 - Python 3.11+
 - Git
+- Redis (optional - for persistence features)
 
 ## 🚀 Quick Installation
 
@@ -26,9 +27,6 @@ cd mock-and-roll
 
 ```bash
 # Clone and enter directory
-git clone https://github.com/bvandewe/mock-and-roll.git
-cd mock-and-roll
-
 # Create virtual environment
 python3 -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
@@ -40,253 +38,490 @@ pip install -r requirements.txt
 chmod +x mockctl
 ```
 
-## 🎯 Your First Mock Server
+**That's it!** 🎉 Your mock API server is ready. Access Swagger UI at `http://localhost:8000/docs`
 
-### Start a Basic Server
+## 🎯 Your First Mock API
 
-```bash
-# Start with the basic configuration
-./mockctl start basic
+### Start with a Pre-configured Profile
 
-# The server will start on http://localhost:8000
-# Swagger docs available at http://localhost:8000/docs
-```
-
-### Test Your Server
+Mock-and-Roll includes several ready-to-use configurations:
 
 ```bash
-# In another terminal, test the API
-curl http://localhost:8000/api/health
+# Interactive selection (recommended for first time)
+./mockctl start
 
-# Expected response:
-# {"status": "healthy", "timestamp": "2025-01-01T12:00:00Z"}
+# Or start a specific configuration directly
+./mockctl start basic --port 8000
 ```
 
-## 🔍 Exploring Features
-
-### View Available Commands
+### Test Your API
 
 ```bash
-./mockctl --help
+# Test the health endpoint
+curl http://localhost:8000/api/v1/health
 
-# Common commands:
-# start <config>  - Start a mock server
-# stop           - Stop servers  
-# list           - List running servers
-# search <pattern> - Search logs
-# version        - Show version information
-
-# Global options:
-# --json        - Output in JSON format
-# --no-emoji    - Remove emojis from output
-# --version/-v  - Show version information
+# Test with authentication (using API key from config)
+curl -H "X-API-Key: demo-api-key-123" \
+     http://localhost:8000/api/v1/items/123
 ```
 
-### List Running Servers
+### Explore Swagger Documentation
 
-```bash
-./mockctl list
+Open your browser and navigate to `http://localhost:8000/docs` to:
 
-# Clean output without emojis
-./mockctl --no-emoji list
+- View all available endpoints
+- Test authentication methods
+- Try out API calls interactively
+- View request/response schemas
 
-# Example output:
-# Running Mock Servers:
-# Config: basic | PID: 12345 | Port: 8000 | Status: ✅ running
-```
+## 📋 Available Configuration Profiles
 
-### Search Server Logs
-
-```bash
-# Search for API requests
-./mockctl --json search basic "/api"
-
-# Search for authentication requests
-./mockctl search basic "/auth"
-
-# Clean search output without emojis
-./mockctl --no-emoji search basic "/auth"
-
-# Search with regex patterns
-./mockctl search basic "POST.*login"
-```
-
-## 📋 Configuration Profiles
-
-Mock-and-Roll comes with three pre-configured profiles:
+Mock-and-Roll comes with four pre-built profiles to get you started:
 
 ### Basic Profile
-- Simple REST API endpoints
-- JSON responses
-- No authentication required
-- Perfect for testing and development
+
+Simple REST API with minimal setup - perfect for development and testing.
+
+**Features:**
+
+- API key authentication
+- Static JSON responses
+- Path parameter support
+- No external dependencies
 
 ```bash
 ./mockctl start basic
 ```
 
 ### Persistence Profile
-- All basic features
-- Redis integration for data persistence
-- Stateful responses
-- User data management
+
+Full-featured API with Redis-backed data persistence.
+
+**Features:**
+
+- Multiple authentication methods (API key, Basic Auth, OIDC)
+- CRUD operations with real data storage
+- Conditional responses based on request content
+- User management endpoints
 
 ```bash
-# Requires Redis server running
+# Requires Redis server
 ./mockctl start persistence
 ```
 
 ### vManage Profile
-- Cisco vManage API simulation
-- Authentication workflows
-- Network device management endpoints
-- Realistic networking scenarios
+
+Cisco SD-WAN vManage API simulation for network automation testing.
+
+**Features:**
+
+- Multi-factor authentication workflows
+- Network device management
+- 25+ realistic endpoints
+- Template variables and dynamic responses
 
 ```bash
 ./mockctl start vmanage
 ```
 
-## 🐳 Docker Quick Start
+### Airgapped Profile
 
-### Using Docker Compose
+Offline-capable API for environments without internet access.
 
-```bash
-# Start all services (includes Redis)
-docker-compose up
+**Features:**
 
-# Start in background
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Stop services
-docker-compose down
-```
-
-### Using Docker Directly
+- No CDN dependencies
+- Local Swagger UI assets
+- Air-gapped deployment ready
+- Security-focused configuration
 
 ```bash
-# Build the image
-docker build -t mock-and-roll .
-
-# Run basic server
-docker run -p 8000:8000 mock-and-roll
-
-# Run with custom config
-docker run -p 8080:8080 -e CONFIG_NAME=vmanage mock-and-roll
+./mockctl start airgapped
 ```
 
-## 🎨 Customizing Your Server
+## 🔧 Creating Your Custom API Configuration
 
-### Configuration Structure
+### Step 1: Copy a Base Configuration
 
 ```bash
-configs/
-├── basic/          # Simple mock API
-├── persistence/    # With Redis persistence
-└── vmanage/        # Cisco vManage simulation
+# Create your custom config directory
+cp -r configs/basic configs/myapi
+
+# Navigate to your new config
+cd configs/myapi
 ```
 
-### Creating Custom Endpoints
+### Step 2: Configure API Metadata (`api.json`)
 
-Edit `configs/<profile>/endpoints.json`:
+```json
+{
+  "api_name": "My Custom API",
+  "version": "1.0.0",
+  "description": "Custom mock API for my project",
+  "base_url": "https://api.mycompany.com",
+  "root_path": "/api/v1",
+  "openapi_tags": [
+    {
+      "name": "Users",
+      "description": "User management operations"
+    }
+  ],
+  "system": {
+    "authentication": ["system_api_key"],
+    "endpoints": ["system_health"]
+  }
+}
+```
+
+### Step 3: Set Up Authentication (`auth.json`)
+
+```json
+{
+  "authentication_methods": {
+    "api_key": {
+      "type": "api_key",
+      "name": "X-API-Key",
+      "location": "header",
+      "valid_keys": ["my-secret-key-123", "another-key-456"]
+    },
+    "bearer_token": {
+      "type": "http_bearer",
+      "valid_tokens": ["eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.demo-token"]
+    },
+    "system_api_key": {
+      "type": "api_key",
+      "name": "X-System-Key",
+      "location": "header",
+      "valid_keys": ["system-admin-key"]
+    }
+  }
+}
+```
+
+### Step 4: Define Your Endpoints (`endpoints.json`)
 
 ```json
 {
   "endpoints": [
     {
-      "path": "/api/custom",
       "method": "GET",
-      "response": {
-        "message": "Hello from Mock-and-Roll!",
-        "timestamp": "{{now}}"
+      "path": "/users/{user_id}",
+      "tag": "Users",
+      "authentication": ["api_key"],
+      "description": "Get user by ID",
+      "parameters": {
+        "user_id": {
+          "type": "string",
+          "description": "Unique user identifier"
+        }
       },
-      "status_code": 200
+      "responses": [
+        {
+          "response": {
+            "status_code": 200,
+            "body": {
+              "id": "{user_id}",
+              "name": "John Doe",
+              "email": "john@example.com",
+              "created_at": "{{timestamp}}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/users",
+      "tag": "Users",
+      "authentication": ["bearer_token"],
+      "description": "Create a new user",
+      "request_schema": {
+        "type": "object",
+        "required": ["name", "email"],
+        "properties": {
+          "name": { "type": "string" },
+          "email": { "type": "string", "format": "email" }
+        }
+      },
+      "responses": [
+        {
+          "response": {
+            "status_code": 201,
+            "body": {
+              "id": "{{random_uuid}}",
+              "name": "{{request.name}}",
+              "email": "{{request.email}}",
+              "created_at": "{{timestamp}}"
+            }
+          }
+        }
+      ]
     }
   ]
 }
 ```
 
-## 🔧 Troubleshooting
+### Step 5: Start Your Custom API
 
-### Common Issues
-
-**Port already in use:**
 ```bash
-# Check what's running on port 8000
+./mockctl start myapi --port 8080
+```
+
+## 🎛️ Key Features Explained
+
+### Configuration-Driven Development
+
+Mock-and-Roll uses JSON files to define your API without writing code:
+
+- **`api.json`**: Server metadata, OpenAPI settings, system configuration
+- **`auth.json`**: Authentication methods and credentials
+- **`endpoints.json`**: API endpoints, request/response schemas
+
+### Dynamic Template Variables
+
+Use template variables for dynamic responses:
+
+```json
+{
+  "user_id": "{{random_uuid}}",
+  "timestamp": "{{timestamp}}",
+  "request_data": "{{request.field_name}}",
+  "random_number": "{{random_int(1, 100)}}"
+}
+```
+
+### Conditional Responses
+
+Return different responses based on request conditions:
+
+```json
+{
+  "responses": [
+    {
+      "body_conditions": { "role": "admin" },
+      "response": { "status_code": 200, "body": { "access": "granted" } }
+    },
+    {
+      "body_conditions": { "role": "user" },
+      "response": { "status_code": 403, "body": { "error": "forbidden" } }
+    }
+  ]
+}
+```
+
+### Multiple Authentication Methods
+
+Support various authentication schemes:
+
+- **API Keys**: Header or query parameter based
+- **Bearer Tokens**: JWT and simple bearer tokens
+- **Basic Auth**: Username/password authentication
+- **OIDC/OAuth2**: Authorization code flow simulation
+- **Session Auth**: Cookie-based sessions
+- **CSRF Protection**: Anti-CSRF token validation
+
+### Redis Persistence (Optional)
+
+Enable stateful behavior with Redis:
+
+```json
+{
+  "method": "POST",
+  "path": "/users",
+  "persistence": {
+    "entity_name": "users",
+    "action": "create"
+  }
+}
+```
+
+### Comprehensive Logging
+
+Monitor your API with detailed logging:
+
+```bash
+# Search logs by pattern
+./mockctl search myapi "POST /users"
+
+# Search with time filtering
+./mockctl search myapi "/auth" --since "1h ago"
+
+# Export logs as JSON
+./mockctl --json search myapi "/api" > api-logs.json
+```
+
+## 🔧 Advanced Configuration
+
+### Custom Request Validation
+
+Add JSON Schema validation for request bodies:
+
+```json
+{
+  "request_schema": {
+    "type": "object",
+    "required": ["name", "email"],
+    "properties": {
+      "name": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 100
+      },
+      "email": {
+        "type": "string",
+        "format": "email"
+      },
+      "age": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 150
+      }
+    }
+  }
+}
+```
+
+### Path Parameters and Conditions
+
+Create dynamic paths with validation:
+
+```json
+{
+  "path": "/users/{user_id}/posts/{post_id}",
+  "path_conditions": {
+    "user_id": 123,
+    "post_id": "^[0-9]+$"
+  }
+}
+```
+
+### Multi-Response Endpoints
+
+Handle different scenarios with multiple response conditions:
+
+```json
+{
+  "responses": [
+    {
+      "path_conditions": { "user_id": 999 },
+      "response": { "status_code": 404, "body": { "error": "User not found" } }
+    },
+    {
+      "body_conditions": { "action": "delete" },
+      "response": { "status_code": 204 }
+    },
+    {
+      "response": { "status_code": 200, "body": { "success": true } }
+    }
+  ]
+}
+```
+
+## � Production Deployment
+
+### Docker Deployment
+
+```bash
+# Build production image
+docker build -t my-mock-api .
+
+# Run with custom config
+docker run -d \
+  -p 8000:8000 \
+  -v $(pwd)/configs/myapi:/app/configs/custom \
+  -e CONFIG_NAME=custom \
+  my-mock-api
+```
+
+### Environment Variables
+
+Configure your deployment with environment variables:
+
+```bash
+export CONFIG_FOLDER="/path/to/configs"
+export REDIS_HOST="redis.example.com"
+export REDIS_PORT="6379"
+export LOG_LEVEL="INFO"
+
+./mockctl start myapi
+```
+
+## 🔍 Monitoring and Debugging
+
+### Server Management
+
+```bash
+# List all running servers
 ./mockctl list
+
+# Stop specific server
+./mockctl stop --config myapi
 
 # Stop all servers
 ./mockctl stop --all
 
-# Or specify a different port
-./mockctl start basic --port 8080
+# Clean up logs and processes
+./mockctl clean-up
 ```
 
-**Python/dependency issues:**
-```bash
-# Verify Python version
-python3 --version  # Should be 3.11+
+### Log Analysis
 
-# Reinstall dependencies
-pip install --upgrade pip
-pip install -r requirements.txt
+```bash
+# Real-time log monitoring
+tail -f logs/mockctl.log
+
+# Search for specific patterns
+./mockctl search myapi "ERROR"
+
+# JSON output for analysis
+./mockctl --json search myapi "/users" | jq '.requests[].status_code'
 ```
 
-**Redis connection errors (persistence profile):**
-```bash
-# Check if Redis is running
-redis-cli ping  # Should return "PONG"
+### Health Checks
 
-# Start Redis (if installed)
-redis-server
-
-# Or use Docker
-docker run -d -p 6379:6379 redis:alpine
-```
-
-### Getting Help
+Every Mock-and-Roll server includes system endpoints:
 
 ```bash
-# Command help
-./mockctl --help
-./mockctl start --help
+# Health check
+curl http://localhost:8000/system/health
 
-# Check server status
-./mockctl list --verbose
+# Server info
+curl -H "X-System-Key: system-admin-key" \
+     http://localhost:8000/system/info
 
-# View recent logs
-tail -f logs/latest.logs
+# Clear Redis cache (if persistence enabled)
+curl -X DELETE \
+     -H "X-System-Key: system-admin-key" \
+     http://localhost:8000/system/cache
 ```
 
 ## 🎉 What's Next?
 
-You're now ready to explore Mock-and-Roll! Here are some next steps:
+You now have a fully functional custom mock API! Explore these advanced topics:
 
-- **[Configuration Guide](configuration.md)**: Learn about advanced configuration options
-- **[CLI Commands](user-guide/cli-commands.md)**: Master the `mockctl` tool
-- **[Examples](examples/basic-usage.md)**: See real-world usage scenarios
-- **[Architecture](architecture/overview.md)**: Understand how Mock-and-Roll works
+- **[Configuration Reference](reference/configuration-schema.md)**: Complete configuration options
+- **[Authentication Guide](../features/authentication.md)**: Advanced authentication setups
+- **[Persistence Features](../features/persistence.md)**: Redis integration and data management
+- **[CLI Reference](user-guide/cli-commands.md)**: Master all `mockctl` commands
+- **[Examples](examples/basic-usage.md)**: Real-world use cases and patterns
 
 ## 💡 Pro Tips
 
-1. **Use JSON output for automation:**
-   ```bash
-   ./mockctl --json search "/api" | jq '.total_requests'
-   ```
+**Development Workflow:**
 
-2. **Monitor multiple servers:**
-   ```bash
-   watch './mockctl list'
-   ```
+```bash
+# Quick config validation
+./mockctl config-help
 
-3. **Quick configuration changes:**
-   ```bash
+# Auto-restart on config changes
+./mockctl start myapi --reload
+
+# Test specific endpoints
+./mockctl test myapi
    # Edit and restart
    vim configs/basic/endpoints.json
    ./mockctl stop
    ./mockctl start basic
-   ```
+```
 
 Happy mocking! 🚀

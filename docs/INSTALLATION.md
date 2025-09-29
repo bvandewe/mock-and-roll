@@ -12,7 +12,7 @@ Complete installation instructions for Mock-and-Roll across different platforms.
 
 **Required Software:**
 
-- Python 3.11+ 
+- Python 3.11+
 - Git
 
 **Optional (Enhanced Features):**
@@ -158,19 +158,22 @@ redis-server &
 ```
 
 **🎉 Simplified Requirements:**
+
 - **No system tools needed**: Port detection now uses Python's built-in `socket` module
 - **Cross-platform compatibility**: Works in minimal container environments
 - **Reduced dependencies**: No longer requires `lsof`, `netstat`, `ss`, or other system utilities
 
 **Legacy Alpine Requirements (No Longer Needed):**
 Previous versions required these packages for port detection, but they are no longer necessary:
+
 - ~~`net-tools`~~ - Network diagnostics (not needed)
-- ~~`iproute2`~~ - Modern networking tools (not needed)  
+- ~~`iproute2`~~ - Modern networking tools (not needed)
 - ~~`lsof`~~ - List open files/ports (not needed)
 - ~~`procps`~~ - Process tools (only needed for process management, not port detection)
 
 **Docker Alpine Usage:**
 Use the provided Alpine Dockerfile for containerized deployment:
+
 ```bash
 # Build Alpine-based image
 docker build -f Dockerfile.alpine -t mock-server-alpine .
@@ -213,6 +216,7 @@ curl http://localhost:8000/
 ## Dependencies
 
 **Core Dependencies (automatically installed):**
+
 - `fastapi` - Modern web framework
 - `uvicorn` - ASGI server
 - `redis` - Redis client (for persistence features)
@@ -225,6 +229,7 @@ curl http://localhost:8000/
 - `email-validator` - Email validation
 
 **Development Dependencies:**
+
 - `pytest` - Testing framework
 - `python-dotenv` - Environment variable management
 - `pre-commit` - Git hooks for code quality
@@ -234,6 +239,7 @@ curl http://localhost:8000/
 **Common Issues:**
 
 1. **Python version too old**
+
    ```bash
    # Check version
    python3 --version
@@ -241,6 +247,7 @@ curl http://localhost:8000/
    ```
 
 2. **Permission errors on macOS/Linux**
+
    ```bash
    # Use virtual environment to avoid system-wide installs
    python3 -m venv venv
@@ -249,6 +256,7 @@ curl http://localhost:8000/
    ```
 
 3. **Poetry not found**
+
    ```bash
    # Add Poetry to PATH (typically needed after installation)
    export PATH="$HOME/.local/bin:$PATH"
@@ -256,6 +264,7 @@ curl http://localhost:8000/
    ```
 
 4. **Redis connection errors**
+
    ```bash
    # Check if Redis is running
    redis-cli ping  # Should return PONG
@@ -263,20 +272,21 @@ curl http://localhost:8000/
    ```
 
 5. **Alpine Linux - externally-managed-environment error**
+
    ```bash
    # If you see "externally-managed-environment" when trying to install packages:
-   
+
    # Option 1: Full automated setup (installs Poetry, system packages)
    setup/alpine.sh
-   
+
    # Option 2: Minimal setup (no admin privileges required)
    setup/alpine_minimal.sh
-   
+
    # Option 3: Manual virtual environment setup
    python3 -m venv .venv
    source .venv/bin/activate
    pip install -r requirements.txt
-   
+
    # Option 3: Use Poetry (if available)
    poetry config virtualenvs.in-project true
    poetry install
@@ -285,6 +295,7 @@ curl http://localhost:8000/
 ## Post-Installation Setup
 
 After successful installation, see the main [README.md](../README.md) for:
+
 - Quick start guide
 - Configuration options
 - Usage examples

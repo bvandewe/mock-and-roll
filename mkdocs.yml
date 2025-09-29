@@ -10,10 +10,23 @@ nav:
     - Installation: installation.md
     - Quick Start: quick-start.md
     - Configuration: configuration.md
+  - Features Overview: features.md
+  - Server Features:
+    - Configuration-Driven API: features/config-driven-api.md
+    - Authentication Methods: features/authentication.md
+    - Conditional Responses: features/conditional-responses.md
+    - Persistence & Redis: features/persistence.md
+    - Logging & Monitoring: features/logging.md
+    - Template Variables: features/template-variables.md
   - User Guide:
     - CLI Commands: user-guide/cli-commands.md
-  - Features:
-    - Search Functionality: features/search-functionality.md
+    - Server Management: user-guide/server-management.md
+    - Log Analysis: features/search-functionality.md
+  - Configuration Reference:
+    - API Configuration: reference/api-config.md
+    - Authentication Config: reference/auth-config.md
+    - Endpoints Config: reference/endpoints-config.md
+    - Configuration Schema: reference/configuration-schema.md
   - Architecture:
     - Overview: architecture/overview.md
     - CLI Design: architecture/cli-design.md
@@ -21,9 +34,9 @@ nav:
     - Contributing: development/contributing.md
   - Examples:
     - Basic Usage: examples/basic-usage.md
+    - Advanced Patterns: examples/advanced-patterns.md
   - Reference:
     - API Reference: reference/api-reference.md
-    - Configuration Schema: reference/configuration-schema.md
     - Diagrams & Visualizations: reference/diagrams.md
   - Changelog: changelog.md
 
