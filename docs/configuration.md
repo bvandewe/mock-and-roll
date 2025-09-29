@@ -9,7 +9,7 @@ Mock-and-Roll uses a three-tier configuration system stored in the `configs/` di
 ```
 configs/
 ├── basic/          # Simple mock API configuration
-├── persistence/    # Configuration with Redis persistence  
+├── persistence/    # Configuration with Redis persistence
 └── vmanage/        # Cisco vManage API simulation
 ```
 
@@ -46,16 +46,16 @@ Defines basic API metadata and server settings:
 
 **Key Settings:**
 
-| Field | Description | Default |
-|-------|-------------|---------|
-| `info.title` | API title in documentation | "Mock API Server" |
-| `info.description` | API description | Basic description |
-| `info.version` | API version | "1.0.0" |
-| `server.host` | Bind address | "0.0.0.0" |
-| `server.port` | Server port | 8000 |
-| `server.reload` | Auto-reload on changes | false |
-| `system_auth.enabled` | Enable system authentication | true |
-| `system_auth.api_key` | System admin API key | Generated key |
+| Field                 | Description                  | Default           |
+| --------------------- | ---------------------------- | ----------------- |
+| `info.title`          | API title in documentation   | "Mock API Server" |
+| `info.description`    | API description              | Basic description |
+| `info.version`        | API version                  | "1.0.0"           |
+| `server.host`         | Bind address                 | "0.0.0.0"         |
+| `server.port`         | Server port                  | 8000              |
+| `server.reload`       | Auto-reload on changes       | false             |
+| `system_auth.enabled` | Enable system authentication | true              |
+| `system_auth.api_key` | System admin API key         | Generated key     |
 
 ### Authentication Configuration (`auth.json`)
 
@@ -67,10 +67,7 @@ Configures authentication methods and security settings:
     "api_key": {
       "enabled": true,
       "header_name": "X-API-Key",
-      "valid_keys": [
-        "demo-key-123",
-        "test-key-456"
-      ]
+      "valid_keys": ["demo-key-123", "test-key-456"]
     },
     "oauth": {
       "enabled": false,
@@ -85,12 +82,12 @@ Configures authentication methods and security settings:
 
 **Authentication Methods:**
 
-| Method | Description | Use Case |
-|--------|-------------|----------|
-| `api_key` | Simple API key authentication | Development, testing |
-| `oauth` | OAuth 2.0 token authentication | Production-like scenarios |
-| `basic` | HTTP Basic authentication | Legacy system simulation |
-| `jwt` | JWT token authentication | Modern API simulation |
+| Method    | Description                    | Use Case                  |
+| --------- | ------------------------------ | ------------------------- |
+| `api_key` | Simple API key authentication  | Development, testing      |
+| `oauth`   | OAuth 2.0 token authentication | Production-like scenarios |
+| `basic`   | HTTP Basic authentication      | Legacy system simulation  |
+| `jwt`     | JWT token authentication       | Modern API simulation     |
 
 ### Endpoint Configuration (`endpoints.json`)
 
@@ -101,7 +98,7 @@ Defines the API endpoints and their behavior:
   "endpoints": [
     {
       "path": "/api/health",
-      "method": "GET", 
+      "method": "GET",
       "response": {
         "status": "healthy",
         "timestamp": "{{now}}"
@@ -126,15 +123,15 @@ Defines the API endpoints and their behavior:
 
 **Endpoint Properties:**
 
-| Property | Type | Description | Required |
-|----------|------|-------------|----------|
-| `path` | string | URL path with optional parameters | ✅ |
-| `method` | string | HTTP method (GET, POST, PUT, DELETE, etc.) | ✅ |
-| `response` | object | Response body template | ✅ |
-| `status_code` | integer | HTTP status code | ✅ |
-| `auth_required` | boolean | Whether authentication is required | ❌ |
-| `headers` | object | Custom response headers | ❌ |
-| `conditions` | array | Conditional response rules | ❌ |
+| Property        | Type    | Description                                | Required |
+| --------------- | ------- | ------------------------------------------ | -------- |
+| `path`          | string  | URL path with optional parameters          | ✅       |
+| `method`        | string  | HTTP method (GET, POST, PUT, DELETE, etc.) | ✅       |
+| `response`      | object  | Response body template                     | ✅       |
+| `status_code`   | integer | HTTP status code                           | ✅       |
+| `auth_required` | boolean | Whether authentication is required         | ❌       |
+| `headers`       | object  | Custom response headers                    | ❌       |
+| `conditions`    | array   | Conditional response rules                 | ❌       |
 
 ## Template Variables
 
@@ -142,12 +139,12 @@ Mock-and-Roll supports dynamic response generation using template variables:
 
 ### Built-in Variables
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `{{now}}` | Current timestamp (ISO 8601) | "2025-01-01T12:00:00Z" |
-| `{{uuid}}` | Random UUID | "550e8400-e29b-41d4-a716-446655440000" |
-| `{{random}}` | Random number (0-1000) | 42 |
-| `{{timestamp}}` | Unix timestamp | 1640995200 |
+| Variable        | Description                  | Example                                |
+| --------------- | ---------------------------- | -------------------------------------- |
+| `{{now}}`       | Current timestamp (ISO 8601) | "2025-01-01T12:00:00Z"                 |
+| `{{uuid}}`      | Random UUID                  | "550e8400-e29b-41d4-a716-446655440000" |
+| `{{random}}`    | Random number (0-1000)       | 42                                     |
+| `{{timestamp}}` | Unix timestamp               | 1640995200                             |
 
 ### Path Parameters
 
@@ -208,7 +205,7 @@ Create dynamic responses based on request conditions:
       "status_code": 200
     },
     {
-      "when": "{{body.username}} == 'user'", 
+      "when": "{{body.username}} == 'user'",
       "response": {
         "token": "user-token-456",
         "role": "user"
@@ -227,14 +224,14 @@ Create dynamic responses based on request conditions:
 
 Override configuration settings using environment variables:
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `MOCK_CONFIG_FOLDER` | Configuration directory path | `configs/basic` |
-| `CONFIG_FOLDER` | Alternative config path variable | - |
-| `REDIS_HOST` | Redis server hostname | `localhost` |
-| `REDIS_PORT` | Redis server port | `6379` |
-| `REDIS_DB` | Redis database number | `0` |
-| `LOG_LEVEL` | Logging level | `INFO` |
+| Variable             | Description                      | Default         |
+| -------------------- | -------------------------------- | --------------- |
+| `MOCK_CONFIG_FOLDER` | Configuration directory path     | `configs/basic` |
+| `CONFIG_FOLDER`      | Alternative config path variable | -               |
+| `REDIS_HOST`         | Redis server hostname            | `localhost`     |
+| `REDIS_PORT`         | Redis server port                | `6379`          |
+| `REDIS_DB`           | Redis database number            | `0`             |
+| `LOG_LEVEL`          | Logging level                    | `INFO`          |
 
 ## Configuration Profiles
 
@@ -243,6 +240,7 @@ Override configuration settings using environment variables:
 **Purpose:** Simple mock API for development and testing
 
 **Features:**
+
 - RESTful endpoints
 - JSON responses
 - Optional authentication
@@ -250,6 +248,7 @@ Override configuration settings using environment variables:
 - In-memory data
 
 **Use Cases:**
+
 - Frontend development
 - API client testing
 - Rapid prototyping
@@ -259,6 +258,7 @@ Override configuration settings using environment variables:
 **Purpose:** Stateful mock API with data persistence
 
 **Features:**
+
 - All basic features
 - Redis integration
 - Data persistence
@@ -266,11 +266,13 @@ Override configuration settings using environment variables:
 - Session handling
 
 **Use Cases:**
+
 - Integration testing
 - Demonstration environments
 - Training scenarios
 
 **Requirements:**
+
 - Redis server
 
 ### vManage Profile
@@ -278,6 +280,7 @@ Override configuration settings using environment variables:
 **Purpose:** Cisco vManage SD-WAN controller simulation
 
 **Features:**
+
 - Authentication workflows
 - Device management
 - Policy configuration
@@ -285,6 +288,7 @@ Override configuration settings using environment variables:
 - Realistic data structures
 
 **Use Cases:**
+
 - Network automation development
 - SD-WAN training
 - Cisco ecosystem integration
@@ -320,7 +324,7 @@ Edit the files to match your requirements:
     "version": "1.0.0"
   },
   "server": {
-    "host": "0.0.0.0", 
+    "host": "0.0.0.0",
     "port": 8080
   }
 }
@@ -341,7 +345,7 @@ Add custom headers to all responses:
 ```json
 {
   "path": "/api/data",
-  "response": {"data": "example"},
+  "response": { "data": "example" },
   "headers": {
     "X-Custom-Header": "Custom Value",
     "X-Request-ID": "{{uuid}}"
@@ -360,15 +364,15 @@ Simulate different error conditions:
     {
       "when": "{{query.error}} == 'server'",
       "status_code": 500,
-      "response": {"error": "Internal server error"}
+      "response": { "error": "Internal server error" }
     },
     {
       "when": "{{query.error}} == 'auth'",
       "status_code": 401,
-      "response": {"error": "Unauthorized"}
+      "response": { "error": "Unauthorized" }
     }
   ],
-  "response": {"message": "Success"},
+  "response": { "message": "Success" },
   "status_code": 200
 }
 ```
@@ -380,7 +384,7 @@ Add realistic response delays:
 ```json
 {
   "path": "/api/slow",
-  "response": {"message": "This was slow"},
+  "response": { "message": "This was slow" },
   "delay_ms": 2000,
   "status_code": 200
 }
@@ -448,12 +452,14 @@ curl -X POST -H "Content-Type: application/json" \
 ### Common Configuration Issues
 
 **Invalid JSON syntax:**
+
 ```bash
 # Validate JSON files
 python -m json.tool configs/myprofile/api.json
 ```
 
 **Port conflicts:**
+
 ```bash
 # Check port usage
 ./mockctl list
@@ -461,6 +467,7 @@ netstat -an | grep :8080
 ```
 
 **Authentication issues:**
+
 ```bash
 # Test without auth
 curl http://localhost:8080/api/health
@@ -470,6 +477,7 @@ curl -H "X-API-Key: demo-key-123" http://localhost:8080/api/protected
 ```
 
 **Template variable errors:**
+
 ```bash
 # Check logs for template errors
 tail -f logs/latest.logs

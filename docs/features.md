@@ -1,53 +1,71 @@
-# Mock-and-Roll Features Status
+# Mock-and-Roll Features Overview
 
-This document provides a comprehensive overview of all Mock-and-Roll features, their current implementation status, and development roadmap. Features are organized by category with clear indicators of what is currently functional versus planned functionality.
+Quick reference guide to all Mock-and-Roll features with links to detailed documentation.
 
-## 🟢 Core System Features (Fully Implemented)
+## ✅ Core Features (Production Ready)
 
-### Configuration-Driven API Development ✅
+| Feature                      | Status              | Description                                              | Documentation                                              |
+| ---------------------------- | ------------------- | -------------------------------------------------------- | ---------------------------------------------------------- |
+| **Configuration-Driven API** | ✅ Fully Functional | JSON-based endpoint configuration with multiple profiles | [Config Guide](features/config-driven-api.md)              |
+| **Authentication Methods**   | ✅ Fully Functional | API keys, Basic Auth, Bearer tokens, Session auth, CSRF  | [Auth Guide](features/authentication.md)                   |
+| **Conditional Responses**    | ✅ Fully Functional | Dynamic responses based on request conditions            | [Conditional Responses](features/conditional-responses.md) |
+| **Template Variables**       | ✅ Fully Functional | Dynamic content with `{{uuid}}`, `{{timestamp}}`, etc.   | [Template Variables](features/template-variables.md)       |
+| **Redis Persistence**        | ✅ Fully Functional | Stateful API simulation with CRUD operations             | [Persistence Guide](features/persistence.md)               |
+| **Logging & Monitoring**     | ✅ Fully Functional | Request/response logging with powerful search            | [Logging Guide](features/logging.md)                       |
+| **CLI Management**           | ✅ Fully Functional | Server lifecycle with `mockctl` command                  | [CLI Commands](user-guide/cli-commands.md)                 |
 
-- **Status**: Fully Functional (v0.1.0+)
-- **Implementation**: Complete JSON-based configuration system
-- **Files**: `configs/*/api.json`, `configs/*/auth.json`, `configs/*/endpoints.json`
-- **Features**:
-  - Three-file configuration structure (API metadata, authentication, endpoints)
-  - Multiple configuration profiles (basic, persistence, vmanage, airgapped)
-  - Hot configuration reloading
-  - Configuration validation and error handling
-  - Environment variable support (`MOCK_CONFIG_FOLDER`, `CONFIG_FOLDER`)
+## 🚧 Advanced Features (In Development)
 
-### FastAPI Server Framework ✅
+| Feature                     | Status         | Target Version | Description                                  |
+| --------------------------- | -------------- | -------------- | -------------------------------------------- |
+| **Multi-Factor Auth (MFA)** | 🚧 Partial     | v0.4.0         | TOTP/SMS integration for enhanced security   |
+| **OAuth2/OIDC**             | 🚧 Config Only | v0.5.0         | Full JWT validation and provider integration |
+| **Advanced Templates**      | 🚧 Basic       | v0.4.0         | Conditional logic and complex calculations   |
 
-- **Status**: Fully Functional (v0.1.0+)
-- **Implementation**: Complete FastAPI-based HTTP server
-- **Files**: `src/main.py`, `src/app/`
-- **Features**:
-  - RESTful API endpoint creation
-  - Automatic OpenAPI/Swagger documentation
-  - Path parameter support with dynamic routing
-  - Request/response validation
-  - Middleware integration
-  - CORS support
+## 📋 Planned Features (Roadmap)
 
-### CLI Server Management (mockctl) ✅
+| Feature                 | Status     | Target Version | Description                                      |
+| ----------------------- | ---------- | -------------- | ------------------------------------------------ |
+| **WebSocket Support**   | 📋 Planned | v0.6.0         | Real-time bidirectional communication            |
+| **GraphQL API**         | 📋 Planned | v0.7.0         | GraphQL schema and resolver mocking              |
+| **Performance Testing** | 📋 Planned | v0.8.0         | Built-in load testing and metrics                |
+| **Plugin System**       | 📋 Planned | v1.0.0         | Extensible architecture for custom functionality |
 
-- **Status**: Fully Functional (v0.2.0+)
-- **Implementation**: Complete Python-based CLI tool
-- **Files**: `src/cli/`, `mockctl` executable
-- **Features**:
-  - Server lifecycle management (start, stop, list, status, cleanup)
-  - Configuration profile management
-  - Process tracking with PID and port monitoring
-  - Interactive configuration selection
-  - JSON and text output formats
-  - Multi-server management
+## 🏗️ Configuration Profiles
 
-## 🟢 Authentication & Security (Fully Implemented)
+| Profile         | Status              | Use Case                | Features                                 |
+| --------------- | ------------------- | ----------------------- | ---------------------------------------- |
+| **Basic**       | ✅ Production Ready | Simple API mocking      | Static responses, API key auth           |
+| **Persistence** | ✅ Production Ready | Stateful workflows      | Redis integration, full CRUD             |
+| **vManage**     | ✅ Production Ready | Cisco SD-WAN simulation | Session auth, CSRF tokens, 25+ endpoints |
+| **Airgapped**   | ✅ Production Ready | Offline environments    | No external dependencies                 |
 
-### Multiple Authentication Methods ✅
+## 🎯 Quick Links
 
-- **Status**: Fully Functional (v0.1.0+)
-- **Implementation**: Comprehensive authentication system
+### Get Started
+
+- [Installation Guide](installation.md) - Setup and installation
+- [Quick Start](quick-start.md) - Get running in 2 minutes
+- [Configuration Guide](configuration.md) - Basic configuration
+
+### Feature Documentation
+
+- [Configuration-Driven API](features/config-driven-api.md) - JSON-based API development
+- [Authentication Methods](features/authentication.md) - Security and auth options
+- [Conditional Responses](features/conditional-responses.md) - Dynamic response patterns
+- [Template Variables](features/template-variables.md) - Dynamic content generation
+- [Persistence & Redis](features/persistence.md) - Stateful API simulation
+- [Logging & Monitoring](features/logging.md) - Request tracking and analysis
+
+### Tools & Management
+
+- [CLI Commands](user-guide/cli-commands.md) - mockctl reference
+- [Server Management](user-guide/server-management.md) - Server lifecycle
+
+### Examples & Patterns
+
+- [Basic Usage Examples](examples/basic-usage.md) - Common patterns
+- [API Reference](reference/api-reference.md) - Complete API documentation
 - **Files**: `src/auth/security.py`, `src/auth/session_manager.py`
 - **Supported Methods**:
   - **API Key Authentication**: Header-based (`X-API-Key`) and query parameter
@@ -56,7 +74,7 @@ This document provides a comprehensive overview of all Mock-and-Roll features, t
   - **Session Authentication**: Cookie-based sessions with CSRF protection
   - **Form Authentication**: Login form processing with session creation
 
-### Security Features ✅
+### Security Features
 
 - **Status**: Fully Functional (v0.1.0+)
 - **Implementation**: Complete security framework
@@ -68,7 +86,7 @@ This document provides a comprehensive overview of all Mock-and-Roll features, t
   - Multi-level auth placeholders in responses
   - Random session selection for realistic simulation
 
-### System Authentication ✅
+### System Authentication
 
 - **Status**: Fully Functional (v0.2.0+)
 - **Implementation**: System-level authentication for admin endpoints
@@ -78,9 +96,9 @@ This document provides a comprehensive overview of all Mock-and-Roll features, t
   - Configurable system authentication bypass
   - Integration with server status and control endpoints
 
-## 🟢 Dynamic Response Features (Fully Implemented)
+## Dynamic Response Features (Fully Implemented)
 
-### Conditional Responses ✅
+### Conditional Responses
 
 - **Status**: Fully Functional (v0.1.0+)
 - **Implementation**: Complete conditional response system
@@ -97,7 +115,7 @@ This document provides a comprehensive overview of all Mock-and-Roll features, t
   - Complex nested conditions
   - Condition evaluation order (first match wins)
 
-### Template Variables ✅
+### Template Variables
 
 - **Status**: Fully Functional (v0.1.0+)
 - **Implementation**: Complete template processing system
@@ -115,9 +133,9 @@ This document provides a comprehensive overview of all Mock-and-Roll features, t
   - Authentication placeholder integration
   - Path parameter substitution
 
-## 🟢 Data Persistence (Fully Implemented)
+## Data Persistence (Fully Implemented)
 
-### Redis Integration ✅
+### Redis Integration
 
 - **Status**: Fully Functional (v0.2.0+)
 - **Implementation**: Complete Redis persistence layer
@@ -129,7 +147,7 @@ This document provides a comprehensive overview of all Mock-and-Roll features, t
   - **Connection Management**: Singleton Redis client with error handling
   - **Graceful Fallbacks**: Continues operation when Redis is unavailable
 
-### Stateful API Simulation ✅
+### Stateful API Simulation
 
 - **Status**: Fully Functional (v0.2.0+)
 - **Implementation**: Complete stateful endpoint handling
@@ -142,9 +160,9 @@ This document provides a comprehensive overview of all Mock-and-Roll features, t
   - Entity deletion with confirmation
   - Configuration-driven persistence behavior
 
-## 🟢 Logging & Monitoring (Fully Implemented)
+## Logging & Monitoring (Fully Implemented)
 
-### Request/Response Logging ✅
+### Request/Response Logging
 
 - **Status**: Fully Functional (v0.1.0+)
 - **Implementation**: Complete logging middleware
@@ -157,7 +175,7 @@ This document provides a comprehensive overview of all Mock-and-Roll features, t
   - Body size limiting to prevent log overflow
   - File-based and console logging
 
-### Log Search Functionality ✅
+### Log Search Functionality
 
 - **Status**: Fully Functional (v0.3.0+)
 - **Implementation**: Complete log search system
@@ -171,7 +189,7 @@ This document provides a comprehensive overview of all Mock-and-Roll features, t
   - **Multiple Output Formats**: Text and JSON output with full traceability
   - **Request/Response Pairing**: Correlation ID-based request/response matching
 
-### Log Management ✅
+### Log Management
 
 - **Status**: Fully Functional (v0.3.0+)
 - **Implementation**: Complete log lifecycle management
@@ -264,28 +282,28 @@ This document provides a comprehensive overview of all Mock-and-Roll features, t
 
 ## Configuration Profiles Status
 
-### ✅ Basic Profile (Fully Functional)
+### Basic Profile (Fully Functional)
 
 - **Purpose**: Simple mock API without persistence
 - **Features**: Static responses, basic auth, template variables
 - **Status**: Production ready
 - **Use Cases**: Quick API mocking, simple testing scenarios
 
-### ✅ Persistence Profile (Fully Functional)
+### Persistence Profile (Fully Functional)
 
 - **Purpose**: Stateful API simulation with Redis
 - **Features**: Full CRUD operations, entity persistence, cache management
 - **Status**: Production ready
 - **Use Cases**: Complex workflows, data persistence testing
 
-### ✅ vManage Profile (Fully Functional)
+### vManage Profile (Fully Functional)
 
 - **Purpose**: Cisco vManage API simulation
 - **Features**: Session auth, CSRF tokens, device management endpoints
 - **Status**: Production ready
 - **Use Cases**: SD-WAN testing, Cisco API development
 
-### ✅ Airgapped Profile (Fully Functional)
+### Airgapped Profile (Fully Functional)
 
 - **Purpose**: Offline/isolated environment deployment
 - **Features**: No external dependencies, embedded documentation
@@ -324,35 +342,35 @@ This document provides a comprehensive overview of all Mock-and-Roll features, t
 
 ## Testing & Quality Status
 
-### ✅ Unit Testing (Comprehensive)
+### Unit Testing (Comprehensive)
 
 - **Coverage**: Core functionality, authentication, templates, persistence
 - **Files**: `tests/test_*.py` (15+ test modules)
 - **Status**: Continuous integration ready
 
-### ✅ Integration Testing (Active)
+### Integration Testing (Active)
 
 - **Coverage**: API endpoints, configuration validation, CLI commands
 - **Status**: Automated testing pipeline established
 
-### ✅ Configuration Validation (Complete)
+### Configuration Validation (Complete)
 
 - **Coverage**: All configuration profiles validated
 - **Features**: Schema validation, error reporting, migration support
 
 ## Documentation Status
 
-### ✅ User Documentation (Complete)
+### User Documentation (Complete)
 
 - Installation guides, quick-start tutorials, configuration references
 - **Files**: `docs/` directory with MkDocs structure
 
-### ✅ API Reference (Complete)
+### API Reference (Complete)
 
 - OpenAPI/Swagger documentation, endpoint examples, authentication guides
 - **Files**: `docs/reference/api-reference.md`
 
-### ✅ Development Documentation (Complete)
+### Development Documentation (Complete)
 
 - Architecture overview, contributing guidelines, coding standards
 - **Files**: `docs/development/`, `docs/architecture/`
@@ -367,4 +385,3 @@ Mock-and-Roll currently provides a **robust, production-ready mock API server** 
 - **Data persistence** with Redis integration and CRUD operations
 - **Comprehensive logging** with powerful search and analysis capabilities
 - **Professional CLI tools** for server management and operations
-

@@ -14,22 +14,26 @@ Mock-and-Roll is a powerful and flexible mock API server that allows you to quic
 ## ✨ Key Features
 
 ### 🚀 **Quick Setup**
+
 - **Zero Configuration**: Get started with pre-built configuration profiles
 - **CLI Tool**: Easy server management with `mockctl` command
 - **Docker Support**: Run anywhere with Docker containers
 
 ### 🔧 **Highly Configurable**
+
 - **Configuration Profiles**: Basic, Persistence, and vManage simulation profiles
 - **Dynamic Endpoints**: Define custom endpoints through JSON configuration
 - **Flexible Authentication**: Support for API keys, OAuth, and custom auth methods
 
 ### 📊 **Advanced Features**
+
 - **Log Searching**: Built-in search functionality with regex pattern support
 - **Redis Persistence**: Optional data persistence with Redis integration
 - **Real-time Monitoring**: Comprehensive logging and request tracking
 - **Template System**: Dynamic response generation with variable substitution
 
 ### 🔍 **Developer Experience**
+
 - **Interactive Documentation**: Automatic OpenAPI/Swagger documentation
 - **CLI Management**: Start, stop, and monitor servers with simple commands
 - **Alpine Linux Support**: Optimized for minimal container deployments
@@ -37,6 +41,7 @@ Mock-and-Roll is a powerful and flexible mock API server that allows you to quic
 ## 🎯 Quick Start
 
 ### Install and Run
+
 ```bash
 # Clone the repository
 git clone https://github.com/bvandewe/mock-and-roll.git
@@ -54,6 +59,7 @@ docker-compose up
 ```
 
 ### Example Usage
+
 ```bash
 # Start a basic mock server
 mockctl start basic
@@ -71,21 +77,25 @@ mockctl stop --all
 ## 📋 Use Cases
 
 ### 🧪 **Testing & Development**
+
 - Mock external APIs during development
 - Create consistent test environments
 - Simulate various response scenarios
 
 ### 🎓 **Training & Demonstrations**
+
 - API training workshops
 - Product demonstrations
 - Educational environments
 
 ### 🔌 **Integration Testing**
+
 - Test client applications against known API responses
 - Validate error handling scenarios
 - Performance testing with realistic data
 
 ### 🌐 **Network Simulation**
+
 - Cisco vManage API simulation
 - Custom enterprise API mocking
 - Protocol testing environments
@@ -103,7 +113,7 @@ Mock-and-Roll follows a clean, modular architecture:
 
 <div class="grid cards" markdown>
 
--   :material-rocket-launch: **Get Started**
+- :rocket: **Get Started**
 
     ---
 
@@ -111,7 +121,7 @@ Mock-and-Roll follows a clean, modular architecture:
 
     [:octicons-arrow-right-24: Installation](installation.md)
 
--   :material-cog: **Configuration**
+- :gear: **Configuration**
 
     ---
 
@@ -119,7 +129,7 @@ Mock-and-Roll follows a clean, modular architecture:
 
     [:octicons-arrow-right-24: Configuration](configuration.md)
 
--   :material-console: **CLI Reference**
+- :computer: **CLI Reference**
 
     ---
 
@@ -127,7 +137,7 @@ Mock-and-Roll follows a clean, modular architecture:
 
     [:octicons-arrow-right-24: CLI Commands](user-guide/cli-commands.md)
 
--   :material-code-braces: **Examples**
+- :books: **Examples**
 
     ---
 
