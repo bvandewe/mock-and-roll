@@ -4,6 +4,10 @@ site_url: https://bvandewe.github.io/mock-and-roll/
 docs_dir: docs
 site_dir: site
 
+repo_name: bvandewe/mock-and-roll
+repo_url: https://github.com/bvandewe/mock-and-roll 
+edit_uri: edit/main/docs/
+
 nav:
   - Home: index.md
   - Getting Started:
