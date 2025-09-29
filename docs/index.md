@@ -11,6 +11,9 @@ A highly configurable and extensible mock REST API server built with FastAPI.
 
 Mock-and-Roll is a powerful and flexible mock API server that allows you to quickly create realistic API endpoints for testing, development, and demonstration purposes. Built with FastAPI, it provides high performance and automatic API documentation.
 
+- 📚 Full documentation at [https://bvandewe.github.io/mock-and-roll/](https://bvandewe.github.io/mock-and-roll/)
+- ⚠️ Public Repository at [https://github.com/bvandewe/mock-and-roll](https://github.com/bvandewe/mock-and-roll)
+
 ## ✨ Key Features
 
 ### 🚀 **Quick Setup**
@@ -115,7 +118,7 @@ Mock-and-Roll follows a clean, modular architecture:
 
 - :rocket: **Get Started**
 
-    ---
+    ***
 
     Jump right in with our quick installation guide
 
@@ -123,7 +126,7 @@ Mock-and-Roll follows a clean, modular architecture:
 
 - :gear: **Configuration**
 
-    ---
+    ***
 
     Learn about configuration profiles and customization
 
@@ -131,7 +134,7 @@ Mock-and-Roll follows a clean, modular architecture:
 
 - :computer: **CLI Reference**
 
-    ---
+    ***
 
     Master the mockctl command-line tool
 
@@ -139,7 +142,7 @@ Mock-and-Roll follows a clean, modular architecture:
 
 - :books: **Examples**
 
-    ---
+    ***
 
     Explore real-world usage examples
 

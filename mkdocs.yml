@@ -9,12 +9,13 @@ repo_url: https://github.com/bvandewe/mock-and-roll
 edit_uri: edit/main/docs/
 
 nav:
-  - Home: index.md
-  - Getting Started:
+  - Home: 
+    - index.md
     - Installation: installation.md
+  - Getting Started:
     - Quick Start: quick-start.md
     - Configuration: configuration.md
-  - Server Features:
+  - Mock Features:
     - Features Overview: features.md
     - Configuration-Driven API: features/config-driven-api.md
     - Authentication Methods: features/authentication.md
@@ -23,27 +24,23 @@ nav:
     - Logging & Monitoring: features/logging.md
     - Template Variables: features/template-variables.md
   - User Guide:
-    - CLI Commands: user-guide/cli-commands.md
+    - Basic Usage: examples/basic-usage.md
+    - Advanced Patterns: examples/advanced-patterns.md
     - Server Management: user-guide/server-management.md
+    - CLI Commands: user-guide/cli-commands.md
     - Log Analysis: features/search-functionality.md
+    - Architecture Overview: architecture/overview.md
+    - CLI Design: architecture/cli-design.md
   - Configuration Reference:
     - API Configuration: reference/api-config.md
     - Authentication Config: reference/auth-config.md
     - Endpoints Config: reference/endpoints-config.md
     - Configuration Schema: reference/configuration-schema.md
-  - Architecture:
-    - Overview: architecture/overview.md
-    - CLI Design: architecture/cli-design.md
-  - Development:
-    - Contributing: development/contributing.md
-  - Examples:
-    - Basic Usage: examples/basic-usage.md
-    - Advanced Patterns: examples/advanced-patterns.md
-  - Reference:
     - API Reference: reference/api-reference.md
     - Diagrams & Visualizations: reference/diagrams.md
-  - Changelog: changelog.md
-
+  - Development:
+    - Contributing: development/contributing.md
+    - Changelog: changelog.md
 theme:
   name: material
   # logo: assets/logo.png
