@@ -8,6 +8,8 @@
 
 A highly configurable and extensible mock REST API server built with FastAPI. Create realistic API endpoints with authentication, persistence, and dynamic responses through simple JSON configuration files.
 
+⚠️ Full documentation at [https://bvandewe.github.io/mock-and-roll/](https://bvandewe.github.io/mock-and-roll/). 👈
+
 ---
 
 ## 📖 Table of Contents
@@ -31,7 +33,7 @@ A highly configurable and extensible mock REST API server built with FastAPI. Cr
   - [🚀 Usage Examples](#-usage-examples)
     - [Basic API Call](#basic-api-call)
     - [With Persistence (Redis required)](#with-persistence-redis-required)
-    - [Advanced Search (Mandatory config_name Argument)](#advanced-search-mandatory-config_name-argument)
+    - [Advanced Search (Mandatory config\_name Argument)](#advanced-search-mandatory-config_name-argument)
     - [Air-gapped Environment](#air-gapped-environment)
   - [📚 Documentation](#-documentation)
   - [🐳 Docker Usage](#-docker-usage)

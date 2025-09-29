@@ -14,8 +14,8 @@ nav:
     - Installation: installation.md
     - Quick Start: quick-start.md
     - Configuration: configuration.md
-  - Features Overview: features.md
   - Server Features:
+    - Features Overview: features.md
     - Configuration-Driven API: features/config-driven-api.md
     - Authentication Methods: features/authentication.md
     - Conditional Responses: features/conditional-responses.md
