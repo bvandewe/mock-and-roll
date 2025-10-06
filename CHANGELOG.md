@@ -1,13 +1,21 @@
 # Changelog
 
-All notable changes to Mock-and-Roll will be documented in this file.
-
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-- Fix prog line in mockctl help
+## [0.4.1] - 2025-10-06
+
+### Fixed
+
+- **JSON Response Body Parsing**: Fixed `mockctl --json search` to return properly parsed JSON objects for response bodies instead of escaped strings
+  - Enhanced logging middleware to detect and log JSON response/request bodies in structured format
+  - Updated log parsing in `RequestResponsePair.from_log_entries()` to parse JSON bodies when detected
+  - Added request body parsing support with same JSON detection logic
+  - Modified presentation layer to handle both string and parsed JSON objects for backward compatibility
+  - Response bodies like `{"error":"Auth failed"}` now appear as proper JSON objects `{"error":"Auth failed"}` in search output
+  - Enables seamless use with `jq` for JSON manipulation: `mockctl --json search config pattern | jq '.matched_requests[].response_body.error'`
 
 ## [0.4.0] - 2025-09-16
 
@@ -17,29 +25,29 @@ Feature and tooling release adding environment housekeeping command and test/doc
 
 ### Added
 
-* **Clean-up Command**: New `mockctl clean-up` (alias `mockctl cleanup`) command for environment housekeeping
-  * Gracefully stops all tracked running mock server instances
-  * Deletes timestamped server log files (`logs/*.logs`) while preserving `logs/mockctl.log`
-  * Truncates `logs/mockctl.log` to keep file for ongoing CLI logging
-  * JSON mode provides structured summary including stopped instances and deleted files
-  * Useful before packaging, between integration test runs, or reclaiming disk space
-* Shared pytest session fixture for automatic `LOG_FILE` provisioning (`tests/conftest.py`)
+- **Clean-up Command**: New `mockctl clean-up` (alias `mockctl cleanup`) command for environment housekeeping
+  - Gracefully stops all tracked running mock server instances
+  - Deletes timestamped server log files (`logs/*.logs`) while preserving `logs/mockctl.log`
+  - Truncates `logs/mockctl.log` to keep file for ongoing CLI logging
+  - JSON mode provides structured summary including stopped instances and deleted files
+  - Useful before packaging, between integration test runs, or reclaiming disk space
+- Shared pytest session fixture for automatic `LOG_FILE` provisioning (`tests/conftest.py`)
 
 ### Changed
 
-* Converted legacy tests that returned boolean values into pytest assertion style (removes warning noise)
-* Clarified mandatory `config_name` positional argument and `all` mode behavior in search command documentation
+- Converted legacy tests that returned boolean values into pytest assertion style (removes warning noise)
+- Clarified mandatory `config_name` positional argument and `all` mode behavior in search command documentation
 
 ### Maintenance
 
-* General test suite stabilization (logging environment consistency, assertion hygiene)
-
+- General test suite stabilization (logging environment consistency, assertion hygiene)
 
 ## [0.3.0] - 2025-09-12
 
 ### Added
 
 - **Air-gapped Swagger UI Support**: Complete offline documentation interface for secure environments
+
   - Local Swagger UI assets (CSS/JS) bundled with application - no CDN dependencies
   - **Local Favicon Support**: FastAPI favicon served locally without internet dependency
   - Automatic air-gapped mode detection via configuration (`airgapped_mode: true`)
@@ -99,6 +107,7 @@ Feature and tooling release adding environment housekeeping command and test/doc
   - Resolves 404 errors when accessing Swagger UI in air-gapped environments
   - Ensures complete air-gapped functionality without external dependencies
 - **Complete Logging System Overhaul**: Eliminated generic log files and ensured proper log file management
+
   - **Removed latest.logs Usage**: Completely eliminated `latest.logs` references throughout the codebase
   - **Mandatory LOG_FILE Environment Variable**: Server now requires LOG_FILE environment variable to start
   - **Prevents Direct Server Startup**: Server refuses to start without proper log file configuration
@@ -180,10 +189,10 @@ Feature and tooling release adding environment housekeeping command and test/doc
 
 ## Version History Summary
 
-| Version | Release Date | Key Features |
-|---------|--------------|--------------|
+| Version | Release Date | Key Features                                      |
+| ------- | ------------ | ------------------------------------------------- |
 | 0.2.0   | 2024-09-10   | Advanced search, clean architecture, enhanced CLI |
-| 0.1.0   | 2024-08-XX   | Initial release with core mock API functionality |
+| 0.1.0   | 2024-08-XX   | Initial release with core mock API functionality  |
 
 ---
 

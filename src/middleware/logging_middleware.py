@@ -76,18 +76,25 @@ class RequestResponseLoggingMiddleware(BaseHTTPMiddleware):
                 body_bytes = await request.body()
                 if body_bytes:
                     request_body = body_bytes.decode("utf-8")
-                    if len(request_body) > self.max_body_size:
-                        truncated_body = request_body[: self.max_body_size] + "... [TRUNCATED]"
-                        self.logger.debug(f"[{request_id}] Request Body: {truncated_body}")
-                    else:
-                        self.logger.debug(f"[{request_id}] Request Body: {request_body}")
 
-                    # Try to parse as JSON for better formatting
+                    # Try to parse as JSON for structured logging
                     try:
                         json_body = json.loads(request_body)
-                        self.logger.debug(f"[{request_id}] Request Body (JSON): {json.dumps(json_body, indent=2)}")
+                        # Log as structured JSON for better parsing
+                        if len(request_body) > self.max_body_size:
+                            # For large JSON, log the raw string truncated
+                            truncated_body = request_body[: self.max_body_size] + "... [TRUNCATED]"
+                            self.logger.debug(f"[{request_id}] Request Body: {truncated_body}")
+                        else:
+                            # Log JSON object in a format that preserves structure for parsing
+                            self.logger.debug(f"[{request_id}] Request Body: {json.dumps(json_body, separators=(',', ':'))}")
                     except json.JSONDecodeError:
-                        pass  # Not JSON, already logged as string
+                        # Not JSON, log as string
+                        if len(request_body) > self.max_body_size:
+                            truncated_body = request_body[: self.max_body_size] + "... [TRUNCATED]"
+                            self.logger.debug(f"[{request_id}] Request Body: {truncated_body}")
+                        else:
+                            self.logger.debug(f"[{request_id}] Request Body: {request_body}")
 
             except Exception as e:
                 self.logger.warning(f"[{request_id}] Failed to read request body: {e}")
@@ -122,23 +129,35 @@ class RequestResponseLoggingMiddleware(BaseHTTPMiddleware):
 
                 if response_body:
                     body_str = response_body.decode("utf-8")
-                    if len(body_str) > self.max_body_size:
-                        truncated_body = body_str[: self.max_body_size] + "... [TRUNCATED]"
-                        self.logger.debug(f"[{request_id}] Response Body: {truncated_body}")
-                    else:
-                        self.logger.debug(f"[{request_id}] Response Body: {body_str}")
 
-                    # # Try to parse as JSON for better formatting
-                    # try:
-                    #     json_body = json.loads(body_str)
-                    #     self.logger.debug(f"[{request_id}] Response Body (JSON): {json.dumps(json_body, indent=2)}")
-                    # except json.JSONDecodeError:
-                    #     pass  # Not JSON, already logged as string
+                    # Try to parse as JSON for structured logging
+                    try:
+                        json_body = json.loads(body_str)
+                        # Log as structured JSON for better parsing
+                        if len(body_str) > self.max_body_size:
+                            # For large JSON, log the raw string truncated
+                            truncated_body = body_str[: self.max_body_size] + "... [TRUNCATED]"
+                            self.logger.debug(f"[{request_id}] Response Body: {truncated_body}")
+                        else:
+                            # Log JSON object in a format that preserves structure for parsing
+                            self.logger.debug(f"[{request_id}] Response Body: {json.dumps(json_body, separators=(',', ':'))}")
+                    except json.JSONDecodeError:
+                        # Not JSON, log as string
+                        if len(body_str) > self.max_body_size:
+                            truncated_body = body_str[: self.max_body_size] + "... [TRUNCATED]"
+                            self.logger.debug(f"[{request_id}] Response Body: {truncated_body}")
+                        else:
+                            self.logger.debug(f"[{request_id}] Response Body: {body_str}")
 
                 # Create new response with the body we read
                 from fastapi import Response as FastAPIResponse
 
-                response = FastAPIResponse(content=response_body, status_code=status_code, headers=dict(response.headers), media_type=response.headers.get("content-type"))
+                response = FastAPIResponse(
+                    content=response_body,
+                    status_code=status_code,
+                    headers=dict(response.headers),
+                    media_type=response.headers.get("content-type"),
+                )
 
             except Exception as e:
                 self.logger.warning(f"[{request_id}] Failed to read response body: {e}")

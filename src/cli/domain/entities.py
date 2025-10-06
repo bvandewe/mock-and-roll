@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 
 class ServerStatus(Enum):
@@ -65,12 +65,28 @@ class ServerInstance:
 
     def to_dict(self) -> dict:
         """Convert to dictionary for serialization."""
-        return {"config": self.config_name, "port": self.port, "pid": self.pid, "host": self.host, "status": self.status.value, "started_at": self.started_at.isoformat(), "log_file": self.log_file}
+        return {
+            "config": self.config_name,
+            "port": self.port,
+            "pid": self.pid,
+            "host": self.host,
+            "status": self.status.value,
+            "started_at": self.started_at.isoformat(),
+            "log_file": self.log_file,
+        }
 
     @classmethod
     def from_dict(cls, data: dict) -> "ServerInstance":
         """Create instance from dictionary."""
-        return cls(config_name=data["config"], port=data["port"], pid=data["pid"], host=data.get("host", "0.0.0.0"), status=ServerStatus(data.get("status", "running")), started_at=datetime.fromisoformat(data["started_at"]), log_file=data.get("log_file"))
+        return cls(
+            config_name=data["config"],
+            port=data["port"],
+            pid=data["pid"],
+            host=data.get("host", "0.0.0.0"),
+            status=ServerStatus(data.get("status", "running")),
+            started_at=datetime.fromisoformat(data["started_at"]),
+            log_file=data.get("log_file"),
+        )
 
 
 @dataclass
@@ -175,7 +191,14 @@ class LogEntry:
         except ValueError:
             return None
 
-        return cls(timestamp=timestamp, correlation_id=correlation_id, level=level, logger=logger, message=message, raw_line=line.strip())
+        return cls(
+            timestamp=timestamp,
+            correlation_id=correlation_id,
+            level=level,
+            logger=logger,
+            message=message,
+            raw_line=line.strip(),
+        )
 
     @property
     def is_error(self) -> bool:
@@ -237,12 +260,20 @@ class RequestResponsePair:
     response_time_ms: Optional[float] = None
     request_headers: Optional[Union[dict[str, str], str]] = None
     response_headers: Optional[Union[dict[str, str], str]] = None
-    request_body: Optional[str] = None
-    response_body: Optional[str] = None
+    request_body: Optional[Union[dict[str, Any], str]] = None
+    response_body: Optional[Union[dict[str, Any], str]] = None
     log_file_source: Optional[str] = None  # Track which log file this came from
 
     @classmethod
-    def from_log_entries(cls, request_entry: "LogEntry", response_entry: Optional["LogEntry"] = None, request_headers_entry: Optional["LogEntry"] = None, response_headers_entry: Optional["LogEntry"] = None, response_body_entry: Optional["LogEntry"] = None) -> Optional["RequestResponsePair"]:
+    def from_log_entries(
+        cls,
+        request_entry: "LogEntry",
+        response_entry: Optional["LogEntry"] = None,
+        request_headers_entry: Optional["LogEntry"] = None,
+        response_headers_entry: Optional["LogEntry"] = None,
+        request_body_entry: Optional["LogEntry"] = None,
+        response_body_entry: Optional["LogEntry"] = None,
+    ) -> Optional["RequestResponsePair"]:
         """Create a RequestResponsePair from log entries."""
         import json
         import re
@@ -298,14 +329,50 @@ class RequestResponsePair:
                     # If parsing fails, store as string
                     response_headers = headers_match.group(1)
 
+        # Parse request body
+        if request_body_entry:
+            body_pattern = r"Request Body: (.+)"
+            body_match = re.search(body_pattern, request_body_entry.message)
+            if body_match:
+                body_str = body_match.group(1)
+                try:
+                    # Try to parse as JSON if it looks like JSON
+                    if body_str.strip().startswith(("{", "[")):
+                        request_body = json.loads(body_str)
+                    else:
+                        request_body = body_str
+                except (json.JSONDecodeError, ValueError):
+                    # If parsing fails, store as string
+                    request_body = body_str
+
         # Parse response body
         if response_body_entry:
             body_pattern = r"Response Body: (.+)"
             body_match = re.search(body_pattern, response_body_entry.message)
             if body_match:
-                response_body = body_match.group(1)
+                body_str = body_match.group(1)
+                try:
+                    # Try to parse as JSON if it looks like JSON
+                    if body_str.strip().startswith(("{", "[")):
+                        response_body = json.loads(body_str)
+                    else:
+                        response_body = body_str
+                except (json.JSONDecodeError, ValueError):
+                    # If parsing fails, store as string
+                    response_body = body_str
 
-        return cls(correlation_id=request_entry.correlation_id, method=method, path=path, status_code=status_code, timestamp=request_entry.timestamp, response_time_ms=response_time_ms, request_headers=request_headers, response_headers=response_headers, request_body=request_body, response_body=response_body)
+        return cls(
+            correlation_id=request_entry.correlation_id,
+            method=method,
+            path=path,
+            status_code=status_code,
+            timestamp=request_entry.timestamp,
+            response_time_ms=response_time_ms,
+            request_headers=request_headers,
+            response_headers=response_headers,
+            request_body=request_body,
+            response_body=response_body,
+        )
 
 
 @dataclass

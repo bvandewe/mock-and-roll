@@ -52,7 +52,15 @@ class FileSystemLogSearchRepository(LogSearchRepository):
 
         search_duration = (time.time() - start_time) * 1000
 
-        return SearchResult(path_pattern=path_regex, log_files=[log_file_path], total_requests=len(matched_pairs), matched_requests=matched_pairs, status_code_summary=status_summary, search_duration_ms=search_duration, since_timestamp=since_timestamp)
+        return SearchResult(
+            path_pattern=path_regex,
+            log_files=[log_file_path],
+            total_requests=len(matched_pairs),
+            matched_requests=matched_pairs,
+            status_code_summary=status_summary,
+            search_duration_ms=search_duration,
+            since_timestamp=since_timestamp,
+        )
 
     def find_log_file_for_server(self, server: ServerInstance) -> Optional[str]:
         """Find the log file path for a server instance."""
@@ -126,6 +134,7 @@ class FileSystemLogSearchRepository(LogSearchRepository):
             response_entry = None
             request_headers_entry = None
             response_headers_entry = None
+            request_body_entry = None
             response_body_entry = None
 
             for entry in entries:
@@ -137,11 +146,20 @@ class FileSystemLogSearchRepository(LogSearchRepository):
                     request_headers_entry = entry
                 elif "Response Headers:" in entry.message:
                     response_headers_entry = entry
+                elif "Request Body:" in entry.message:
+                    request_body_entry = entry
                 elif "Response Body:" in entry.message:
                     response_body_entry = entry
 
             if request_entry:
-                pair = RequestResponsePair.from_log_entries(request_entry, response_entry, request_headers_entry, response_headers_entry, response_body_entry)
+                pair = RequestResponsePair.from_log_entries(
+                    request_entry,
+                    response_entry,
+                    request_headers_entry,
+                    response_headers_entry,
+                    request_body_entry,
+                    response_body_entry,
+                )
                 if pair:
                     pair.log_file_source = log_file_path  # Set the log file source
                     pairs.append(pair)

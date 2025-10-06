@@ -126,7 +126,22 @@ class Presenter:
     def show_server_started(self, instance: ServerInstance) -> None:
         """Show server started information."""
         if self.json_mode:
-            self._output_json({"status": "success", "action": "server_started", "server": {"config_name": instance.config_name, "pid": instance.pid, "host": instance.host, "port": instance.port, "base_url": instance.base_url, "docs_url": instance.docs_url, "openapi_url": instance.openapi_url, "started_at": self._format_datetime(instance.started_at)}})
+            self._output_json(
+                {
+                    "status": "success",
+                    "action": "server_started",
+                    "server": {
+                        "config_name": instance.config_name,
+                        "pid": instance.pid,
+                        "host": instance.host,
+                        "port": instance.port,
+                        "base_url": instance.base_url,
+                        "docs_url": instance.docs_url,
+                        "openapi_url": instance.openapi_url,
+                        "started_at": self._format_datetime(instance.started_at),
+                    },
+                }
+            )
         else:
             print(self._format_output(f"{Colors.GREEN}🚀 Starting Mock Server with '{instance.config_name}' configuration...{Colors.NC}"))
             print(self._format_output(f"{Colors.BLUE}🌐 Host: {instance.host}{Colors.NC}"))
@@ -149,7 +164,20 @@ class Presenter:
     def show_config_selection(self, configs: list[ServerConfig]) -> None:
         """Show configuration selection menu."""
         if self.json_mode:
-            self._output_json({"action": "config_selection", "configs": [{"index": i, "name": config.name, "description": config.description, "is_valid": config.is_valid()} for i, config in enumerate(configs, 1)]})
+            self._output_json(
+                {
+                    "action": "config_selection",
+                    "configs": [
+                        {
+                            "index": i,
+                            "name": config.name,
+                            "description": config.description,
+                            "is_valid": config.is_valid(),
+                        }
+                        for i, config in enumerate(configs, 1)
+                    ],
+                }
+            )
         else:
             print(self._format_output(f"{Colors.CYAN}📂 Available Configurations:{Colors.NC}"))
             print()
@@ -165,7 +193,26 @@ class Presenter:
     def show_servers_list(self, servers: list[ServerInstance]) -> None:
         """Show list of servers."""
         if self.json_mode:
-            self._output_json({"action": "list_servers", "count": len(servers), "servers": [{"config_name": server.config_name, "pid": server.pid, "host": server.host, "port": server.port, "base_url": server.base_url, "docs_url": server.docs_url, "openapi_url": server.openapi_url, "started_at": self._format_datetime(server.started_at), "is_running": server.is_running} for server in servers]})
+            self._output_json(
+                {
+                    "action": "list_servers",
+                    "count": len(servers),
+                    "servers": [
+                        {
+                            "config_name": server.config_name,
+                            "pid": server.pid,
+                            "host": server.host,
+                            "port": server.port,
+                            "base_url": server.base_url,
+                            "docs_url": server.docs_url,
+                            "openapi_url": server.openapi_url,
+                            "started_at": self._format_datetime(server.started_at),
+                            "is_running": server.is_running,
+                        }
+                        for server in servers
+                    ],
+                }
+            )
         else:
             print(self._format_output(f"{Colors.BLUE}🔍 Scanning for running Mock API Servers...{Colors.NC}"))
             print()
@@ -192,7 +239,14 @@ class Presenter:
     def show_no_servers(self) -> None:
         """Show no servers found message."""
         if self.json_mode:
-            self._output_json({"action": "list_servers", "count": 0, "servers": [], "message": "No tracked servers found"})
+            self._output_json(
+                {
+                    "action": "list_servers",
+                    "count": 0,
+                    "servers": [],
+                    "message": "No tracked servers found",
+                }
+            )
         else:
             print(self._format_output(f"{Colors.YELLOW}📭 No tracked servers found{Colors.NC}"))
             print()
@@ -209,7 +263,21 @@ class Presenter:
     def show_server_selection(self, servers: list[ServerInstance], action: str) -> None:
         """Show server selection menu."""
         if self.json_mode:
-            self._output_json({"action": "server_selection", "operation": action, "servers": [{"index": i, "config_name": server.config_name, "pid": server.pid, "port": server.port} for i, server in enumerate(servers, 1)]})
+            self._output_json(
+                {
+                    "action": "server_selection",
+                    "operation": action,
+                    "servers": [
+                        {
+                            "index": i,
+                            "config_name": server.config_name,
+                            "pid": server.pid,
+                            "port": server.port,
+                        }
+                        for i, server in enumerate(servers, 1)
+                    ],
+                }
+            )
         else:
             print(f"{Colors.CYAN}Multiple servers found. Choose one to {action}:{Colors.NC}")
             for i, server in enumerate(servers, 1):
@@ -218,7 +286,14 @@ class Presenter:
     def show_stop_result(self, success: bool, identifier: str) -> None:
         """Show stop operation result."""
         if self.json_mode:
-            self._output_json({"action": "stop_server", "success": success, "identifier": identifier, "message": f"Successfully stopped server ({identifier})" if success else f"Failed to stop server ({identifier})"})
+            self._output_json(
+                {
+                    "action": "stop_server",
+                    "success": success,
+                    "identifier": identifier,
+                    "message": (f"Successfully stopped server ({identifier})" if success else f"Failed to stop server ({identifier})"),
+                }
+            )
         else:
             if success:
                 print(self._format_output(f"{Colors.GREEN}✅ Successfully stopped server ({identifier}){Colors.NC}"))
@@ -231,7 +306,15 @@ class Presenter:
         total = len(results)
 
         if self.json_mode:
-            self._output_json({"action": "stop_all_servers", "total": total, "successful": successful, "failed": total - successful, "success_rate": successful / total if total > 0 else 0})
+            self._output_json(
+                {
+                    "action": "stop_all_servers",
+                    "total": total,
+                    "successful": successful,
+                    "failed": total - successful,
+                    "success_rate": successful / total if total > 0 else 0,
+                }
+            )
         else:
             if successful == total:
                 print(self._format_output(f"{Colors.GREEN}✅ Successfully stopped all {total} servers{Colors.NC}"))
@@ -246,8 +329,26 @@ class Presenter:
             self._output_json(
                 {
                     "action": "config_help",
-                    "configs": [{"name": config.name, "description": config.description, "is_valid": config.is_valid(), "path": config.path} for config in configs],
-                    "usage_examples": {"start_interactive": "mockctl start", "start_specific": "mockctl start basic", "start_with_port": "mockctl start vmanage --port 8080", "stop_auto": "mockctl stop", "stop_by_config": "mockctl stop basic", "stop_by_port": "mockctl stop --port 8080", "stop_all": "mockctl stop --all", "list_servers": "mockctl list", "list_json": "mockctl list --json"},
+                    "configs": [
+                        {
+                            "name": config.name,
+                            "description": config.description,
+                            "is_valid": config.is_valid(),
+                            "path": config.path,
+                        }
+                        for config in configs
+                    ],
+                    "usage_examples": {
+                        "start_interactive": "mockctl start",
+                        "start_specific": "mockctl start basic",
+                        "start_with_port": "mockctl start vmanage --port 8080",
+                        "stop_auto": "mockctl stop",
+                        "stop_by_config": "mockctl stop basic",
+                        "stop_by_port": "mockctl stop --port 8080",
+                        "stop_all": "mockctl stop --all",
+                        "list_servers": "mockctl list",
+                        "list_json": "mockctl list --json",
+                    },
                 }
             )
         else:
@@ -288,10 +389,26 @@ class Presenter:
         """Show search results for requests and responses."""
         if self.json_mode:
             # Convert SearchResult to JSON-serializable format
-            json_data = {"total_requests": result.total_requests, "log_files": result.log_files, "status_code_summary": result.status_code_summary, "matched_requests": []}
+            json_data = {
+                "total_requests": result.total_requests,
+                "log_files": result.log_files,
+                "status_code_summary": result.status_code_summary,
+                "matched_requests": [],
+            }
 
             for req_resp in result.matched_requests:
-                request_data = {"timestamp": req_resp.timestamp.isoformat() if req_resp.timestamp else None, "correlation_id": req_resp.correlation_id, "method": req_resp.method, "path": req_resp.path, "status_code": req_resp.status_code, "response_time_ms": req_resp.response_time_ms, "request_body": req_resp.request_body, "response_body": req_resp.response_body, "request_headers": req_resp.request_headers, "response_headers": req_resp.response_headers}
+                request_data = {
+                    "timestamp": req_resp.timestamp.isoformat() if req_resp.timestamp else None,
+                    "correlation_id": req_resp.correlation_id,
+                    "method": req_resp.method,
+                    "path": req_resp.path,
+                    "status_code": req_resp.status_code,
+                    "response_time_ms": req_resp.response_time_ms,
+                    "request_body": req_resp.request_body,  # Already parsed as JSON if applicable
+                    "response_body": req_resp.response_body,  # Already parsed as JSON if applicable
+                    "request_headers": req_resp.request_headers,
+                    "response_headers": req_resp.response_headers,
+                }
                 # Add log file source to each request
                 if hasattr(req_resp, "log_file_source"):
                     request_data["log_file_source"] = req_resp.log_file_source
@@ -316,7 +433,10 @@ class Presenter:
             if result.status_code_summary:
                 print(self._format_output(f"\n{Colors.YELLOW}📊 Status Code Summary:{Colors.NC}"))
                 # Sort status codes numerically by extracting the numeric part
-                sorted_items = sorted(result.status_code_summary.items(), key=lambda x: int(x[0][7:]) if x[0].startswith("status_") else 0)
+                sorted_items = sorted(
+                    result.status_code_summary.items(),
+                    key=lambda x: int(x[0][7:]) if x[0].startswith("status_") else 0,
+                )
 
                 for status_key, count in sorted_items:
                     # Extract numeric status code for color determination
