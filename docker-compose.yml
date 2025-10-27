@@ -10,25 +10,26 @@ services:
       [
         "sh",
         "-c",
-        "pip install debugpy -t /tmp && python /tmp/debugpy --wait-for-client --listen 0.0.0.0:5678 -m uvicorn src.main:app --host 0.0.0.0 --port 8080 --reload",
+        "pip install debugpy -t /tmp && python /tmp/debugpy  --listen 0.0.0.0:5678 -m uvicorn src.main:app --host 0.0.0.0 --port 8080 --reload",
       ]
     ports:
       - 8000:8080
-      - 5678:5678
+      - 5699:5678
     environment:
       # Redis Configuration
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_DB: 0
-      
       # Application Configuration
       LOG_LEVEL: DEBUG
       APP_TITLE: Mock API Server
-      
+      CONFIG_FOLDER: /app/config
+      # LOG_FILE: /app/logs/20000101_000000_basic_8000.logs  # REQUIRED for basic mock API
+      LOG_FILE: /app/logs/20000101_000000_vmanage_8000.logs # REQUIRED for vManage mock API
     volumes:
       - ./src:/app/src
-      # - ./config:/app/config # Uncomment to mount the default config directory...
-      - ./configs/vmanage/:/app/config # Uncomment to mount the test config directory...
+      # - ./configs/basic/:/app/config # Uncomment to mount the basic config directory...
+      - ./configs/vmanage/:/app/config # Uncomment to mount the vManage config directory...
     depends_on:
       - redis
     networks:
@@ -42,9 +43,9 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    command: redis-server --appendonly yes
     networks:
       - mock-api-network
-    command: redis-server --appendonly yes
 
 volumes:
   redis_data:

@@ -129,7 +129,15 @@ def create_app() -> FastAPI:
         @app.get("/docs", include_in_schema=False)
         async def airgapped_swagger_ui_html():
             # Air-gapped Swagger UI parameters with no external validator
-            swagger_params = {"docExpansion": "none", "defaultModelsExpandDepth": -1, "defaultModelExpandDepth": -1, "displayRequestDuration": True, "tryItOutEnabled": True, "validatorUrl": None, "oauth2RedirectUrl": app.swagger_ui_oauth2_redirect_url or "/docs/oauth2-redirect"}  # Disable external validator
+            swagger_params = {
+                "docExpansion": "none",
+                "defaultModelsExpandDepth": -1,
+                "defaultModelExpandDepth": -1,
+                "displayRequestDuration": True,
+                "tryItOutEnabled": True,
+                "validatorUrl": None,
+                "oauth2RedirectUrl": app.swagger_ui_oauth2_redirect_url or "/docs/oauth2-redirect",
+            }  # Disable external validator
 
             # Load swagger configuration if available
             swagger_config = api_config.get("swagger", {})
@@ -137,14 +145,21 @@ def create_app() -> FastAPI:
                 swagger_params.update(
                     {
                         "docExpansion": swagger_config.get("doc_expansion", swagger_params["docExpansion"]),
-                        "defaultModelsExpandDepth": swagger_config.get("default_models_expand_depth", swagger_params["defaultModelsExpandDepth"]),
+                        "defaultModelsExpandDepth": swagger_config.get(
+                            "default_models_expand_depth",
+                            swagger_params["defaultModelsExpandDepth"],
+                        ),
                         "defaultModelExpandDepth": swagger_config.get("default_model_expand_depth", swagger_params["defaultModelExpandDepth"]),
                         "displayRequestDuration": swagger_config.get("display_request_duration", swagger_params["displayRequestDuration"]),
                         "tryItOutEnabled": swagger_config.get("try_it_out_enabled", swagger_params["tryItOutEnabled"]),
                     }
                 )
 
-            return get_swagger_ui_html_airgapped(openapi_url=app.openapi_url or "/openapi.json", title=app.title + " - Swagger UI (Air-gapped)", swagger_ui_parameters=swagger_params)
+            return get_swagger_ui_html_airgapped(
+                openapi_url=app.openapi_url or "/openapi.json",
+                title=app.title + " - Swagger UI (Air-gapped)",
+                swagger_ui_parameters=swagger_params,
+            )
 
         @app.get(app.swagger_ui_oauth2_redirect_url or "/docs/oauth2-redirect", include_in_schema=False)
         async def swagger_ui_redirect():
@@ -173,7 +188,11 @@ def create_app() -> FastAPI:
             swagger_params["displayRequestDuration"] = swagger_config.get("display_request_duration", default_params["displayRequestDuration"])
             swagger_params["tryItOutEnabled"] = swagger_config.get("try_it_out_enabled", default_params["tryItOutEnabled"])
 
-            return get_swagger_ui_html(openapi_url=app.openapi_url or "/openapi.json", title=app.title + " - Swagger UI", swagger_ui_parameters=swagger_params)
+            return get_swagger_ui_html(
+                openapi_url=app.openapi_url or "/openapi.json",
+                title=app.title + " - Swagger UI",
+                swagger_ui_parameters=swagger_params,
+            )
 
         # Override the default docs endpoint
         app.get("/docs", include_in_schema=False)(regular_swagger_ui_html)
@@ -219,24 +238,68 @@ def custom_openapi(app: FastAPI, api_config: dict[str, Any]):
         tags=app.openapi_tags,
     )
 
-    # Customize security schemes with proper names
-    openapi_schema["components"]["securitySchemes"] = {
-        "session_cookie": {"type": "apiKey", "in": "header", "name": "Cookie", "description": "Session cookie (e.g., JSESSIONID=session-id)"},
-        "csrf_token": {"type": "apiKey", "in": "header", "name": "X-XSRF-TOKEN", "description": "CSRF Token"},
-        "api_key": {"type": "apiKey", "in": "header", "name": "X-API-Key", "description": "API Key authentication"},
-        "http_basic": {"type": "http", "scheme": "basic", "description": "HTTP Basic Authentication"},
-        "http_bearer": {"type": "http", "scheme": "bearer", "description": "Bearer Token (OIDC)"},
-        "system_api_key": {"type": "apiKey", "in": "header", "name": "X-API-Key", "description": "System API Key for admin endpoints"},
-    }
-
-    # Fix security requirements for endpoints based on their auth methods
-    # This maps our custom auth methods to the correct OpenAPI security schemes
-    auth_mapping = {"api_key": "api_key", "csrf_token": "csrf_token", "vmanage_session": "session_cookie", "basic_auth": "http_basic", "oidc_auth_code": "http_bearer", "oidc_client_credentials": "http_bearer", "system_api_key": "system_api_key"}
-
-    # Load auth config and endpoints to map endpoints to their required auth methods
+    # Load auth config to dynamically generate security schemes
     from config.loader import load_auth_config, load_endpoints_config
 
-    load_auth_config()  # Load for initialization
+    auth_config = load_auth_config()
+
+    # Dynamically build security schemes based on configured authentication methods
+    security_schemes = {}
+    auth_mapping = {}  # Maps auth method names to OpenAPI security scheme names
+
+    auth_methods = auth_config.get("authentication_methods", {})
+    for method_name, method_config in auth_methods.items():
+        method_type = method_config.get("type", "")
+
+        if method_type == "api_key":
+            # API Key authentication
+            scheme_name = method_name  # Use the actual config name
+            security_schemes[scheme_name] = {
+                "type": "apiKey",
+                "in": method_config.get("location", "header"),
+                "name": method_config.get("name", "X-API-Key"),
+                "description": method_config.get("description", f"{method_name} authentication"),
+            }
+            auth_mapping[method_name] = scheme_name
+
+        elif method_type == "session_based":
+            # Session-based authentication (cookie + CSRF)
+            scheme_name = method_name
+            session_cookie_name = method_config.get("session_cookie", "JSESSIONID")
+            security_schemes[scheme_name] = {
+                "type": "apiKey",
+                "in": "header",
+                "name": "Cookie",
+                "description": f"Session cookie (e.g., {session_cookie_name}=session-id)",
+            }
+            auth_mapping[method_name] = scheme_name
+
+        elif method_type == "http_basic":
+            # HTTP Basic authentication
+            scheme_name = method_name
+            security_schemes[scheme_name] = {
+                "type": "http",
+                "scheme": "basic",
+                "description": method_config.get("description", "HTTP Basic Authentication"),
+            }
+            auth_mapping[method_name] = scheme_name
+
+        elif method_type == "oidc":
+            # OIDC/OAuth2 Bearer token authentication
+            scheme_name = method_name
+            security_schemes[scheme_name] = {
+                "type": "http",
+                "scheme": "bearer",
+                "description": method_config.get("description", "Bearer Token (OIDC)"),
+            }
+            auth_mapping[method_name] = scheme_name
+
+    # Ensure components section exists and set the dynamically generated security schemes
+    if "components" not in openapi_schema:
+        openapi_schema["components"] = {}
+    openapi_schema["components"]["securitySchemes"] = security_schemes
+
+    # Fix security requirements for endpoints based on their auth methods
     config_data = load_endpoints_config()
     endpoints = config_data.get("endpoints", [])
 
