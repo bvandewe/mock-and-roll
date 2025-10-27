@@ -117,8 +117,27 @@ class RequestResponseLoggingMiddleware(BaseHTTPMiddleware):
         self.logger.info(f"[{request_id}] RESPONSE: {status_code} for {method} {url} - Time: {processing_time:.3f}s")
         self.logger.debug(f"[{request_id}] Response Headers: {response_headers}")
 
-        # Log response body if in DEBUG mode, but skip /docs and /system/logs endpoints to prevent recursive logging
-        should_log_response_body = self.logger.isEnabledFor(logging.DEBUG) and not request.url.path.endswith("/docs") and not request.url.path.endswith("/openapi.json") and not request.url.path.endswith("/system/logs")
+        # Check if response is binary content that should not be logged
+        content_type = response_headers.get("content-type", "")
+        is_binary = any(
+            binary_type in content_type.lower()
+            for binary_type in [
+                "image/",
+                "video/",
+                "audio/",
+                "application/octet-stream",
+                "application/pdf",
+                "application/zip",
+                "application/x-",
+                "font/",
+            ]
+        )
+
+        # Log response body if in DEBUG mode, but skip binary content, /docs and /system/logs endpoints
+        should_log_response_body = self.logger.isEnabledFor(logging.DEBUG) and not is_binary and not request.url.path.endswith("/docs") and not request.url.path.endswith("/openapi.json") and not request.url.path.endswith("/system/logs")
+
+        if is_binary and self.logger.isEnabledFor(logging.DEBUG):
+            self.logger.debug(f"[{request_id}] Skipping response body logging for binary content type: {content_type}")
 
         if should_log_response_body:
             try:

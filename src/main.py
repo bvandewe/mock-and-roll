@@ -29,7 +29,11 @@ from routes.setup import setup_routes
 def parse_arguments():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description="Mock API Server")
-    parser.add_argument("--config-folder", type=str, help="Path to the configuration folder containing api.json, auth.json, and endpoints.json files")
+    parser.add_argument(
+        "--config-folder",
+        type=str,
+        help="Path to the configuration folder containing api.json, auth.json, and endpoints.json files",
+    )
     parser.add_argument("--log-file", type=str, help="Path to the log file")
     return parser.parse_known_args()
 
