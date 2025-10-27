@@ -5,6 +5,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.2] - 2025-10-27
+
+### Fixed
+
+- **Binary Content Logging**: Fixed logging middleware to skip binary content types
+  - Detects and bypasses logging for images, videos, audio, PDFs, fonts, and other binary formats
+  - Prevents log pollution and performance issues when serving static assets
+  - Added debug logging message when skipping binary content
+  - Improves logging efficiency for applications serving mixed content types
+- **Dynamic Security Schemes**: Fixed OpenAPI/Swagger UI to dynamically load authentication methods from config
+
+  - Security schemes now loaded from `auth.json` at runtime instead of hardcoded
+  - Automatically adapts Swagger UI authentication to match configured auth methods
+  - Supports dynamic addition/removal of authentication methods without code changes
+  - Includes comprehensive tests for security scheme generation
+  - Docker Compose configuration updated with proper debugger port (5699) and environment variables
+
+- **Documentation Accuracy Overhaul**: Comprehensive review and correction of all documentation to ensure 100% alignment with actual codebase implementation
+  - **configuration.md**: Removed documentation for unimplemented features including:
+    - `required_scopes` OIDC validation (not implemented in auth system)
+    - `delay_ms` response delay configuration (not supported)
+    - `mockctl validate` command (does not exist)
+    - Query parameter and header template variables (not implemented)
+    - `when` conditions in authentication (not supported)
+  - **features/template-variables.md**: Complete rewrite removing ~60% fictional content
+    - Removed 20+ non-existent template variables (`{{request.*}}`, `{{query.*}}`, `{{headers.*}}`, `{{faker.*}}`, etc.)
+    - Removed unsupported features: conditional logic, math operations, string manipulation, array generation
+    - Documented only actual 6 template variables: `{{random_uuid}}`, `{{current_timestamp}}`, `{{timestamp}}`, `{{date}}`, `{{unix_timestamp}}`, `{{unix_timestamp_ms}}`
+    - Added clear limitations section
+  - **features/conditional-responses.md**: Complete rewrite removing ~40% fictional content
+    - Removed `query_conditions` and `header_conditions` (not implemented)
+    - Removed regex patterns, numeric comparisons, nested conditions (not supported)
+    - Documented only actual conditional features: `body_conditions` and `path_conditions` with exact matching
+    - Added clear limitations section
+  - **features.md**: Updated feature descriptions to accurately reflect actual capabilities
+  - **architecture/overview.md**: Corrected architectural documentation
+    - Added airgapped profile to configuration profiles
+    - Removed "JSON schema validation" and "Hot-reloading" (not implemented)
+    - Updated template variables to actual implementations
+    - Removed "Plugin System" references (doesn't exist)
+    - Added note that scope validation is not implemented
+    - Replaced speculative "Future Architecture Considerations" with practical "Best Practices" section
+  - **index.md**: Fixed MkDocs Material grid cards formatting
+    - Corrected markdown syntax for proper rendering
+    - Added `.prettierignore` to prevent formatter from breaking grid card indentation
+
+### Changed
+
+- **Documentation Policy**: All documentation now strictly represents implemented features only, with no aspirational or planned features documented as if they exist
+
+### Added
+
+- Comprehensive test suite for binary content logging (`test_binary_content_logging.py`)
+- Test suite for dynamic security scheme generation (`test_dynamic_security_schemes.py`)
+- OpenAPI verification script for vManage profile (`verify_vmanage_openapi.py`)
+
 ## [0.4.1] - 2025-10-06
 
 ### Fixed
