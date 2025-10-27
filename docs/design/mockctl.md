@@ -7,7 +7,7 @@ This directory contains a refactored version of the `mockctl` CLI tool using Cle
 ```
 src/cli/
 ├── domain/           # Core business logic (entities, rules)
-├── application/      # Use cases and application services  
+├── application/      # Use cases and application services
 ├── infrastructure/   # External dependencies (filesystem, processes)
 ├── interface/        # User interface (CLI commands, presentation)
 └── examples/         # Extension examples and documentation
@@ -16,12 +16,14 @@ src/cli/
 ## Key Benefits
 
 ### 1. **Separation of Concerns**
+
 - **Domain**: Business entities like `ServerInstance`, `ServerConfig`
 - **Application**: Use cases like `StartServerUseCase`, `StopServerUseCase`
 - **Infrastructure**: File system, process management implementations
 - **Interface**: CLI commands and presentation logic
 
 ### 2. **Easy to Extend**
+
 Adding new commands is straightforward:
 
 ```python
@@ -43,24 +45,26 @@ logs_parser.set_defaults(func=LogsCommand(project_root).execute)
 ```
 
 ### 3. **Testable**
+
 Each layer can be tested independently:
 
 ```python
 def test_start_server_use_case():
     # Mock dependencies
     mock_server_repo = Mock()
-    mock_config_repo = Mock() 
+    mock_config_repo = Mock()
     mock_process_repo = Mock()
-    
+
     # Test use case in isolation
     use_case = StartServerUseCase(mock_server_repo, mock_config_repo, mock_process_repo)
     result = use_case.execute("basic", port=8080)
-    
+
     assert result.config_name == "basic"
     assert result.port == 8080
 ```
 
 ### 4. **Consistent Error Handling**
+
 Errors are handled consistently across all commands:
 
 ```python
@@ -75,17 +79,20 @@ except ValueError as e:
 ## Domain Layer
 
 ### Entities
+
 - `ServerInstance`: Represents a running mock server
 - `ServerConfig`: Represents a configuration set
 - `LogEntry`: Represents a log entry
 - `TestResult`: Represents an endpoint test result
 
 ### Value Objects
+
 - `Port`: Network port with validation
-- `ProcessId`: Process ID with validation  
+- `ProcessId`: Process ID with validation
 - `ApiKey`: API key with masking capabilities
 
 ### Repositories (Interfaces)
+
 - `ServerInstanceRepository`: Server instance persistence
 - `ServerConfigRepository`: Configuration management
 - `ProcessRepository`: Process management
@@ -93,12 +100,14 @@ except ValueError as e:
 ## Application Layer
 
 ### Use Cases
+
 - `StartServerUseCase`: Start a server with configuration
 - `StopServerUseCase`: Stop a server by various criteria
 - `ListServersUseCase`: List and update server status
 - `GetConfigurationsUseCase`: Manage configurations
 
 Each use case:
+
 - Takes dependencies via constructor injection
 - Has a single `execute()` method
 - Contains pure business logic
@@ -107,11 +116,13 @@ Each use case:
 ## Infrastructure Layer
 
 ### Implementations
+
 - `FileSystemServerInstanceRepository`: JSON file-based persistence
 - `FileSystemServerConfigRepository`: Configuration file management
 - `SystemProcessRepository`: OS-level process management
 
 ### Key Features
+
 - Graceful fallbacks when `psutil` is not available
 - Cross-platform process management
 - Robust error handling
@@ -119,12 +130,14 @@ Each use case:
 ## Interface Layer
 
 ### Command Handlers
+
 - `StartCommand`: Handles start command logic
-- `StopCommand`: Handles stop command logic  
+- `StopCommand`: Handles stop command logic
 - `ListCommand`: Handles list command logic
 - `ConfigHelpCommand`: Handles configuration help
 
 ### Presentation
+
 - `Presenter`: Formats output for users
 - `Colors`: Terminal color constants
 - Consistent styling across all commands
@@ -132,6 +145,7 @@ Each use case:
 ## Usage Examples
 
 ### Starting a Server
+
 ```bash
 # Interactive configuration selection
 ./mockctl_clean.py start
@@ -144,6 +158,7 @@ Each use case:
 ```
 
 ### Stopping Servers
+
 ```bash
 # Auto-detect and stop
 ./mockctl_clean.py stop
@@ -159,6 +174,7 @@ Each use case:
 ```
 
 ### Listing Servers
+
 ```bash
 # Show all tracked servers
 ./mockctl_clean.py list

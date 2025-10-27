@@ -52,6 +52,8 @@ cd mock-and-roll
 
 # Quick setup (choose your platform)
 ./setup/alpine_minimal.sh    # For Alpine Linux
+./setup/add_to_path.sh       # Add mockctl to your PATH
+
 # or use Docker
 docker-compose up
 
@@ -114,11 +116,13 @@ Mock-and-Roll follows a clean, modular architecture:
 
 ## 🚀 What's Next?
 
-<div class="grid cards" markdown>
+<!-- markdownlint-disable MD007 MD030 MD032 -->
+<!-- prettier-ignore-start -->
+<div class="grid cards" markdown="1">
 
 - :rocket: **Get Started**
 
-    ***
+    ---
 
     Jump right in with our quick installation guide
 
@@ -126,7 +130,7 @@ Mock-and-Roll follows a clean, modular architecture:
 
 - :gear: **Configuration**
 
-    ***
+    ---
 
     Learn about configuration profiles and customization
 
@@ -134,7 +138,7 @@ Mock-and-Roll follows a clean, modular architecture:
 
 - :computer: **CLI Reference**
 
-    ***
+    ---
 
     Master the mockctl command-line tool
 
@@ -142,13 +146,15 @@ Mock-and-Roll follows a clean, modular architecture:
 
 - :books: **Examples**
 
-    ***
+    ---
 
     Explore real-world usage examples
 
     [:octicons-arrow-right-24: Examples](examples/basic-usage.md)
 
 </div>
+<!-- prettier-ignore-end -->
+<!-- markdownlint-enable MD007 MD030 MD032 -->
 
 ## 📞 Support & Community
 

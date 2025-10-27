@@ -1,134 +1,22 @@
 # Template Variables
 
-Mock-and-Roll supports dynamic template variables in responses, allowing you to generate realistic, varied data without hardcoding static values.
+Mock-and-Roll supports dynamic template variables in responses for generating realistic, varied data without hardcoding static values.
 
 ## Overview
 
 Template variables enable:
 
-- Dynamic response generation
-- Realistic data simulation
-- Request data reflection
-- Time-based values
-- Random data generation
-- Contextual information injection
+- Dynamic timestamp generation
+- Unique identifier creation
+- Authentication placeholder resolution
+- Automatic static timestamp replacement
+- Path parameter substitution
 
-## Basic Template Variables
-
-### Timestamp Variables
-
-Generate current and calculated timestamps:
-
-```json
-{
-  "response": {
-    "status_code": 200,
-    "body": {
-      "current_time": "{{timestamp}}",
-      "iso_format": "{{timestamp_iso}}",
-      "unix_timestamp": "{{timestamp_unix}}",
-      "human_readable": "{{timestamp_human}}"
-    }
-  }
-}
-```
-
-Output example:
-
-```json
-{
-  "current_time": "2024-12-28T10:30:15.123Z",
-  "iso_format": "2024-12-28T10:30:15.123Z",
-  "unix_timestamp": 1703766615,
-  "human_readable": "Dec 28, 2024 10:30 AM"
-}
-```
+## Supported Template Variables
 
 ### UUID Generation
 
 Generate unique identifiers:
-
-```json
-{
-  "response": {
-    "body": {
-      "id": "{{random_uuid}}",
-      "transaction_id": "{{uuid4}}",
-      "correlation_id": "{{uuid}}"
-    }
-  }
-}
-```
-
-Output example:
-
-```json
-{
-  "id": "550e8400-e29b-41d4-a716-446655440000",
-  "transaction_id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
-  "correlation_id": "123e4567-e89b-12d3-a456-426614174000"
-}
-```
-
-### Random Numbers
-
-Generate random numeric values:
-
-```json
-{
-  "response": {
-    "body": {
-      "random_id": "{{random_int(1, 1000)}}",
-      "percentage": "{{random_float(0, 100)}}",
-      "score": "{{random_int(0, 100)}}",
-      "price": "{{random_float(10.0, 999.99)}}"
-    }
-  }
-}
-```
-
-Output example:
-
-```json
-{
-  "random_id": 742,
-  "percentage": 73.42,
-  "score": 85,
-  "price": 299.99
-}
-```
-
-### Random Strings
-
-Generate random text content:
-
-```json
-{
-  "response": {
-    "body": {
-      "session_token": "{{random_string(32)}}",
-      "hex_value": "{{random_hex(16)}}",
-      "api_key": "{{random_alphanum(24)}}"
-    }
-  }
-}
-```
-
-Output example:
-
-```json
-{
-  "session_token": "k8jH9mP2nQ7rS5tX1wY3zA4bC6dE8fG9",
-  "hex_value": "a1b2c3d4e5f6789a",
-  "api_key": "ABC123DEF456GHI789JKL012"
-}
-```
-
-## Request Data Variables
-
-### Request Body Reflection
-
-Echo request data in responses:
 
 ```json
 {
@@ -140,16 +28,285 @@ Echo request data in responses:
         "status_code": 201,
         "body": {
           "id": "{{random_uuid}}",
-          "name": "{{request.name}}",
-          "email": "{{request.email}}",
-          "age": "{{request.age}}",
-          "created_at": "{{timestamp}}"
+          "correlation_id": "{{random_uuid}}"
         }
       }
     }
   ]
 }
 ```
+
+Output example:
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "correlation_id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+}
+```
+
+### Current Timestamp
+
+Get the current UTC timestamp:
+
+```json
+{
+  "response": {
+    "body": {
+      "created_at": "{{current_timestamp}}"
+    }
+  }
+}
+```
+
+Output example:
+
+```json
+{
+  "created_at": "2025-10-27T14:30:15Z"
+}
+```
+
+### Realistic Recent Timestamp
+
+Generate a realistic timestamp (1-30 minutes ago):
+
+```json
+{
+  "response": {
+    "body": {
+      "last_updated": "{{timestamp}}"
+    }
+  }
+}
+```
+
+Output example:
+
+```json
+{
+  "last_updated": "2025-10-27T14:15:42Z"
+}
+```
+
+### Realistic Recent Date
+
+Generate a realistic date (1-7 days ago):
+
+```json
+{
+  "response": {
+    "body": {
+      "last_login": "{{date}}"
+    }
+  }
+}
+```
+
+Output example:
+
+```json
+{
+  "last_login": "2025-10-25"
+}
+```
+
+### Unix Timestamps
+
+Generate realistic Unix timestamps:
+
+```json
+{
+  "response": {
+    "body": {
+      "timestamp_seconds": "{{unix_timestamp}}",
+      "timestamp_milliseconds": "{{unix_timestamp_ms}}"
+    }
+  }
+}
+```
+
+Output example:
+
+```json
+{
+  "timestamp_seconds": "1729953795",
+  "timestamp_milliseconds": "1729953795000"
+}
+```
+
+## Path Parameter Substitution
+
+URL path parameters are automatically available in responses using `{parameter_name}` syntax:
+
+```json
+{
+  "method": "GET",
+  "path": "/users/{user_id}/posts/{post_id}",
+  "responses": [
+    {
+      "response": {
+        "status_code": 200,
+        "body": {
+          "user_id": "{user_id}",
+          "post_id": "{post_id}",
+          "retrieved_at": "{{timestamp}}"
+        }
+      }
+    }
+  ]
+}
+```
+
+Request: `GET /users/123/posts/456`
+
+Response:
+
+```json
+{
+  "user_id": "123",
+  "post_id": "456",
+  "retrieved_at": "2025-10-27T14:20:15Z"
+}
+```
+
+## Automatic Timestamp Replacement
+
+The server automatically detects and replaces static timestamps in responses with realistic recent values:
+
+```json
+{
+  "response": {
+    "body": {
+      "data": {
+        "created_at": "2025-08-19T10:30:00Z",
+        "timestamp": "1724058600",
+        "date": "2025-08-19"
+      }
+    }
+  }
+}
+```
+
+These static values are automatically replaced with recent, realistic timestamps during response generation.
+
+**Detected Patterns:**
+
+- ISO 8601 timestamps: `YYYY-MM-DDTHH:MM:SSZ`
+- Unix timestamps (10 digits): `1724058600`
+- Unix timestamps in milliseconds (13 digits): `1724058600000`
+- Date strings: `YYYY-MM-DD`
+
+## Authentication Placeholders
+
+Reference session data and authentication state using special placeholders:
+
+```json
+{
+  "method": "GET",
+  "path": "/dataservice/client/token",
+  "authentication": ["vmanage_session"],
+  "responses": [
+    {
+      "response": {
+        "status_code": 200,
+        "headers": {
+          "X-XSRF-TOKEN": "${auth.vmanage_session.random_session.csrf_token}"
+        },
+        "body": {
+          "token": "${auth.vmanage_session.random_session.csrf_token}"
+        }
+      }
+    }
+  ]
+}
+```
+
+**Placeholder Syntax:** `${auth.<method>.<selector>.<field>}`
+
+- `method` - Authentication method name from auth.json
+- `selector` - Session selector (e.g., `random_session`, `current_session`)
+- `field` - Field to extract (e.g., `session_id`, `csrf_token`, `username`)
+
+### Available Placeholders
+
+For `vmanage_session` authentication:
+
+- `${auth.vmanage_session.random_session.session_id}` - Random session ID
+- `${auth.vmanage_session.random_session.csrf_token}` - CSRF token for random session
+- `${auth.vmanage_session.random_session.username}` - Username for random session
+- `${auth.vmanage_session.current_session.csrf_token}` - CSRF token for current request session
+
+For `api_key` authentication:
+
+- `${auth.api_key.random_key}` - Random API key from valid_keys
+
+For `csrf_token` authentication:
+
+- `${auth.csrf_token.random_key}` - Random CSRF token from valid_keys
+
+## Complete Example
+
+Combining multiple template features:
+
+```json
+{
+  "method": "POST",
+  "path": "/devices/{device_id}",
+  "authentication": ["vmanage_session", "csrf_token"],
+  "responses": [
+    {
+      "response": {
+        "status_code": 200,
+        "headers": {
+          "Content-Type": "application/json",
+          "X-XSRF-TOKEN": "${auth.vmanage_session.random_session.csrf_token}"
+        },
+        "body": {
+          "device_id": "{device_id}",
+          "transaction_id": "{{random_uuid}}",
+          "timestamp": "{{current_timestamp}}",
+          "last_updated": "{{timestamp}}",
+          "session_info": {
+            "session_id": "${auth.vmanage_session.random_session.session_id}",
+            "user": "${auth.vmanage_session.random_session.username}"
+          }
+        }
+      }
+    }
+  ]
+}
+```
+
+## Best Practices
+
+1. **Use Realistic Timestamps**: Prefer `{{timestamp}}` and `{{date}}` for more believable test data
+2. **Consistent IDs**: Use path parameters `{id}` when echoing request data
+3. **Authentication Context**: Use `${auth.*}` placeholders for session-aware responses
+4. **Automatic Replacement**: Let the server replace static timestamps automatically
+
+## Limitations
+
+The template system currently does NOT support:
+
+- Request body field access (e.g., `{{request.name}}`)
+- Query parameter access (e.g., `{{query.limit}}`)
+- Request header access (e.g., `{{headers.user-agent}}`)
+- Conditional logic (e.g., `{{if/else}}`)
+- Random numbers or strings (e.g., `{{random_int}}`)
+- Faker/realistic fake data generation
+- Custom functions or calculations
+- Array/list generation
+
+For these use cases, use conditional responses with `body_conditions` to match request data and return appropriate static responses.
+
+## See Also
+
+- [Configuration Guide](../configuration.md) - Complete configuration reference
+- [Conditional Responses](conditional-responses.md) - Dynamic response patterns
+- [Authentication](authentication.md) - Authentication methods and placeholders
+
+````
 
 Request:
 
@@ -159,7 +316,7 @@ Request:
   "email": "john@example.com",
   "age": 30
 }
-```
+````
 
 Response:
 

@@ -6,17 +6,22 @@ Mock-and-Roll allows you to return different responses based on request conditio
 
 Conditional responses let you:
 
-- Return different data based on request parameters
+- Return different data based on request body content
+- Return different data based on URL path parameters
 - Simulate error conditions for specific inputs
 - Test edge cases and error handling
 - Create realistic API behavior patterns
-- Support A/B testing scenarios
 
-## Response Condition Types
+## Supported Condition Types
 
-### Body Conditions
+Mock-and-Roll currently supports two types of conditions:
 
-Match against request body content:
+1. **Body Conditions** - Match against request body JSON fields
+2. **Path Conditions** - Match against URL path parameters
+
+## Body Conditions
+
+Match against request body content with exact key-value matching:
 
 ```json
 {
@@ -39,22 +44,24 @@ Match against request body content:
     },
     {
       "body_conditions": {
-        "role": "user"
+        "role": "guest"
       },
       "response": {
         "status_code": 201,
         "body": {
-          "message": "Regular user created",
-          "user_id": "{{random_int(100, 900)}}",
+          "message": "Guest user created with limited permissions",
+          "user_id": 100,
           "permissions": ["read"]
         }
       }
     },
     {
+      "body_conditions": null,
       "response": {
         "status_code": 400,
         "body": {
-          "error": "Invalid role specified"
+          "error": "Bad Request",
+          "detail": "Role must be specified"
         }
       }
     }
@@ -62,9 +69,64 @@ Match against request body content:
 }
 ```
 
-### Path Conditions
+### Body Condition Matching Rules
 
-Match against URL path parameters:
+- **Exact Match**: All fields in `body_conditions` must match exactly
+- **All Fields Required**: Every field specified in conditions must have matching value
+- **Order**: Responses are evaluated in order, first match wins
+- **Catch-All**: Use `"body_conditions": null` as default/fallback response
+
+### Example: Authentication
+
+```json
+{
+  "method": "POST",
+  "path": "/auth/login",
+  "responses": [
+    {
+      "body_conditions": {
+        "username": "admin",
+        "password": "admin123"
+      },
+      "response": {
+        "status_code": 200,
+        "body": {
+          "token": "admin-token-xyz",
+          "role": "administrator",
+          "expires_in": 3600
+        }
+      }
+    },
+    {
+      "body_conditions": {
+        "username": "user",
+        "password": "user123"
+      },
+      "response": {
+        "status_code": 200,
+        "body": {
+          "token": "user-token-abc",
+          "role": "user",
+          "expires_in": 1800
+        }
+      }
+    },
+    {
+      "body_conditions": null,
+      "response": {
+        "status_code": 401,
+        "body": {
+          "error": "Invalid credentials"
+        }
+      }
+    }
+  ]
+}
+```
+
+## Path Conditions
+
+Match against URL path parameters with exact value matching:
 
 ```json
 {
@@ -97,6 +159,7 @@ Match against URL path parameters:
       }
     },
     {
+      "path_conditions": null,
       "response": {
         "status_code": 200,
         "body": {
@@ -110,54 +173,142 @@ Match against URL path parameters:
 }
 ```
 
-### Query Parameter Conditions
+### Path Condition Matching Rules
 
-Match against URL query parameters:
+- **Exact String Match**: Path parameter values are compared as strings
+- **Type Coercion**: Numeric path parameters are compared as strings (e.g., `123` matches `"123"`)
+- **Multiple Parameters**: Can match multiple path parameters simultaneously
+- **Order**: Evaluated in order, first match wins
+- **Catch-All**: Use `"path_conditions": null` as default response
+
+### Example: Item Details with Special Cases
 
 ```json
 {
   "method": "GET",
-  "path": "/products",
+  "path": "/items/{item_id}",
   "responses": [
     {
-      "query_conditions": {
-        "category": "electronics",
-        "sort": "price"
+      "path_conditions": {
+        "item_id": "123"
       },
       "response": {
         "status_code": 200,
         "body": {
-          "products": [
-            { "name": "Laptop", "price": 999.99 },
-            { "name": "Phone", "price": 599.99 }
-          ],
-          "sorted_by": "price"
+          "message": "Special item 123",
+          "item_id": "123",
+          "special": true,
+          "data": {
+            "name": "Premium Item",
+            "value": 9999
+          }
         }
       }
     },
     {
-      "query_conditions": {
-        "category": "books"
+      "path_conditions": null,
+      "response": {
+        "status_code": 200,
+        "body": {
+          "message": "Here is the item you requested",
+          "item_id": "{item_id}",
+          "data": {
+            "name": "A Mocked Item",
+            "value": 123
+          }
+        }
+      }
+    }
+  ]
+}
+```
+
+## Combining Conditions
+
+You can use both body and path conditions in the same endpoint. Note that only one set of conditions can be active per response rule:
+
+```json
+{
+  "method": "POST",
+  "path": "/users/{user_id}/actions",
+  "responses": [
+    {
+      "path_conditions": {
+        "user_id": "admin"
       },
       "response": {
         "status_code": 200,
         "body": {
-          "products": [
-            { "title": "Programming Guide", "price": 39.99 },
-            { "title": "API Design", "price": 29.99 }
-          ]
+          "message": "Admin user - all actions allowed"
         }
       }
     },
     {
-      "query_conditions": {
-        "limit": "0"
+      "body_conditions": {
+        "action": "delete"
+      },
+      "response": {
+        "status_code": 403,
+        "body": {
+          "error": "Delete action not permitted"
+        }
+      }
+    },
+    {
+      "body_conditions": null,
+      "response": {
+        "status_code": 200,
+        "body": {
+          "message": "Action performed successfully"
+        }
+      }
+    }
+  ]
+}
+```
+
+## Common Patterns
+
+### Error Simulation
+
+Simulate different error scenarios:
+
+```json
+{
+  "method": "POST",
+  "path": "/api/payment",
+  "responses": [
+    {
+      "body_conditions": {
+        "card_number": "4000000000000002"
+      },
+      "response": {
+        "status_code": 402,
+        "body": {
+          "error": "card_declined",
+          "message": "Your card was declined"
+        }
+      }
+    },
+    {
+      "body_conditions": {
+        "amount": "0"
       },
       "response": {
         "status_code": 400,
         "body": {
-          "error": "Invalid limit parameter",
-          "message": "Limit must be greater than 0"
+          "error": "invalid_amount",
+          "message": "Amount must be greater than 0"
+        }
+      }
+    },
+    {
+      "body_conditions": null,
+      "response": {
+        "status_code": 200,
+        "body": {
+          "transaction_id": "{{random_uuid}}",
+          "status": "success"
         }
       }
     }
@@ -165,57 +316,198 @@ Match against URL query parameters:
 }
 ```
 
-### Header Conditions
+### Status-Based Responses
 
-Match against request headers:
+Return different data based on status:
 
 ```json
 {
   "method": "GET",
-  "path": "/api/data",
+  "path": "/orders/{order_id}",
   "responses": [
     {
-      "header_conditions": {
-        "Accept": "application/xml"
+      "path_conditions": {
+        "order_id": "pending-123"
       },
       "response": {
         "status_code": 200,
-        "headers": {
-          "Content-Type": "application/xml"
-        },
-        "body": "<?xml version='1.0'?><data><item>XML Response</item></data>"
-      }
-    },
-    {
-      "header_conditions": {
-        "Accept": "application/json"
-      },
-      "response": {
-        "status_code": 200,
-        "headers": {
-          "Content-Type": "application/json"
-        },
         "body": {
-          "format": "json",
-          "data": ["JSON Response"]
+          "id": "pending-123",
+          "status": "pending",
+          "can_cancel": true
         }
       }
     },
     {
-      "header_conditions": {
-        "User-Agent": "^Mobile.*"
+      "path_conditions": {
+        "order_id": "shipped-456"
       },
       "response": {
         "status_code": 200,
         "body": {
-          "mobile_optimized": true,
-          "data": "Mobile-friendly response"
+          "id": "shipped-456",
+          "status": "shipped",
+          "can_cancel": false,
+          "tracking_number": "TRACK123456"
+        }
+      }
+    },
+    {
+      "path_conditions": null,
+      "response": {
+        "status_code": 404,
+        "body": {
+          "error": "Order not found"
         }
       }
     }
   ]
 }
 ```
+
+### Role-Based Access
+
+Simulate role-based permissions:
+
+```json
+{
+  "method": "DELETE",
+  "path": "/admin/users/{user_id}",
+  "authentication": ["api_key"],
+  "responses": [
+    {
+      "path_conditions": {
+        "user_id": "1"
+      },
+      "response": {
+        "status_code": 403,
+        "body": {
+          "error": "Cannot delete primary admin user"
+        }
+      }
+    },
+    {
+      "body_conditions": {
+        "force": "true"
+      },
+      "response": {
+        "status_code": 200,
+        "body": {
+          "message": "User deleted (forced)",
+          "user_id": "{user_id}"
+        }
+      }
+    },
+    {
+      "body_conditions": null,
+      "response": {
+        "status_code": 200,
+        "body": {
+          "message": "User deleted successfully",
+          "user_id": "{user_id}"
+        }
+      }
+    }
+  ]
+}
+```
+
+## Best Practices
+
+### 1. Order Matters
+
+Place more specific conditions first:
+
+```json
+{
+  "responses": [
+    { "body_conditions": { "role": "admin", "action": "delete" }, "response": {...} },
+    { "body_conditions": { "role": "admin" }, "response": {...} },
+    { "body_conditions": { "action": "delete" }, "response": {...} },
+    { "body_conditions": null, "response": {...} }
+  ]
+}
+```
+
+### 2. Always Include a Default
+
+Use `null` conditions as a catch-all:
+
+```json
+{
+  "responses": [
+    { "body_conditions": { "specific": "case" }, "response": {...} },
+    { "body_conditions": null, "response": { "status_code": 400, "body": {"error": "Bad request"} } }
+  ]
+}
+```
+
+### 3. Use Realistic Values
+
+Test with realistic data:
+
+```json
+{
+  "body_conditions": {
+    "email": "test@example.com",
+    "age": "25"
+  }
+}
+```
+
+### 4. Document Special Cases
+
+Add comments in configuration (via separate docs) for special test cases:
+
+- `user_id: "123"` - Returns premium user
+- `user_id: "999"` - Returns 404
+- `card_number: "4000000000000002"` - Card declined error
+
+## Limitations
+
+The conditional response system currently does NOT support:
+
+- **Query Parameter Conditions**: Cannot match against URL query strings (e.g., `?limit=10`)
+- **Header Conditions**: Cannot match against request headers (e.g., `Accept: application/json`)
+- **Regular Expressions**: Only exact string matching is supported
+- **Numeric Comparisons**: Cannot use `>`, `<`, `>=`, `<=` operators
+- **Complex Logic**: No AND/OR operators or nested conditions
+- **Partial Matching**: Cannot match substrings or patterns
+- **Type Validation**: No type checking (all values compared as strings)
+
+For more complex scenarios, consider:
+
+- Creating separate endpoints for different cases
+- Using Redis persistence with dynamic data
+- Combining multiple simple conditions strategically
+
+## See Also
+
+- [Configuration Guide](../configuration.md) - Complete endpoint configuration
+- [Template Variables](template-variables.md) - Dynamic response content
+- [Authentication](authentication.md) - Authentication methods
+- [Persistence](persistence.md) - Stateful API simulation
+
+          }
+        }
+      },
+      {
+        "header_conditions": {
+          "User-Agent": "^Mobile.*"
+        },
+        "response": {
+          "status_code": 200,
+          "body": {
+            "mobile_optimized": true,
+            "data": "Mobile-friendly response"
+          }
+        }
+      }
+
+  ]
+  }
+
+````
 
 ## Advanced Condition Matching
 
@@ -236,7 +528,7 @@ Use regex patterns for flexible matching:
     }
   }
 }
-```
+````
 
 ### Numeric Comparisons
 

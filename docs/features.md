@@ -8,8 +8,8 @@ Quick reference guide to all Mock-and-Roll features with links to detailed docum
 | ---------------------------- | ------------------- | -------------------------------------------------------- | ---------------------------------------------------------- |
 | **Configuration-Driven API** | ✅ Fully Functional | JSON-based endpoint configuration with multiple profiles | [Config Guide](features/config-driven-api.md)              |
 | **Authentication Methods**   | ✅ Fully Functional | API keys, Basic Auth, Bearer tokens, Session auth, CSRF  | [Auth Guide](features/authentication.md)                   |
-| **Conditional Responses**    | ✅ Fully Functional | Dynamic responses based on request conditions            | [Conditional Responses](features/conditional-responses.md) |
-| **Template Variables**       | ✅ Fully Functional | Dynamic content with `{{uuid}}`, `{{timestamp}}`, etc.   | [Template Variables](features/template-variables.md)       |
+| **Conditional Responses**    | ✅ Fully Functional | Dynamic responses based on body and path conditions      | [Conditional Responses](features/conditional-responses.md) |
+| **Template Variables**       | ✅ Fully Functional | Dynamic timestamps, UUIDs, and auth placeholders         | [Configuration](configuration.md)                          |
 | **Redis Persistence**        | ✅ Fully Functional | Stateful API simulation with CRUD operations             | [Persistence Guide](features/persistence.md)               |
 | **Logging & Monitoring**     | ✅ Fully Functional | Request/response logging with powerful search            | [Logging Guide](features/logging.md)                       |
 | **CLI Management**           | ✅ Fully Functional | Server lifecycle with `mockctl` command                  | [CLI Commands](user-guide/cli-commands.md)                 |
@@ -104,16 +104,12 @@ Quick reference guide to all Mock-and-Roll features with links to detailed docum
 - **Implementation**: Complete conditional response system
 - **Files**: `src/handlers/routes.py`, `src/processing/templates.py`
 - **Condition Types**:
-  - **Body Conditions**: Match against request body content
-  - **Path Conditions**: Match against URL path parameters
-  - **Query Conditions**: Match against URL query parameters
-  - **Header Conditions**: Match against request headers
+  - **Body Conditions**: Match against request body content (exact key-value matching)
+  - **Path Conditions**: Match against URL path parameters (exact value matching)
 - **Features**:
-  - Multiple condition logic (AND/OR)
-  - Regular expression pattern matching
-  - Numeric comparisons
-  - Complex nested conditions
-  - Condition evaluation order (first match wins)
+  - First-match-wins evaluation order
+  - Null conditions act as catch-all/default
+  - All specified fields must match for condition to succeed
 
 ### Template Variables
 
@@ -121,17 +117,17 @@ Quick reference guide to all Mock-and-Roll features with links to detailed docum
 - **Implementation**: Complete template processing system
 - **Files**: `src/processing/templates.py`
 - **Available Templates**:
-  - `{{random_uuid}}` - Generate unique identifiers
-  - `{{current_timestamp}}` - Current ISO 8601 timestamp
-  - `{{timestamp}}` - Realistic recent timestamp (1-30 minutes ago)
-  - `{{date}}` - Realistic recent date (1-7 days ago)
-  - `{{unix_timestamp}}` - Realistic Unix timestamp (10 digits)
-  - `{{unix_timestamp_ms}}` - Realistic Unix timestamp in milliseconds
+  - `{{random_uuid}}` - Generate unique identifiers (UUID v4)
+  - `{{current_timestamp}}` - Current UTC timestamp in ISO 8601 format
+  - `{{timestamp}}` - Realistic recent timestamp (1-30 minutes ago, ISO 8601)
+  - `{{date}}` - Realistic recent date (1-7 days ago, YYYY-MM-DD)
+  - `{{unix_timestamp}}` - Realistic Unix timestamp in seconds (10 digits)
+  - `{{unix_timestamp_ms}}` - Realistic Unix timestamp in milliseconds (13 digits)
 - **Features**:
   - Automatic static timestamp detection and replacement
   - Recursive template processing for nested objects
-  - Authentication placeholder integration
-  - Path parameter substitution
+  - Authentication placeholder integration (`${auth.method.selector.field}`)
+  - Path parameter substitution using `{parameter_name}` syntax
 
 ## Data Persistence (Fully Implemented)
 

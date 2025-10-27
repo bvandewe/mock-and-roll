@@ -23,21 +23,15 @@ nav:
     - Persistence & Redis: features/persistence.md
     - Logging & Monitoring: features/logging.md
     - Template Variables: features/template-variables.md
+    - Log Analysis: features/search-functionality.md
   - User Guide:
     - Basic Usage: examples/basic-usage.md
     - Advanced Patterns: examples/advanced-patterns.md
     - Server Management: user-guide/server-management.md
     - CLI Commands: user-guide/cli-commands.md
-    - Log Analysis: features/search-functionality.md
-    - Architecture Overview: architecture/overview.md
-    - CLI Design: architecture/cli-design.md
-  - Configuration Reference:
-    - API Configuration: reference/api-config.md
-    - Authentication Config: reference/auth-config.md
-    - Endpoints Config: reference/endpoints-config.md
-    - Configuration Schema: reference/configuration-schema.md
-    - API Reference: reference/api-reference.md
-    - Diagrams & Visualizations: reference/diagrams.md
+  - Reference:
+    - App Design: design/mock-and-roll.md
+    - CLI Design: design/mockctl.md
   - Development:
     - Contributing: development/contributing.md
     - Changelog: changelog.md

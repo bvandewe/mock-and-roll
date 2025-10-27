@@ -1,0 +1,4 @@
+# Prettier ignore file
+
+# Ignore files with special formatting (MkDocs Material grid cards)
+docs/index.md

@@ -13,18 +13,19 @@ graph TB
     App --> Auth[Authentication Layer]
     App --> Routes[Dynamic Route Handler]
     App --> Middleware[Logging Middleware]
-    
+
     Routes --> Templates[Template Engine]
     Routes --> Persistence[Redis Persistence]
-    
+
     Auth --> ApiKey[API Key Auth]
     Auth --> OAuth[OAuth Handler]
     Auth --> System[System Auth]
-    
+
     Config --> Basic[Basic Profile]
-    Config --> Persist[Persistence Profile] 
+    Config --> Persist[Persistence Profile]
     Config --> vManage[vManage Profile]
-    
+    Config --> Airgapped[Airgapped Profile]
+
     CLI --> Search[Log Search Engine]
     CLI --> Process[Process Management]
 ```
@@ -36,6 +37,7 @@ graph TB
 The command-line interface provides user interaction and server management.
 
 **Structure:**
+
 ```
 src/cli/
 ├── interface/          # User interface (commands, presentation)
@@ -46,16 +48,19 @@ src/cli/
 ```
 
 **Key Responsibilities:**
-- Server lifecycle management
-- Log searching and analysis
-- Configuration validation
+
+- Server lifecycle management (start, stop, list, cleanup)
+- Log searching and analysis with regex support
+- Process management and monitoring
 - User interface and feedback
+- Configuration profile selection
 
 ### 2. Web Application (`src/app/`)
 
 FastAPI-based web application that serves the mock API.
 
 **Components:**
+
 - **Application Factory** (`factory.py`) - Creates and configures FastAPI app
 - **Route Handlers** (`handlers/`) - Dynamic endpoint processing
 - **Middleware** (`middleware/`) - Request/response processing
@@ -66,20 +71,23 @@ FastAPI-based web application that serves the mock API.
 Manages configuration loading and validation.
 
 **Features:**
-- Multi-profile support (basic, persistence, vmanage)
+
+- Multi-profile support (basic, persistence, vmanage, airgapped)
 - Environment variable override
-- JSON schema validation
-- Hot-reloading in development
+- JSON-based configuration files
+- Profile-specific settings
 
 ### 4. Dynamic Processing (`src/processing/`)
 
 Handles dynamic response generation and template processing.
 
 **Capabilities:**
-- Variable substitution ({{now}}, {{uuid}}, etc.)
+
+- Variable substitution ({{random_uuid}}, {{current_timestamp}}, {{timestamp}}, {{date}}, {{unix_timestamp}}, {{unix_timestamp_ms}})
+- Authentication placeholder resolution
 - Path parameter extraction
-- Conditional response logic
-- Request/response transformation
+- Conditional response logic (body_conditions, path_conditions)
+- Automatic timestamp replacement for static values
 
 ## Design Principles
 
@@ -103,12 +111,14 @@ The system follows clean architecture principles:
 
 ### 3. Extensibility
 
-The architecture supports easy extension:
+The architecture supports extension through:
 
-- **Plugin System** - Add new authentication methods
-- **Custom Middleware** - Inject custom processing logic
-- **Template Functions** - Add new template variables
-- **Configuration Profiles** - Create domain-specific setups
+- **Custom Authentication Methods** - Add new auth handlers in `src/auth/`
+- **Custom Middleware** - Inject custom processing logic in `src/middleware/`
+- **Configuration Profiles** - Create domain-specific setups in `configs/`
+- **Template Variables** - Extend template processing in `src/processing/templates.py`
+
+**Note:** While the architecture is designed for extensibility, adding new template variables or authentication methods requires code changes. The primary extension mechanism is through configuration profiles.
 
 ## Component Details
 
@@ -122,33 +132,33 @@ graph LR
         Commands[Command Parser]
         Presentation[Output Formatter]
     end
-    
-    subgraph "Application Layer" 
+
+    subgraph "Application Layer"
         ServerMgmt[Server Management]
         LogSearch[Log Search Service]
     end
-    
+
     subgraph "Domain Layer"
         Entities[Server/Log Entities]
         Repos[Repository Contracts]
     end
-    
+
     subgraph "Infrastructure Layer"
         FileSystem[File Operations]
         ProcessMgmt[Process Management]
         LogParser[Log File Parser]
     end
-    
+
     Commands --> ServerMgmt
     Commands --> LogSearch
-    
+
     ServerMgmt --> Repos
     LogSearch --> Repos
-    
+
     Repos --> FileSystem
     Repos --> ProcessMgmt
     Repos --> LogParser
-    
+
     ServerMgmt --> Presentation
     LogSearch --> Presentation
 ```
@@ -165,11 +175,11 @@ sequenceDiagram
     participant Router
     participant Template
     participant Response
-    
+
     Client->>Middleware: HTTP Request
     Middleware->>Auth: Authenticate
     Auth-->>Middleware: Auth Result
-    
+
     alt Authentication Required & Failed
         Middleware-->>Client: 401 Unauthorized
     else Authentication Passed/Not Required
@@ -191,20 +201,20 @@ graph TD
     Start[Application Start] --> EnvVar{Environment Variable?}
     EnvVar -->|Yes| CustomPath[Custom Config Path]
     EnvVar -->|No| DefaultPath[Default: configs/basic]
-    
+
     CustomPath --> LoadFiles[Load JSON Files]
     DefaultPath --> LoadFiles
-    
+
     LoadFiles --> Validate[Validate Configuration]
     Validate --> Merge[Merge with Defaults]
     Merge --> Ready[Configuration Ready]
-    
+
     subgraph "Config Files"
         API[api.json]
-        Auth[auth.json] 
+        Auth[auth.json]
         Endpoints[endpoints.json]
     end
-    
+
     LoadFiles --> API
     LoadFiles --> Auth
     LoadFiles --> Endpoints
@@ -235,10 +245,10 @@ graph TD
 
 ### Memory Management
 
-- **Lazy Loading** - Configuration loaded on demand
+- **Configuration Caching** - Configuration loaded once at startup
 - **Streaming Logs** - Process large log files incrementally
-- **Cached Templates** - Compile templates once, reuse many times
-- **Connection Pooling** - Reuse Redis connections when available
+- **Connection Pooling** - Reuse Redis connections when persistence is enabled
+- **Efficient Response Processing** - Direct response generation without caching
 
 ### Scalability
 
@@ -257,33 +267,41 @@ graph TD
 
 ### Security Features
 
-- **API Key Management** - Configurable valid keys
-- **Request Logging** - Full audit trail
-- **Input Validation** - Prevent injection attacks
-- **Resource Limits** - Prevent abuse
+- **API Key Management** - Configurable valid keys in auth.json
+- **Token-based Authentication** - Support for Bearer tokens and session cookies
+- **Request Logging** - Full audit trail of all requests
+- **Input Validation** - FastAPI automatic validation
+- **CORS Configuration** - Configurable cross-origin settings
+
+**Note:** The system does NOT currently implement scope validation or fine-grained permission checks.
 
 ## Extension Points
 
 ### Adding New Authentication Methods
 
-1. Implement auth handler in `src/auth/`
-2. Register in authentication configuration
-3. Update configuration schema
+1. Implement auth handler in `src/auth/security.py`
+2. Add configuration in `auth.json`
+3. Update `verify_auth()` function to handle new method
 4. Add tests and documentation
 
-### Custom Template Functions
+### Custom Template Variables
 
-1. Add function to `src/processing/templates.py`
-2. Register with template engine
+1. Add variable handling to `src/processing/templates.py`
+2. Implement in `process_response_body()` function
 3. Document usage patterns
-4. Add validation logic
+4. Add unit tests for new variable
 
 ### New Configuration Profiles
 
-1. Create directory in `configs/`
-2. Define JSON configuration files
-3. Test with validation tools
+1. Create directory in `configs/` (e.g., `configs/myprofile/`)
+2. Define JSON configuration files:
+   - `api.json` - API metadata and settings
+   - `auth.json` - Authentication configuration
+   - `endpoints.json` - Endpoint definitions
+3. Test profile with `mockctl start myprofile`
 4. Document profile purpose and usage
+
+**Note:** Configuration profiles are the primary extension mechanism and do not require code changes.
 
 ## Testing Strategy
 
@@ -319,7 +337,7 @@ graph TB
         Server[FastAPI Server]
         Config[Configuration Files]
         Logs[Log Files]
-        
+
         CLI --> Server
         Server --> Config
         Server --> Logs
@@ -335,12 +353,12 @@ graph TB
         Config[Config Volume]
         Logs[Logs Volume]
     end
-    
+
     subgraph "External"
         Redis[Redis Service]
         Storage[Persistent Storage]
     end
-    
+
     App --> Config
     App --> Logs
     App --> Redis
@@ -348,20 +366,27 @@ graph TB
     Logs --> Storage
 ```
 
-## Future Architecture Considerations
+## Best Practices
 
-### Microservices Evolution
+### Configuration Management
 
-- **Service Decomposition** - Split into focused services
-- **Event-Driven Architecture** - Async communication patterns
-- **Service Discovery** - Dynamic service registration
-- **Load Balancing** - Multiple instance management
+- **Version Control** - Store configuration profiles in version control
+- **Environment-Specific Profiles** - Create separate profiles for dev, test, prod
+- **Documentation** - Document custom profiles with README files
+- **Testing** - Validate configurations before deployment
 
-### Advanced Features
+### Security
 
-- **GraphQL Support** - Alternative query interface
-- **WebSocket Simulation** - Real-time communication mocking
-- **Database Integration** - Direct database mocking
-- **Metrics Collection** - Advanced monitoring and analytics
+- **Credential Management** - Never commit real credentials in configuration files
+- **Access Control** - Restrict file system access to configuration directories
+- **Audit Logging** - Enable comprehensive request logging for security monitoring
+- **Regular Updates** - Keep dependencies updated for security patches
 
-This architecture provides a solid foundation for current needs while maintaining flexibility for future enhancements.
+### Performance
+
+- **Redis Connection Pooling** - Configure appropriate pool sizes for persistence profile
+- **Log File Rotation** - Implement log rotation to prevent disk space issues
+- **Process Management** - Monitor and restart servers as needed
+- **Resource Limits** - Set appropriate limits for production environments
+
+This architecture provides a solid foundation for creating flexible, configurable mock API servers that can simulate a wide variety of API behaviors.
