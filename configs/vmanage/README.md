@@ -5,18 +5,22 @@ This configuration has been updated to support Cisco SD-WAN vManage API endpoint
 ## Key Features Added
 
 ### 1. Request Body Schema Validation
+
 - **JSON Schema Support**: All POST endpoints include comprehensive `request_body_schema` definitions
 - **Swagger Documentation**: Schemas are automatically included in the OpenAPI/Swagger UI
 - **Payload Validation**: Request bodies are validated against the defined schemas
 - **Form Data Support**: Authentication endpoint supports `application/x-www-form-urlencoded`
 
 ### 2. Custom Headers Support
+
 - **Response Headers**: Endpoints can now return custom headers in responses
 - **Required Headers**: Endpoints can validate required headers in requests (e.g., X-XSRF-TOKEN)
 - **Authentication Headers**: Support for session-based authentication with CSRF tokens
 
 ### 3. vManage Authentication
+
 Added `vmanage_session` authentication method in `auth.json`:
+
 - Session-based authentication using JSESSIONID cookie
 - CSRF token validation via X-XSRF-TOKEN header
 - Multiple valid session/token combinations for testing
@@ -24,16 +28,19 @@ Added `vmanage_session` authentication method in `auth.json`:
 ### 4. SD-WAN API Endpoints
 
 #### Authentication Endpoints
+
 - `POST /j_security_check` - User authentication with form data validation
 - `GET /dataservice/client/token` - Get CSRF token
 - `GET /logout` - User logout
 
-#### Device Management Endpoints  
+#### Device Management Endpoints
+
 - `GET /dataservice/device/monitor` - Get device status information
 - `GET /dataservice/device/interface` - Get device interface statistics
 - `GET /dataservice/device/control/connections` - Get control plane connections
 
 #### Configuration Management Endpoints
+
 - `POST /dataservice/template/device` - Create device template with schema validation
 - `POST /dataservice/template/device/config/attachfeature` - Attach devices to template
 - `POST /dataservice/template/policy/list/site` - Create site list
@@ -41,6 +48,7 @@ Added `vmanage_session` authentication method in `auth.json`:
 ## Configuration Structure Changes
 
 ### endpoints.json with Request Schemas
+
 ```json
 {
   "name": "Endpoint Name",
@@ -82,6 +90,7 @@ Added `vmanage_session` authentication method in `auth.json`:
 ```
 
 ### auth.json
+
 ```json
 {
   "authentication_methods": {
@@ -106,17 +115,20 @@ Added `vmanage_session` authentication method in `auth.json`:
 The configuration now includes comprehensive request body schemas for all POST endpoints:
 
 ### Authentication Schema
+
 - Validates `j_username` and `j_password` fields
 - Supports form-urlencoded content type
 - Required fields validation
 
 ### Device Template Schema
+
 - Template name and description validation
 - Device type enumeration
 - Template definition structure validation
 - Nested object validation for system properties
 
 ### Site List Schema
+
 - Site list name and type validation
 - Entries array with site ID validation
 - Strict schema with no additional properties
@@ -124,6 +136,7 @@ The configuration now includes comprehensive request body schemas for all POST e
 ## Usage Example
 
 1. **Authenticate**: POST to `/j_security_check` with form data
+
    ```bash
    curl -X POST -d "j_username=admin&j_password=admin" /j_security_check
    ```
@@ -136,6 +149,7 @@ The configuration now includes comprehensive request body schemas for all POST e
 ## Mock Server Code Changes
 
 ### Added Features in main.py
+
 - `check_required_headers()` function for header validation
 - Support for `headers` field in response configuration
 - Support for `required_headers` field in endpoint configuration
@@ -143,34 +157,41 @@ The configuration now includes comprehensive request body schemas for all POST e
 - Header validation integrated into both request handlers
 
 ### Request Body Parsing
+
 - Automatic detection of content-type
 - Support for `application/x-www-form-urlencoded`
 - Support for `application/json`
 - Schema validation using existing schema infrastructure
 
 ### Response Headers
+
 All JSONResponse objects now support custom headers from the configuration.
 
 ### Header Validation
+
 Required headers are validated before processing requests, returning 400 error if missing or incorrect.
 
 ## Testing
 
 The configuration supports realistic SD-WAN API testing scenarios including:
+
 - Authentication flows with form data
-- Session management  
+- Session management
 - Device monitoring
 - Interface statistics
 - Control plane status
 - Configuration management with schema validation
 
 ### Test Scripts
+
 - `test_vmanage_api.py` - Python test script with all endpoints
 - `test_vmanage_api.sh` - Bash script with curl commands
 - Both scripts test request payload validation
 
 ### Swagger Documentation
+
 Visit `/docs` when the server is running to see:
+
 - Complete API documentation
 - Interactive request/response examples
 - Schema validation in the Swagger UI
