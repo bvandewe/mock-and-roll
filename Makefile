@@ -73,85 +73,93 @@ dev-setup: ## Setup development environment with example config
 	@echo "✓ Development environment ready"
 
 ## Development
-dev: dev-setup ## Start development server (mockctl)
-	@echo "Starting Mock-and-Roll development server..."
-	@echo "Available at: http://localhost:$(DEV_PORT)"
-	$(POETRY) run python src/main.py
+# dev: dev-setup ## Start development server (mockctl)
+# 	@echo "Starting Mock-and-Roll development server..."
+# 	@echo "Available at: http://localhost:$(DEV_PORT)"
+# 	$(POETRY) run python src/main.py
 
-dev-basic: dev-setup ## Start basic config server
+local-status: dev-setup
+	@echo "Listing current services..."
+	./mockctl status
+
+local-stop: dev-setup
+	@echo "Stopping all running services..."
+	./mockctl stop --all
+
+local-basic: dev-setup ## Start basic config server
 	@echo "Starting Mock-and-Roll with basic config..."
 	./mockctl start basic --port $(DEV_PORT)
 
-dev-persistence: dev-setup ## Start persistence config server (requires Redis)
+local-persistence: dev-setup ## Start persistence config server (requires Redis)
 	@echo "Starting Mock-and-Roll with persistence config..."
 	@echo "Note: Ensure Redis is running (make redis-up)"
 	./mockctl start persistence --port $(DEV_PORT)
 
-dev-vmanage: dev-setup ## Start vManage simulation server
+local-vmanage: dev-setup ## Start vManage simulation server
 	@echo "Starting vManage simulation server..."
 	./mockctl start vmanage --port $(DEV_PORT)
 
-stop: ## Stop all running servers
+local-stop: ## Stop all running servers
 	@echo "Stopping all Mock-and-Roll servers..."
-	./mockctl stop all || true
+	./mockctl stop --all || true
 	./mockctl cleanup || true
 	@echo "✓ All servers stopped"
 
-status: ## Show status of running servers
+local-status: ## Show status of running servers
 	@echo "Mock-and-Roll Server Status:"
 	./mockctl list
 
-logs: ## Show server logs
+local-logs: ## Show server logs
 	@echo "Recent server logs:"
 	./mockctl logs --lines 50
 
 ## Testing & Quality
-test: ## Run all tests
+local-test: ## Run all tests
 	@echo "Running tests..."
 	$(POETRY) run pytest tests/ -v
 
-test-coverage: ## Run tests with coverage report
+local-test-coverage: ## Run tests with coverage report
 	@echo "Running tests with coverage..."
 	$(POETRY) run pytest tests/ --cov=src --cov-report=html --cov-report=term-missing
 
-test-integration: ## Run integration tests only
+local-test-integration: ## Run integration tests only
 	@echo "Running integration tests..."
 	$(POETRY) run pytest tests/ -k integration -v
 
-test-unit: ## Run unit tests only
+local-test-unit: ## Run unit tests only
 	@echo "Running unit tests..."
 	$(POETRY) run pytest tests/ -k "not integration" -v
 
-test-watch: ## Run tests in watch mode
+local-test-watch: ## Run tests in watch mode
 	@echo "Running tests in watch mode (press Ctrl+C to stop)..."
 	$(POETRY) run pytest-watch tests/ -- -v
 
 ## Code Quality
-lint: ## Run all linters
+local-lint: ## Run all linters
 	@echo "Running linters..."
 	$(POETRY) run flake8 src tests
 	$(POETRY) run black --check src tests
 	@echo "✓ Linting complete"
 
-format: ## Format code with Black and other formatters
+local-format: ## Format code with Black and other formatters
 	@echo "Formatting code..."
 	$(POETRY) run black src tests
 	$(POETRY) run autoflake --remove-all-unused-imports --recursive --remove-unused-variables --in-place src tests
 	@echo "✓ Code formatted"
 
-type-check: ## Run type checking with mypy
+local-type-check: ## Run type checking with mypy
 	@echo "Running type checks..."
 	$(POETRY) run mypy src --ignore-missing-imports || echo "Note: mypy not configured, skipping"
 
-pre-commit: ## Run pre-commit hooks on all files
+local-pre-commit: ## Run pre-commit hooks on all files
 	@echo "Running pre-commit hooks..."
 	$(POETRY) run pre-commit run --all-files
 
-pre-commit-update: ## Update pre-commit hooks
+local-pre-commit-update: ## Update pre-commit hooks
 	@echo "Updating pre-commit hooks..."
 	$(POETRY) run pre-commit autoupdate
 
-quality: lint type-check test ## Run all quality checks (lint, type-check, test)
+local-quality: local-lint local-type-check local-test ## Run all quality checks (lint, type-check, test)
 
 ## Documentation
 docs-install: ## Install documentation dependencies
@@ -180,17 +188,17 @@ docs-deploy: docs-build ## Deploy documentation (requires proper git setup)
 	@echo "✓ Documentation deployed"
 
 ## Docker Operations
-docker-build: ## Build Docker image
-	@echo "Building Docker image..."
-	docker build -t $(PROJECT_NAME):latest .
-	@echo "✓ Docker image built"
+# docker-build: ## Build Docker image
+# 	@echo "Building Docker image..."
+# 	docker build -t $(PROJECT_NAME):latest .
+# 	@echo "✓ Docker image built"
 
-docker-build-alpine: ## Build Alpine Docker image
-	@echo "Building Alpine Docker image..."
-	docker build -f Dockerfile.alpine -t $(PROJECT_NAME):alpine .
-	@echo "✓ Alpine Docker image built"
+# docker-build-alpine: ## Build Alpine Docker image
+# 	@echo "Building Alpine Docker image..."
+# 	docker build -f Dockerfile.alpine -t $(PROJECT_NAME):alpine .
+# 	@echo "✓ Alpine Docker image built"
 
-docker-dev: ## Start development environment with Docker Compose
+docker-start: ## Start development environment with Docker Compose
 	@echo "Starting Docker development environment..."
 	@echo "API available at: http://localhost:$(DEV_PORT)"
 	@echo "Redis will be available on localhost:6379"
@@ -219,18 +227,18 @@ docker-test: ## Run tests in Docker environment
 	$(DOCKER_COMPOSE) -f docker-compose_test.yml up --build --abort-on-container-exit
 	$(DOCKER_COMPOSE) -f docker-compose_test.yml down
 
-redis-up: ## Start only Redis service
+docker-redis-up: ## Start only Redis service
 	@echo "Starting Redis service..."
 	$(DOCKER_COMPOSE) up redis -d
 	@echo "✓ Redis started on localhost:6379"
 
-redis-down: ## Stop Redis service
+docker-redis-down: ## Stop Redis service
 	@echo "Stopping Redis service..."
 	$(DOCKER_COMPOSE) stop redis
 	@echo "✓ Redis stopped"
 
 ## Utilities
-clean: ## Clean up temporary files and caches
+local-clean: ## Clean up temporary files and caches
 	@echo "Cleaning up..."
 	find . -type f -name "*.pyc" -delete
 	find . -type d -name "__pycache__" -delete
@@ -243,12 +251,12 @@ clean: ## Clean up temporary files and caches
 	rm -rf build/
 	@echo "✓ Cleanup complete"
 
-clean-logs: ## Clean up log files
+local-clean-logs: ## Clean up log files
 	@echo "Cleaning up log files..."
 	rm -rf logs/*.logs
 	@echo "✓ Log files cleaned"
 
-clean-all: clean clean-logs docker-down ## Deep clean (files, logs, Docker)
+local-clean-all: local-clean local-clean-logs docker-down ## Deep clean (files, logs, Docker)
 	@echo "Performing deep clean..."
 	docker system prune -f --volumes 2>/dev/null || true
 	@echo "✓ Deep clean complete"
@@ -272,11 +280,11 @@ search-logs: ## Search server logs (usage: make search-logs PATTERN="your-patter
 	./mockctl search ${CONFIG:-basic} "${PATTERN:-.*}"
 
 ## Comprehensive Tasks
-all-tests: test-unit test-integration test-coverage ## Run all types of tests
+all-tests: local-test-unit local-test-integration local-test-coverage ## Run all types of tests
 
-full-check: quality docs-build docker-build ## Complete project validation
+full-check: local-quality docs-build docker-build ## Complete project validation
 
-ci: install lint test docs-build ## Continuous Integration tasks
+ci: install local-lint local-test docs-build ## Continuous Integration tasks
 
 release-check: full-check ## Pre-release validation
 	@echo "✓ Release validation complete"
@@ -286,14 +294,6 @@ release-check: full-check ## Pre-release validation
 	@echo "  ☐ Update CHANGELOG.md"
 	@echo "  ☐ Tag release: git tag v<version>"
 	@echo "  ☐ Push tags: git push --tags"
-
-## Development Workflows
-workflow-setup: setup dev-setup ## Complete development workflow setup
-	@echo "Development workflow ready!"
-
-workflow-dev: stop dev-basic docs-live ## Start full development workflow
-
-workflow-test: format lint test ## Quick test workflow
 
 # Validation targets
 validate-poetry:
@@ -318,3 +318,4 @@ debug: ## Show debug information
 	@echo "Available Python: $(shell which python3 python 2>/dev/null | head -1)"
 	@echo "Git Branch: $(shell git branch --show-current 2>/dev/null || echo 'Not in git repo')"
 	@echo "Docker Status: $(shell docker info >/dev/null 2>&1 && echo 'Running' || echo 'Not running')"
+	./mockctl status
