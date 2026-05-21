@@ -53,7 +53,9 @@ def create_application():
     elif os.getenv("CONFIG_FOLDER"):
         config_folder = os.getenv("CONFIG_FOLDER")
         if config_folder and not os.path.exists(config_folder):
-            print(f"Error: Config folder '{config_folder}' (from CONFIG_FOLDER env var) does not exist")
+            print(
+                f"Error: Config folder '{config_folder}' (from CONFIG_FOLDER env var) does not exist"
+            )
             sys.exit(1)
         if config_folder:
             set_config_folder(config_folder)
@@ -72,15 +74,26 @@ def create_application():
     # Create the FastAPI application
     app = create_app()
 
+    # Initialize persistence store backend
+    from persistence.store import init_store, seed_static_entities
+
+    persistence_type = api_config.get("persistence")
+    init_store(persistence_type)
+
     # Set up dynamic routes
     setup_routes(app, config_data, auth_data)
 
-    # Add cache management endpoints if Redis persistence is configured
-    if api_config.get("persistence") == "redis":
-        logging.info("Redis persistence configured - adding cache management endpoints")
+    # Seed static entities into the store for unified lookups
+    seed_static_entities(config_data)
+
+    # Add cache management endpoints if persistence is configured
+    if persistence_type in ("redis", "file"):
+        logging.info(
+            f"{persistence_type.title()} persistence configured - adding cache management endpoints"
+        )
         add_cache_management_endpoints(app, api_config, auth_data)
     else:
-        logging.info("Redis persistence not configured - cache management endpoints not added")
+        logging.info("No persistent storage configured - cache management endpoints not added")
 
     # Add logging management endpoints
     logging.info("Adding logging management endpoints")

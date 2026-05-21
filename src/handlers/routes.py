@@ -9,12 +9,12 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from fastapi import Body, HTTPException, Request
+from fastapi import Body, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 
 from auth.security import clear_auth_resolution_cache
 from models.dynamic import create_request_model
-from persistence.redis_client import get_entity, list_entities, store_entity
+from persistence.store import delete_entity, get_entity, is_protected_entity, list_entities, store_entity
 from processing.templates import (
     check_conditions,
     process_response_body,
@@ -64,14 +64,8 @@ def build_persistence_list_response(
     if not isinstance(response_body, dict):
         return JSONResponse(status_code=status_code, content=response_body, headers=headers)
 
-    static_items = []
-    if persistence_config.get("merge_with_static_response", False):
-        existing_items = response_body.get(list_key, [])
-        if isinstance(existing_items, list):
-            static_items = existing_items
-
     persisted_items = [extract_persisted_entity_data(entity) for entity in entities]
-    response_body[list_key] = [*static_items, *persisted_items]
+    response_body[list_key] = persisted_items
 
     count_key = persistence_config.get("response_count_key")
     if count_key:
@@ -139,6 +133,67 @@ def create_handler_with_body(endpoint_config: dict[str, Any], auth_config: dict[
             and entity_name
             and persistence_config.get("action") == "create"
         ):
+            # Validate that referenced entities exist before creating
+            required_entities = persistence_config.get("required_entities", [])
+            for req_entity in required_entities:
+                ref_field = req_entity.get("field")
+                ref_entity_name = req_entity.get("entity_name")
+                if ref_field and ref_entity_name and request_body.get(ref_field):
+                    ref_id = request_body[ref_field]
+                    referenced = get_entity(ref_entity_name, ref_id)
+                    if not referenced:
+                        error_message = req_entity.get(
+                            "error_message", f"{ref_entity_name.rstrip('s').title()} not found."
+                        )
+                        return JSONResponse(
+                            status_code=404,
+                            content={
+                                "message": error_message,
+                                "errors": [{"description": error_message}],
+                            },
+                        )
+
+            # Check uniqueness constraints before creating
+            unique_fields = persistence_config.get("unique_fields", [])
+            if unique_fields and request_body:
+                existing_entities = list_entities(entity_name)
+                for existing in existing_entities:
+                    existing_data = extract_persisted_entity_data(existing)
+                    if all(
+                        existing_data.get(field) == request_body.get(field)
+                        for field in unique_fields
+                        if request_body.get(field) is not None
+                    ):
+                        # Return 409 conflict response
+                        conflict_rule = None
+                        for rule in endpoint_config.get("responses", []):
+                            resp = rule.get("response", {})
+                            if resp.get("status_code") == 409:
+                                conflict_rule = resp
+                                break
+                        if conflict_rule:
+                            request_context = extract_request_context(request, auth_config)
+                            processed_body = process_response_body(
+                                conflict_rule.get("body", {}), auth_config, request_context
+                            )
+                            headers = process_response_headers(
+                                conflict_rule.get("headers", {}), auth_config
+                            )
+                            return JSONResponse(
+                                status_code=409, content=processed_body, headers=headers
+                            )
+                        return JSONResponse(
+                            status_code=409,
+                            content={
+                                "message": f"Entity already exists with the same {', '.join(unique_fields)}.",
+                                "errors": [
+                                    {
+                                        "description": f"Duplicate entry for {', '.join(unique_fields)}"
+                                    }
+                                ],
+                            },
+                        )
+
             response_rule = get_matching_response_rule(endpoint_config, request_body)
             if response_rule is None:
                 return JSONResponse(
@@ -303,6 +358,47 @@ def create_handler(endpoint_config: dict[str, Any], auth_config: dict[str, Any])
             and persistence_config.get("action") == "create"
         ):
             try:
+                # Check uniqueness constraints before creating
+                unique_fields = persistence_config.get("unique_fields", [])
+                if unique_fields and request_body:
+                    existing_entities = list_entities(entity_name)
+                    for existing in existing_entities:
+                        existing_data = extract_persisted_entity_data(existing)
+                        if all(
+                            existing_data.get(field) == request_body.get(field)
+                            for field in unique_fields
+                            if request_body.get(field) is not None
+                        ):
+                            # Find the matching conflict response rule if configured
+                            conflict_response = None
+                            for rule in endpoint_config.get("responses", []):
+                                resp = rule.get("response", {})
+                                if resp.get("status_code") == 409:
+                                    conflict_response = resp
+                                    break
+                            if conflict_response:
+                                request_context = extract_request_context(request, auth_config)
+                                processed_body = process_response_body(
+                                    conflict_response.get("body", {}), auth_config, request_context
+                                )
+                                headers = process_response_headers(
+                                    conflict_response.get("headers", {}), auth_config
+                                )
+                                return JSONResponse(
+                                    status_code=409, content=processed_body, headers=headers
+                                )
+                            return JSONResponse(
+                                status_code=409,
+                                content={
+                                    "message": f"{entity_name.rstrip('s').title()} already exists with the same {', '.join(unique_fields)}.",
+                                    "errors": [
+                                        {
+                                            "description": f"Duplicate entry for {', '.join(unique_fields)}"
+                                        }
+                                    ],
+                                },
+                            )
+
                 entity_id = store_entity(entity_name, request_body)
                 # Return the created entity with its ID
                 response_body = {
@@ -389,6 +485,76 @@ def create_handler(endpoint_config: dict[str, Any], auth_config: dict[str, Any])
 
             return build_persistence_list_response(request, endpoint_config, auth_config, entities)
 
+        elif (
+            request.method == "DELETE"
+            and entity_name
+            and persistence_config.get("action") == "delete"
+        ):
+            # Extract entity ID from path parameters
+            entity_id = None
+            id_path_param = persistence_config.get("id_path_param")
+            if id_path_param:
+                entity_id = path_params.get(id_path_param)
+            else:
+                entity_id = path_params.get("id") or path_params.get("entity_id")
+
+            if not entity_id:
+                return JSONResponse(status_code=400, content={"error": "Missing entity ID in path"})
+
+            # Block deletion of protected (seeded) entities
+            if is_protected_entity(entity_name, entity_id):
+                return JSONResponse(
+                    status_code=403,
+                    content={
+                        "message": "This resource is protected and cannot be deleted.",
+                        "errors": [{"description": "Protected resources from the initial configuration are read-only."}],
+                    },
+                )
+
+            # Attempt to delete the entity from persistence
+            deleted = delete_entity(entity_name, entity_id)
+            if deleted:
+                # Cascade delete related entities if configured
+                cascade_delete = persistence_config.get("cascade_delete", [])
+                for cascade in cascade_delete:
+                    related_entity = cascade.get("entity_name")
+                    foreign_key = cascade.get("foreign_key")
+                    if related_entity and foreign_key:
+                        related_entities = list_entities(related_entity)
+                        for related in related_entities:
+                            related_data = extract_persisted_entity_data(related)
+                            if related_data.get(foreign_key) == entity_id:
+                                related_id = related.get("id") or related_data.get("id")
+                                if related_id and not is_protected_entity(related_entity, related_id):
+                                    delete_entity(related_entity, related_id)
+
+                # Return configured success response (typically 204)
+                response_rule = get_matching_response_rule(endpoint_config, {})
+                if response_rule:
+                    response_data = response_rule["response"]
+                    headers = process_response_headers(
+                        response_data.get("headers", {}), auth_config
+                    )
+                    return JSONResponse(
+                        status_code=response_data.get("status_code", 204),
+                        content=response_data.get("body"),
+                        headers=headers,
+                    )
+                return JSONResponse(status_code=204, content=None)
+            else:
+                # Entity not found - use not_found_response if configured
+                not_found = endpoint_config.get("not_found_response")
+                if not_found:
+                    return JSONResponse(
+                        status_code=not_found.get("status_code", 404),
+                        content=not_found.get("body"),
+                        headers=not_found.get("headers", {}),
+                    )
+                return JSONResponse(
+                    status_code=404,
+                    content={"error": f"{entity_name.title()} not found", "id": entity_id},
+                )
+
         # Fall back to original static response handling
         for rule in endpoint_config.get("responses", []):
             conditions = rule.get("body_conditions")
@@ -420,12 +586,29 @@ def create_handler(endpoint_config: dict[str, Any], auth_config: dict[str, Any])
             },
         )
 
-    # Set correct signature for FastAPI to recognize path params
+    # Set correct signature for FastAPI to recognize path params and query params
     params = [
         inspect.Parameter("request", inspect.Parameter.POSITIONAL_OR_KEYWORD, annotation=Request)
     ]
     for name in path_param_names:
         params.append(inspect.Parameter(name, inspect.Parameter.KEYWORD_ONLY, annotation=str))
+
+    # Add query parameters from endpoint configuration
+    query_parameters = endpoint_config.get("query_parameters", [])
+    for qp in query_parameters:
+        qp_name = qp.get("name")
+        qp_required = qp.get("required", False)
+        qp_description = qp.get("description", "")
+        default = ... if qp_required else None
+        params.append(
+            inspect.Parameter(
+                qp_name,
+                inspect.Parameter.KEYWORD_ONLY,
+                annotation=str if qp_required else (str | None),
+                default=Query(default, description=qp_description),
+            )
+        )
+
     # Note: Setting __signature__ is handled at runtime by FastAPI
     setattr(handler, "__signature__", inspect.Signature(params))
     return handler

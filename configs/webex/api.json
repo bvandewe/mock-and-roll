@@ -13,7 +13,7 @@
         "url": "https://opensource.org/licenses/MIT"
     },
     "root_path": "/v1",
-    "persistence": "redis",
+    "persistence": "memory",
     "openapi_tags": [
         {
             "name": "Rooms",

@@ -11,8 +11,7 @@
             "persistence": {
                 "entity_name": "rooms",
                 "action": "list",
-                "response_list_key": "items",
-                "merge_with_static_response": true
+                "response_list_key": "items"
             },
             "responses": [
                 {
@@ -88,7 +87,8 @@
             "persistence": {
                 "entity_name": "rooms",
                 "action": "create",
-                "store_response_body": true
+                "store_response_body": true,
+                "unique_fields": ["title"]
             },
             "required_headers": {
                 "Content-Type": "application/json"
@@ -131,6 +131,7 @@
                         }
                     }
                 },
+
                 {
                     "body_conditions": null,
                     "response": {
@@ -165,7 +166,13 @@
             "persistence": {
                 "entity_name": "rooms",
                 "action": "delete",
-                "id_path_param": "roomId"
+                "id_path_param": "roomId",
+                "cascade_delete": [
+                    {
+                        "entity_name": "memberships",
+                        "foreign_key": "roomId"
+                    }
+                ]
             },
             "responses": [
                 {
@@ -207,7 +214,7 @@
                 {
                     "name": "roomId",
                     "type": "string",
-                    "required": true,
+                    "required": false,
                     "description": "The room ID to filter memberships by."
                 }
             ],
@@ -215,7 +222,6 @@
                 "entity_name": "memberships",
                 "action": "list",
                 "response_list_key": "items",
-                "merge_with_static_response": true,
                 "filter_by_query_params": ["roomId"]
             },
             "responses": [
@@ -269,7 +275,15 @@
             "persistence": {
                 "entity_name": "memberships",
                 "action": "create",
-                "store_response_body": true
+                "store_response_body": true,
+                "unique_fields": ["roomId", "personEmail"],
+                "required_entities": [
+                    {
+                        "field": "roomId",
+                        "entity_name": "rooms",
+                        "error_message": "The requested resource could not be found."
+                    }
+                ]
             },
             "required_headers": {
                 "Content-Type": "application/json"

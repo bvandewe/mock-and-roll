@@ -9,7 +9,7 @@ from typing import Any, Optional
 from fastapi import APIRouter, Depends, FastAPI, HTTPException
 
 from auth.security import create_system_auth_dependency, system_api_key
-from persistence.redis_client import (
+from persistence.store import (
     delete_entity,
     flush_cache,
     get_cache_info,
