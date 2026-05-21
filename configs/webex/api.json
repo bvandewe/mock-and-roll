@@ -1,0 +1,51 @@
+{
+    "api_name": "Webex Messaging API Mock",
+    "version": "1.0.0",
+    "base_url": "https://webexapis.com",
+    "description": "Mock Webex Messaging API profile for rooms and memberships workflows.",
+    "support": {
+        "email": "support@webex.example.com",
+        "phone": "+1-800-555-0199"
+    },
+    "terms_of_service": "https://www.cisco.com/c/en/us/about/legal/cloud-and-software/webex-terms.html",
+    "license": {
+        "name": "MIT",
+        "url": "https://opensource.org/licenses/MIT"
+    },
+    "root_path": "/v1",
+    "persistence": "redis",
+    "openapi_tags": [
+        {
+            "name": "Rooms",
+            "description": "Webex room listing and room creation operations."
+        },
+        {
+            "name": "Memberships",
+            "description": "Webex room membership lookup and membership creation operations."
+        }
+    ],
+    "swagger_ui": {
+        "airgapped_mode": true,
+        "doc_expansion": "none",
+        "default_models_expand_depth": -1,
+        "default_model_expand_depth": -1,
+        "display_request_duration": true,
+        "try_it_out_enabled": true
+    },
+    "system": {
+        "protect_endpoints": true,
+        "auth_method": "system_api_key"
+    },
+    "logging": {
+        "enabled": true,
+        "level": "DEBUG",
+        "console_enabled": true,
+        "file_enabled": true,
+        "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        "max_file_size_mb": 10,
+        "backup_count": 5,
+        "max_body_log_size": 1024,
+        "request_response_logging": true,
+        "allow_log_deletion": true
+    }
+}

@@ -1,0 +1,407 @@
+{
+    "endpoints": [
+        {
+            "name": "List Rooms",
+            "method": "GET",
+            "path": "/rooms",
+            "tag": "Rooms",
+            "authentication": [
+                "oidc_auth_code"
+            ],
+            "persistence": {
+                "entity_name": "rooms",
+                "action": "list",
+                "response_list_key": "items",
+                "merge_with_static_response": true
+            },
+            "responses": [
+                {
+                    "body_conditions": null,
+                    "response": {
+                        "status_code": 200,
+                        "headers": {
+                            "Content-Type": "application/json"
+                        },
+                        "body": {
+                            "items": [
+                                {
+                                    "id": "Y2lzY29zcGFyazovL3VybjpURUFNOnVzLXdlc3QtMl9yL1JPT00vMzk5ZWE4ZTAtM2YwZC0xMWYxLWE4NjQtNTM5NjdjZTYyMjkw",
+                                    "title": "Cisco-Devnet",
+                                    "type": "group",
+                                    "isLocked": false,
+                                    "lastActivity": "{{timestamp}}",
+                                    "creatorId": "Y2lzY29zcGFyazovL3VzL1BFT1BMRS8zNWE4ZDlhNS1jYzA2LTQ4MDQtYTdhYi0yMGZmMDNhMWJhNGQ",
+                                    "created": "{{timestamp}}",
+                                    "ownerId": "Y2lzY29zcGFyazovL3VzL09SR0FOSVpBVElPTi8yYTRlYjcxYi1lMDljLTQ3N2ItOWM4OC1kZGFmZTM2YmFlOGI",
+                                    "description": "Internal team with members",
+                                    "isPublic": false,
+                                    "isReadOnly": false
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Get Room Details",
+            "method": "GET",
+            "path": "/rooms/{room_id}",
+            "tag": "Rooms",
+            "authentication": [
+                "oidc_auth_code"
+            ],
+            "persistence": {
+                "entity_name": "rooms",
+                "action": "retrieve",
+                "id_path_param": "room_id"
+            },
+            "responses": [
+                {
+                    "body_conditions": null,
+                    "response": {
+                        "status_code": 404,
+                        "headers": {
+                            "Content-Type": "application/json"
+                        },
+                        "body": {
+                            "message": "The requested resource could not be found.",
+                            "errors": [
+                                {
+                                    "description": "The requested resource could not be found."
+                                }
+                            ],
+                            "trackingId": "ROUTERGW_5c5523e7-e936-4f9c-81c1-a7bcb6bb8fd1"
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Create Room",
+            "method": "POST",
+            "path": "/rooms",
+            "tag": "Rooms",
+            "authentication": [
+                "oidc_auth_code"
+            ],
+            "persistence": {
+                "entity_name": "rooms",
+                "action": "create",
+                "store_response_body": true
+            },
+            "required_headers": {
+                "Content-Type": "application/json"
+            },
+            "request_body_schema": {
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "description": "Room title.",
+                        "example": "Cisco-Devnet"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Room description.",
+                        "example": "Internal team with members"
+                    }
+                },
+                "required": [],
+                "additionalProperties": false
+            },
+            "responses": [
+                {
+                    "body_conditions": {
+                        "title": null
+                    },
+                    "response": {
+                        "status_code": 400,
+                        "headers": {
+                            "Content-Type": "application/json"
+                        },
+                        "body": {
+                            "message": "Title cannot be empty.",
+                            "errors": [
+                                {
+                                    "description": "Title cannot be empty."
+                                }
+                            ],
+                            "trackingId": "ROUTERGW_18f6c1f3-2622-4d71-b081-5aa2b2c79a21"
+                        }
+                    }
+                },
+                {
+                    "body_conditions": null,
+                    "response": {
+                        "status_code": 200,
+                        "headers": {
+                            "Content-Type": "application/json"
+                        },
+                        "body": {
+                            "id": "Y2lzY29zcGFyazovL3VybjpURUFNOnVzLXdlc3QtMl9yL1JPT00vMDFlNTQ3YjAtM2YyMS0xMWYxLWFkZWMtYWQ0MzIwYzRlMjcw",
+                            "title": "Cisco-Devnet",
+                            "type": "group",
+                            "isLocked": false,
+                            "lastActivity": "{{timestamp}}",
+                            "creatorId": "Y2lzY29zcGFyazovL3VzL1BFT1BMRS8zNWE4ZDlhNS1jYzA2LTQ4MDQtYTdhYi0yMGZmMDNhMWJhNGQ",
+                            "created": "{{timestamp}}",
+                            "ownerId": "Y2lzY29zcGFyazovL3VzL09SR0FOSVpBVElPTi8yYTRlYjcxYi1lMDljLTQ3N2ItOWM4OC1kZGFmZTM2YmFlOGI",
+                            "description": "Internal team with members",
+                            "isPublic": false
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Delete a Room",
+            "method": "DELETE",
+            "path": "/rooms/{roomId}",
+            "tag": "Rooms",
+            "authentication": [
+                "oidc_auth_code"
+            ],
+            "persistence": {
+                "entity_name": "rooms",
+                "action": "delete",
+                "id_path_param": "roomId"
+            },
+            "responses": [
+                {
+                    "body_conditions": null,
+                    "response": {
+                        "status_code": 204,
+                        "headers": {
+                            "Content-Type": "application/json"
+                        },
+                        "body": null
+                    }
+                }
+            ],
+            "not_found_response": {
+                "status_code": 404,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "message": "The requested resource could not be found.",
+                    "errors": [
+                        {
+                            "description": "The requested resource could not be found."
+                        }
+                    ],
+                    "trackingId": "ROUTERGW_a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                }
+            }
+        },
+        {
+            "name": "List Memberships",
+            "method": "GET",
+            "path": "/memberships",
+            "tag": "Memberships",
+            "authentication": [
+                "oidc_auth_code"
+            ],
+            "query_parameters": [
+                {
+                    "name": "roomId",
+                    "type": "string",
+                    "required": true,
+                    "description": "The room ID to filter memberships by."
+                }
+            ],
+            "persistence": {
+                "entity_name": "memberships",
+                "action": "list",
+                "response_list_key": "items",
+                "merge_with_static_response": true,
+                "filter_by_query_params": ["roomId"]
+            },
+            "responses": [
+                {
+                    "body_conditions": null,
+                    "response": {
+                        "status_code": 200,
+                        "headers": {
+                            "Content-Type": "application/json"
+                        },
+                        "body": {
+                            "items": [
+                                {
+                                    "id": "Y2lzY29zcGFyazovL3VybjpURUFNOnVzLXdlc3QtMl9yL01FTUJFUlNISVAvMzQxMDUzODUtMjY4Ny00MTI5LWE3NzQtYmIzZTgxYjEyOWIyOjM5OWVhOGUwLTNmMGQtMTFmMS1hODY0LTUzOTY3Y2U2MjI5MA",
+                                    "roomId": "Y2lzY29zcGFyazovL3VybjpURUFNOnVzLXdlc3QtMl9yL1JPT00vMzk5ZWE4ZTAtM2YwZC0xMWYxLWE4NjQtNTM5NjdjZTYyMjkw",
+                                    "roomType": "group",
+                                    "personId": "Y2lzY29zcGFyazovL3VzL1BFT1BMRS8zNDEwNTM4NS0yNjg3LTQxMjktYTc3NC1iYjNlODFiMTI5YjI",
+                                    "personEmail": "aytac125@gmail.com",
+                                    "personDisplayName": "aytac125",
+                                    "personOrgId": "Y2lzY29zcGFyazovL3VzL09SR0FOSVpBVElPTi85Njc2ZDM4YS04OTIyLTQ1MzUtYmE4Zi0yZjRjODk3MzVmZDQ",
+                                    "isModerator": false,
+                                    "isMonitor": false,
+                                    "created": "{{timestamp}}"
+                                },
+                                {
+                                    "id": "Y2lzY29zcGFyazovL3VybjpURUFNOnVzLXdlc3QtMl9yL01FTUJFUlNISVAvMzVhOGQ5YTUtY2MwNi00ODA0LWE3YWItMjBmZjAzYTFiYTRkOjM5OWVhOGUwLTNmMGQtMTFmMS1hODY0LTUzOTY3Y2U2MjI5MA",
+                                    "roomId": "Y2lzY29zcGFyazovL3VybjpURUFNOnVzLXdlc3QtMl9yL1JPT00vMzk5ZWE4ZTAtM2YwZC0xMWYxLWE4NjQtNTM5NjdjZTYyMjkw",
+                                    "roomType": "group",
+                                    "personId": "Y2lzY29zcGFyazovL3VzL1BFT1BMRS8zNWE4ZDlhNS1jYzA2LTQ4MDQtYTdhYi0yMGZmMDNhMWJhNGQ",
+                                    "personEmail": "admin@ayurdaku-6xrq.wbx.ai",
+                                    "personDisplayName": "admin@ayurdaku-6xrq.wbx.ai",
+                                    "personOrgId": "Y2lzY29zcGFyazovL3VzL09SR0FOSVpBVElPTi8yYTRlYjcxYi1lMDljLTQ3N2ItOWM4OC1kZGFmZTM2YmFlOGI",
+                                    "isModerator": false,
+                                    "isMonitor": false,
+                                    "created": "{{timestamp}}"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Create a Membership",
+            "method": "POST",
+            "path": "/memberships",
+            "tag": "Memberships",
+            "authentication": [
+                "oidc_auth_code"
+            ],
+            "persistence": {
+                "entity_name": "memberships",
+                "action": "create",
+                "store_response_body": true
+            },
+            "required_headers": {
+                "Content-Type": "application/json"
+            },
+            "request_body_schema": {
+                "type": "object",
+                "properties": {
+                    "roomId": {
+                        "type": "string",
+                        "description": "Target room identifier.",
+                        "example": "Y2lzY29zcGFyazovL3VybjpURUFNOnVzLXdlc3QtMl9yL1JPT00vMzk5ZWE4ZTAtM2YwZC0xMWYxLWE4NjQtNTM5NjdjZTYyMjkw"
+                    },
+                    "personEmail": {
+                        "type": "string",
+                        "description": "Email of the person to add.",
+                        "example": "aytac125@gmail.com"
+                    },
+                    "isModerator": {
+                        "type": "boolean",
+                        "description": "Whether the member is a moderator.",
+                        "example": false
+                    }
+                },
+                "required": [],
+                "additionalProperties": false
+            },
+            "responses": [
+                {
+                    "body_conditions": {
+                        "roomId": "Y2lzY29zcGFyazovL3VybjpURUFNOnVzLXdlc3QtMl9yL1JPT00vMzk5ZWE4ZTAtM2YwZC0xMWYxLWE4NjQtNTM5NjdjZTYyMjkw",
+                        "personEmail": "aytac125@gmail.com"
+                    },
+                    "response": {
+                        "status_code": 409,
+                        "headers": {
+                            "Content-Type": "application/json"
+                        },
+                        "body": {
+                            "message": "User is already a participant in the room.",
+                            "errors": [
+                                {
+                                    "description": "User is already a participant in the room."
+                                }
+                            ],
+                            "trackingId": "ROUTERGW_7846d88e-9578-4c9a-a42e-5d83e77dc0c9"
+                        }
+                    }
+                },
+                {
+                    "body_conditions": {
+                        "personEmail": "aytac125gmail.com"
+                    },
+                    "response": {
+                        "status_code": 404,
+                        "headers": {
+                            "Content-Type": "application/json"
+                        },
+                        "body": {
+                            "message": "The requested resource could not be found.",
+                            "errors": [
+                                {
+                                    "description": "The requested resource could not be found."
+                                }
+                            ],
+                            "trackingId": "ROUTERGW_4f743a39-0b28-4538-9704-e3eee6357eb1"
+                        }
+                    }
+                },
+                {
+                    "body_conditions": null,
+                    "response": {
+                        "status_code": 200,
+                        "headers": {
+                            "Content-Type": "application/json"
+                        },
+                        "body": {
+                            "id": "Y2lzY29zcGFyazovL3VybjpURUFNOnVzLXdlc3QtMl9yL01FTUJFUlNISVAvMmNkMzI5MGItOGQwNC00MjY2LWIyZjYtMDVlMmY1NTQzY2IwOjM5OWVhOGUwLTNmMGQtMTFmMS1hODY0LTUzOTY3Y2U2MjI5MA",
+                            "roomId": "Y2lzY29zcGFyazovL3VybjpURUFNOnVzLXdlc3QtMl9yL1JPT00vMzk5ZWE4ZTAtM2YwZC0xMWYxLWE4NjQtNTM5NjdjZTYyMjkw",
+                            "roomType": "group",
+                            "personId": "Y2lzY29zcGFyazovL3VzL1BFT1BMRS8yY2QzMjkwYi04ZDA0LTQyNjYtYjJmNi0wNWUyZjU1NDNjYjA",
+                            "personEmail": "aytac125@gmail.com",
+                            "personDisplayName": "aytacyu",
+                            "personOrgId": "Y2lzY29zcGFyazovL3VzL09SR0FOSVpBVElPTi8xOGY3ZWVmYS1iOTZkLTQwZTQtOTYzYi04NTM0MmQ2YjIxZGI",
+                            "isModerator": false,
+                            "isMonitor": false,
+                            "isRoomHidden": false,
+                            "created": "{{timestamp}}"
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Delete a Membership",
+            "method": "DELETE",
+            "path": "/memberships/{membershipId}",
+            "tag": "Memberships",
+            "authentication": [
+                "oidc_auth_code"
+            ],
+            "persistence": {
+                "entity_name": "memberships",
+                "action": "delete",
+                "id_path_param": "membershipId"
+            },
+            "responses": [
+                {
+                    "body_conditions": null,
+                    "response": {
+                        "status_code": 204,
+                        "headers": {
+                            "Content-Type": "application/json"
+                        },
+                        "body": null
+                    }
+                }
+            ],
+            "not_found_response": {
+                "status_code": 404,
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "message": "The requested resource could not be found.",
+                    "errors": [
+                        {
+                            "description": "The requested resource could not be found."
+                        }
+                    ],
+                    "trackingId": "ROUTERGW_b2c3d4e5-f6a7-8901-bcde-f12345678901"
+                }
+            }
+        }
+    ]
+}

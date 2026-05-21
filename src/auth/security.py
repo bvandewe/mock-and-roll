@@ -14,12 +14,12 @@ from fastapi.security import (
     HTTPBasicCredentials,
     HTTPBearer,
 )
-from fastapi.security.api_key import APIKeyHeader
+from fastapi.security.api_key import APIKeyCookie, APIKeyHeader
 
 # Security schemes
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 csrf_token_header = APIKeyHeader(name="X-XSRF-TOKEN", auto_error=False)
-session_cookie = APIKeyHeader(name="Cookie", auto_error=False)
+session_cookie = APIKeyCookie(name="JSESSIONID", auto_error=False)
 security_basic = HTTPBasic(auto_error=False)
 security_bearer = HTTPBearer(auto_error=False)
 
@@ -194,7 +194,7 @@ def get_security_dependencies(auth_methods: list[str], auth_config: dict[str, An
         return None
 
     # Create a custom dependency that handles multiple auth types
-    async def verify_auth(request: Request, api_key: Optional[str] = Security(api_key_header), csrf_token: Optional[str] = Security(csrf_token_header), session_cookie_header: Optional[str] = Security(session_cookie), credentials: Optional[HTTPBasicCredentials] = Security(security_basic), bearer: Optional[HTTPAuthorizationCredentials] = Security(security_bearer)):
+    async def verify_auth(request: Request, api_key: Optional[str] = Security(api_key_header), csrf_token: Optional[str] = Security(csrf_token_header), session_cookie_value: Optional[str] = Security(session_cookie), credentials: Optional[HTTPBasicCredentials] = Security(security_basic), bearer: Optional[HTTPAuthorizationCredentials] = Security(security_bearer)):
         # Collect validation results for all required methods
         auth_errors = []
         auth_results = {}
@@ -267,10 +267,13 @@ def get_security_dependencies(auth_methods: list[str], auth_config: dict[str, An
             valid_sessions = session_config.get("valid_sessions", [])
 
             # Check for session cookie in request cookies first
-            session_id = request.cookies.get(session_cookie_name)
+            session_id = request.cookies.get(session_cookie_name) or session_cookie_value
 
             # If not found in cookies, check if provided via Cookie header
             # (for Swagger UI)
+            if not session_id:
+                session_cookie_header = request.headers.get("Cookie")
+
             if not session_id and session_cookie_header:
                 # Parse cookie header manually for Swagger UI
                 # Expected format: "JSESSIONID=value" or just "value"

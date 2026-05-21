@@ -268,9 +268,9 @@ def custom_openapi(app: FastAPI, api_config: dict[str, Any]):
             session_cookie_name = method_config.get("session_cookie", "JSESSIONID")
             security_schemes[scheme_name] = {
                 "type": "apiKey",
-                "in": "header",
-                "name": "Cookie",
-                "description": f"Session cookie (e.g., {session_cookie_name}=session-id)",
+                "in": "cookie",
+                "name": session_cookie_name,
+                "description": f"Session cookie for {session_cookie_name}",
             }
             auth_mapping[method_name] = scheme_name
 
@@ -310,14 +310,14 @@ def custom_openapi(app: FastAPI, api_config: dict[str, Any]):
 
         if path in openapi_schema["paths"] and method in openapi_schema["paths"][path]:
             if auth_methods:
-                security_requirements = []
+                security_requirement = {}
                 for auth_method in auth_methods:
                     if auth_method in auth_mapping:
                         security_scheme = auth_mapping[auth_method]
-                        security_requirements.append({security_scheme: []})
+                        security_requirement[security_scheme] = []
 
-                if security_requirements:
-                    openapi_schema["paths"][path][method]["security"] = security_requirements
+                if security_requirement:
+                    openapi_schema["paths"][path][method]["security"] = [security_requirement]
 
     # Fix security requirements for system endpoints
     # These endpoints should use the system_api_key security scheme

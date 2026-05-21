@@ -8,7 +8,9 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
 
-def resolve_auth_placeholders(value: Any, auth_config: Optional[dict[str, Any]] = None, request_context: Optional[dict] = None) -> Any:
+def resolve_auth_placeholders(
+    value: Any, auth_config: Optional[dict[str, Any]] = None, request_context: Optional[dict] = None
+) -> Any:
     """
     Import the resolve_auth_placeholders function from auth.security.
     This avoids circular imports by importing only when needed.
@@ -19,17 +21,39 @@ def resolve_auth_placeholders(value: Any, auth_config: Optional[dict[str, Any]] 
 
 
 def check_conditions(data: dict[str, Any], conditions: dict[str, Any]) -> bool:
-    """Checks if the request body satisfies all conditions."""
+    """Check whether request data satisfies configured body conditions.
+
+    Args:
+        data: Incoming request body data.
+        conditions: Configured condition values to match.
+
+    Returns:
+        True when all configured condition values match the request body.
+
+    Notes:
+        A configured ``null`` condition matches both a missing field and an
+        explicitly empty string. This supports configuration-driven validation
+        cases such as treating an omitted or empty title as equivalent invalid
+        input.
+    """
     if not conditions:
         return False
 
     for key, expected_value in conditions.items():
-        if data.get(key) != expected_value:
+        actual_value = data.get(key)
+        if expected_value is None:
+            if actual_value not in (None, ""):
+                return False
+            continue
+
+        if actual_value != expected_value:
             return False
     return True
 
 
-def process_response_body(body: Any, auth_config: Optional[dict[str, Any]] = None, request_context: Optional[dict] = None) -> Any:
+def process_response_body(
+    body: Any, auth_config: Optional[dict[str, Any]] = None, request_context: Optional[dict] = None
+) -> Any:
     """Process response body to replace template variables and auth placeholders."""
     if isinstance(body, dict):
         processed = {}
@@ -60,7 +84,9 @@ def process_response_body(body: Any, auth_config: Optional[dict[str, Any]] = Non
             resolved_body = substitute_timestamp_templates(resolved_body)
 
             # Handle path parameter substitution like {product_id}
-            resolved_body = re.sub(r"\{(\w+)\}", lambda m: f"path_param_{m.group(1)}", resolved_body)
+            resolved_body = re.sub(
+                r"\{(\w+)\}", lambda m: f"path_param_{m.group(1)}", resolved_body
+            )
 
             return resolved_body
     else:
@@ -134,7 +160,9 @@ def generate_realistic_unix_timestamp_ms() -> str:
     return str(int(realistic_time.timestamp() * 1000))
 
 
-def process_response_headers(headers: dict[str, Any], auth_config: Optional[dict[str, Any]] = None) -> dict[str, Any]:
+def process_response_headers(
+    headers: dict[str, Any], auth_config: Optional[dict[str, Any]] = None
+) -> dict[str, Any]:
     """Process response headers to replace auth placeholders."""
     processed_headers = {}
     for key, value in headers.items():

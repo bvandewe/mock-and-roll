@@ -27,7 +27,9 @@ class RedisClient:
                 redis_host = os.getenv("REDIS_HOST", "localhost")
                 redis_port = int(os.getenv("REDIS_PORT", "6379"))
                 redis_db = int(os.getenv("REDIS_DB", "0"))
-                self._client = redis.Redis(host=redis_host, port=redis_port, db=redis_db, decode_responses=True)
+                self._client = redis.Redis(
+                    host=redis_host, port=redis_port, db=redis_db, decode_responses=True
+                )
                 # Test connection
                 self._client.ping()
                 logging.info(f"Connected to Redis at {redis_host}:{redis_port}")
@@ -46,17 +48,31 @@ def get_redis_client():
     return redis_client.get_client()
 
 
-def store_entity(entity_name: str, data: dict[str, Any]) -> str:
-    """Store entity in Redis and return the generated key."""
+def store_entity(entity_name: str, data: dict[str, Any], entity_id: Optional[str] = None) -> str:
+    """Store entity in Redis and return the generated key.
+
+    Args:
+        entity_name: Logical entity collection name.
+        data: Entity payload to persist.
+        entity_id: Optional pre-generated identifier to use for the entity.
+
+    Returns:
+        The stored entity identifier.
+    """
     redis_conn = get_redis_client()
     if not redis_conn:
         raise HTTPException(status_code=503, detail="Redis not available")
 
-    entity_id = str(uuid.uuid4())
+    entity_id = entity_id or str(uuid.uuid4())
     key = f"{entity_name}.{entity_id}"
 
     # Add metadata
-    entity_data = {"id": entity_id, "entity_type": entity_name, "created_at": datetime.utcnow().isoformat(), "data": data}
+    entity_data = {
+        "id": entity_id,
+        "entity_type": entity_name,
+        "created_at": datetime.utcnow().isoformat(),
+        "data": data,
+    }
 
     try:
         redis_conn.setex(key, 3600, json.dumps(entity_data))  # 1 hour TTL
@@ -129,7 +145,13 @@ def get_cache_info() -> dict[str, Any]:
     try:
         info = redis_conn.info()
         keys = redis_conn.dbsize()
-        return {"status": "connected", "keys": keys, "memory_used": info.get("used_memory_human", "N/A"), "connected_clients": info.get("connected_clients", 0), "uptime": info.get("uptime_in_seconds", 0)}
+        return {
+            "status": "connected",
+            "keys": keys,
+            "memory_used": info.get("used_memory_human", "N/A"),
+            "connected_clients": info.get("connected_clients", 0),
+            "uptime": info.get("uptime_in_seconds", 0),
+        }
     except Exception as e:
         logging.error(f"Failed to get cache info: {e}")
         return {"status": "error", "error": str(e)}
