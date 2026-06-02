@@ -3,7 +3,7 @@
         {
             "name": "List Rooms",
             "method": "GET",
-            "path": "/rooms",
+            "path": "/v1/rooms",
             "tag": "Rooms",
             "authentication": [
                 "oidc_auth_code"
@@ -45,7 +45,7 @@
         {
             "name": "Get Room Details",
             "method": "GET",
-            "path": "/rooms/{room_id}",
+            "path": "/v1/rooms/{room_id}",
             "tag": "Rooms",
             "authentication": [
                 "oidc_auth_code"
@@ -79,7 +79,7 @@
         {
             "name": "Create Room",
             "method": "POST",
-            "path": "/rooms",
+            "path": "/v1/rooms",
             "tag": "Rooms",
             "authentication": [
                 "oidc_auth_code"
@@ -158,7 +158,7 @@
         {
             "name": "Delete a Room",
             "method": "DELETE",
-            "path": "/rooms/{roomId}",
+            "path": "/v1/rooms/{roomId}",
             "tag": "Rooms",
             "authentication": [
                 "oidc_auth_code"
@@ -205,7 +205,7 @@
         {
             "name": "List Memberships",
             "method": "GET",
-            "path": "/memberships",
+            "path": "/v1/memberships",
             "tag": "Memberships",
             "authentication": [
                 "oidc_auth_code"
@@ -267,7 +267,7 @@
         {
             "name": "Create a Membership",
             "method": "POST",
-            "path": "/memberships",
+            "path": "/v1/memberships",
             "tag": "Memberships",
             "authentication": [
                 "oidc_auth_code"
@@ -379,7 +379,7 @@
         {
             "name": "Delete a Membership",
             "method": "DELETE",
-            "path": "/memberships/{membershipId}",
+            "path": "/v1/memberships/{membershipId}",
             "tag": "Memberships",
             "authentication": [
                 "oidc_auth_code"
