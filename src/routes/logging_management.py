@@ -5,6 +5,7 @@ Provides endpoints to view and configure logging settings at runtime.
 """
 
 import logging
+import logging.handlers
 import os
 from typing import Any, Optional
 
@@ -19,15 +20,23 @@ class LoggingConfigUpdate(BaseModel):
     """Model for updating logging configuration."""
 
     enabled: Optional[bool] = Field(None, description="Enable or disable logging")
-    level: Optional[str] = Field(None, description="Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)")
+    level: Optional[str] = Field(
+        None, description="Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)"
+    )
     file_path: Optional[str] = Field(None, description="Path to log file")
     format: Optional[str] = Field(None, description="Log format string")
-    max_file_size_mb: Optional[int] = Field(None, description="Maximum file size in MB before rotation", gt=0)
+    max_file_size_mb: Optional[int] = Field(
+        None, description="Maximum file size in MB before rotation", gt=0
+    )
     backup_count: Optional[int] = Field(None, description="Number of backup files to keep", ge=0)
-    allow_log_deletion: Optional[bool] = Field(None, description="Allow or disable log file deletion via API")
+    allow_log_deletion: Optional[bool] = Field(
+        None, description="Allow or disable log file deletion via API"
+    )
 
 
-def add_logging_management_endpoints(app, api_config: dict[str, Any], auth_data: Optional[dict[str, Any]] = None):
+def add_logging_management_endpoints(
+    app, api_config: dict[str, Any], auth_data: Optional[dict[str, Any]] = None
+):
     """
     Add logging management endpoints to the FastAPI app.
 
@@ -60,7 +69,9 @@ def add_logging_management_endpoints(app, api_config: dict[str, Any], auth_data:
             raise HTTPException(status_code=500, detail=f"Failed to get logging status: {str(e)}")
 
     @router.post("/logging/config", summary="Update logging configuration")
-    async def update_logging_config_endpoint(config_update: LoggingConfigUpdate, auth: str = Depends(get_system_auth)):
+    async def update_logging_config_endpoint(
+        config_update: LoggingConfigUpdate, auth: str = Depends(get_system_auth)
+    ):
         """Update the logging configuration at runtime."""
         try:
             # Convert Pydantic model to dict, excluding None values
@@ -73,7 +84,10 @@ def add_logging_management_endpoints(app, api_config: dict[str, Any], auth_data:
             if "level" in new_config:
                 valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
                 if new_config["level"].upper() not in valid_levels:
-                    raise HTTPException(status_code=400, detail=f"Invalid log level. Must be one of: {', '.join(valid_levels)}")
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Invalid log level. Must be one of: {', '.join(valid_levels)}",
+                    )
                 new_config["level"] = new_config["level"].upper()
 
             # Update configuration
@@ -81,43 +95,69 @@ def add_logging_management_endpoints(app, api_config: dict[str, Any], auth_data:
 
             logging.info(f"Logging configuration updated: {new_config}")
 
-            return {"status": "success", "message": "Logging configuration updated successfully", "data": get_logging_status(updated_config)}
+            return {
+                "status": "success",
+                "message": "Logging configuration updated successfully",
+                "data": get_logging_status(updated_config),
+            }
 
         except HTTPException:
             raise
         except Exception as e:
             logging.error(f"Error updating logging configuration: {e}")
-            raise HTTPException(status_code=500, detail=f"Failed to update logging configuration: {str(e)}")
+            raise HTTPException(
+                status_code=500, detail=f"Failed to update logging configuration: {str(e)}"
+            )
 
     @router.get("/logging/logs", summary="Get recent log entries")
-    async def get_recent_logs(lines: int = Query(50, description="Number of recent lines to return", ge=1, le=10000), auth: str = Depends(get_system_auth)):
+    async def get_recent_logs(
+        lines: int = Query(50, description="Number of recent lines to return", ge=1, le=10000),
+        auth: str = Depends(get_system_auth),
+    ):
         """Get recent log entries from the log file."""
         try:
-            logging_config = api_config.get("logging", {})
+            # Get actual log file path from the active file handler
+            log_file_path = None
+            root_logger = logging.getLogger()
+            for handler in root_logger.handlers:
+                if isinstance(handler, (logging.FileHandler, logging.handlers.RotatingFileHandler)):
+                    log_file_path = handler.baseFilename
+                    break
 
-            # Use the same override logic as the logging setup
-            log_file_override = os.getenv("LOG_FILE")
-            if log_file_override:
-                log_file_path = log_file_override
-            else:
-                # Never use latest.logs - use environment LOG_FILE or generate timestamped default
-                import os
-
-                log_file_path = os.getenv("LOG_FILE")
-                if not log_file_path:
-                    from datetime import datetime
-
-                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                    log_file_path = logging_config.get("file_path", f"/app/{timestamp}_server.logs")
+            if not log_file_path:
+                return {
+                    "status": "success",
+                    "data": {
+                        "total_lines": 0,
+                        "returned_lines": 0,
+                        "logs": [],
+                        "message": "No active log file handler found. Server may not have been started with file logging enabled.",
+                    },
+                }
 
             try:
                 with open(log_file_path, "r", encoding="utf-8") as f:
                     all_lines = f.readlines()
                     recent_lines = all_lines[-lines:] if len(all_lines) > lines else all_lines
 
-                return {"status": "success", "data": {"total_lines": len(all_lines), "returned_lines": len(recent_lines), "logs": [line.rstrip("\n") for line in recent_lines]}}
+                return {
+                    "status": "success",
+                    "data": {
+                        "total_lines": len(all_lines),
+                        "returned_lines": len(recent_lines),
+                        "logs": [line.rstrip("\n") for line in recent_lines],
+                    },
+                }
             except FileNotFoundError:
-                return {"status": "success", "data": {"total_lines": 0, "returned_lines": 0, "logs": [], "message": "Log file not found"}}
+                return {
+                    "status": "success",
+                    "data": {
+                        "total_lines": 0,
+                        "returned_lines": 0,
+                        "logs": [],
+                        "message": "Log file not found",
+                    },
+                }
 
         except Exception as e:
             logging.error(f"Error reading log file: {e}")
@@ -131,15 +171,23 @@ def add_logging_management_endpoints(app, api_config: dict[str, Any], auth_data:
 
             # Check if log deletion is allowed
             if not logging_config.get("allow_log_deletion", True):
-                raise HTTPException(status_code=403, detail="Log file deletion is disabled in the configuration")
+                raise HTTPException(
+                    status_code=403, detail="Log file deletion is disabled in the configuration"
+                )
 
-            # Never use latest.logs - use environment LOG_FILE or generate timestamped default
-            log_file_path = os.getenv("LOG_FILE")
+            # Get actual log file path from the active file handler
+            log_file_path = None
+            root_logger = logging.getLogger()
+            for handler in root_logger.handlers:
+                if isinstance(handler, (logging.FileHandler, logging.handlers.RotatingFileHandler)):
+                    log_file_path = handler.baseFilename
+                    break
+
             if not log_file_path:
-                from datetime import datetime
-
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                log_file_path = logging_config.get("file_path", f"/app/{timestamp}_server.logs")
+                raise HTTPException(
+                    status_code=404,
+                    detail="No active log file handler found. Server may not have been started with file logging enabled.",
+                )
 
             try:
                 # Clear the file by opening it in write mode and immediately closing

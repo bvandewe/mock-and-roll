@@ -12,7 +12,6 @@
         "name": "MIT",
         "url": "https://opensource.org/licenses/MIT"
     },
-    "root_path": "/v1",
     "persistence": "memory",
     "openapi_tags": [
         {

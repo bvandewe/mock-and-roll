@@ -29,7 +29,9 @@ def setup_logging(api_config: dict[str, Any], log_file_override: Optional[str] =
 
     # Get logging parameters
     log_level = getattr(logging, logging_config.get("level", "INFO").upper(), logging.INFO)
-    log_format = logging_config.get("format", "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    log_format = logging_config.get(
+        "format", "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
 
     # Use override if provided, otherwise use config, otherwise fail
     if log_file_override:
@@ -40,7 +42,9 @@ def setup_logging(api_config: dict[str, Any], log_file_override: Optional[str] =
             log_file_path = logging_config["file_path"]
         else:
             # Don't create generic server logs - this indicates improper startup
-            raise ValueError("No log file specified and no default in config. Use mockctl to start servers properly.")
+            raise ValueError(
+                "No log file specified and no default in config. Use mockctl to start servers properly."
+            )
 
     max_file_size = logging_config.get("max_file_size_mb", 10) * 1024 * 1024  # Convert MB to bytes
     backup_count = logging_config.get("backup_count", 5)
@@ -86,7 +90,9 @@ def setup_logging(api_config: dict[str, Any], log_file_override: Optional[str] =
     # Set up file handler with rotation if enabled
     if file_enabled:
         try:
-            file_handler = logging.handlers.RotatingFileHandler(log_file_path, maxBytes=max_file_size, backupCount=backup_count, encoding="utf-8")
+            file_handler = logging.handlers.RotatingFileHandler(
+                log_file_path, maxBytes=max_file_size, backupCount=backup_count, encoding="utf-8"
+            )
             file_handler.setLevel(log_level)
             file_handler.setFormatter(formatter)
             handlers.append(file_handler)
@@ -100,7 +106,9 @@ def setup_logging(api_config: dict[str, Any], log_file_override: Optional[str] =
                 console_handler.setFormatter(formatter)
                 handlers.append(console_handler)
                 root_logger.addHandler(console_handler)
-                logging.warning("File logging failed and console was disabled - enabling console logging as fallback")
+                logging.warning(
+                    "File logging failed and console was disabled - enabling console logging as fallback"
+                )
 
     # If no handlers were added, add console as fallback
     if not handlers:
@@ -112,7 +120,13 @@ def setup_logging(api_config: dict[str, Any], log_file_override: Optional[str] =
         logging.warning("No logging handlers configured - using console as fallback")
 
     # Configure uvicorn loggers to use the same handlers
-    uvicorn_loggers = ["uvicorn", "uvicorn.error", "uvicorn.access", "fastapi", "api.requests"]  # Our custom middleware logger
+    uvicorn_loggers = [
+        "uvicorn",
+        "uvicorn.error",
+        "uvicorn.access",
+        "fastapi",
+        "api.requests",
+    ]  # Our custom middleware logger
 
     for logger_name in uvicorn_loggers:
         logger = logging.getLogger(logger_name)
@@ -129,7 +143,9 @@ def setup_logging(api_config: dict[str, Any], log_file_override: Optional[str] =
     # Disable noisy loggers
     logging.getLogger("multipart.multipart").setLevel(logging.WARNING)
 
-    logging.info(f"Logging configured - Level: {logging_config.get('level', 'INFO')}, Console: {console_enabled}, File: {file_enabled}")
+    logging.info(
+        f"Logging configured - Level: {logging_config.get('level', 'INFO')}, Console: {console_enabled}, File: {file_enabled}"
+    )
     if file_enabled:
         logging.info(f"Log file: {log_file_path}")
 
@@ -146,22 +162,30 @@ def get_logging_status(api_config: dict[str, Any]) -> dict[str, Any]:
     """
     logging_config = api_config.get("logging", {})
 
-    # Generate timestamped default file path if needed
-    if "file_path" not in logging_config:
-        from datetime import datetime
+    # Get the actual log file path from the active file handler on the root logger
+    actual_file_path = None
+    root_logger = logging.getLogger()
+    for handler in root_logger.handlers:
+        if isinstance(handler, (logging.FileHandler, logging.handlers.RotatingFileHandler)):
+            actual_file_path = handler.baseFilename
+            break
 
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        default_file_path = f"/app/{timestamp}_server.logs"
-    else:
-        default_file_path = logging_config["file_path"]
+    # Fall back to config value if no active file handler found
+    if not actual_file_path:
+        if "file_path" in logging_config:
+            actual_file_path = logging_config["file_path"]
+        else:
+            actual_file_path = None  # No log file configured or active
 
     status = {
         "enabled": logging_config.get("enabled", True),
         "level": logging_config.get("level", "INFO"),
         "console_enabled": logging_config.get("console_enabled", True),
         "file_enabled": logging_config.get("file_enabled", True),
-        "file_path": default_file_path,
-        "format": logging_config.get("format", "%(asctime)s - %(name)s - %(levelname)s - %(message)s"),
+        "file_path": actual_file_path,
+        "format": logging_config.get(
+            "format", "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        ),
         "max_file_size_mb": logging_config.get("max_file_size_mb", 10),
         "backup_count": logging_config.get("backup_count", 5),
         "max_body_log_size": logging_config.get("max_body_log_size", 2048),
@@ -171,7 +195,7 @@ def get_logging_status(api_config: dict[str, Any]) -> dict[str, Any]:
 
     # Check if log file exists and get its size
     log_file_path = status["file_path"]
-    if os.path.exists(log_file_path):
+    if log_file_path and os.path.exists(log_file_path):
         file_size = os.path.getsize(log_file_path)
         status["file_exists"] = True
         status["file_size_bytes"] = file_size
