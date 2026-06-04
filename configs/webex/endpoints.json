@@ -239,8 +239,8 @@
                                     "roomId": "Y2lzY29zcGFyazovL3VybjpURUFNOnVzLXdlc3QtMl9yL1JPT00vMzk5ZWE4ZTAtM2YwZC0xMWYxLWE4NjQtNTM5NjdjZTYyMjkw",
                                     "roomType": "group",
                                     "personId": "Y2lzY29zcGFyazovL3VzL1BFT1BMRS8zNDEwNTM4NS0yNjg3LTQxMjktYTc3NC1iYjNlODFiMTI5YjI",
-                                    "personEmail": "aytac125@gmail.com",
-                                    "personDisplayName": "aytac125",
+                                    "personEmail": "user1@cisco.com",
+                                    "personDisplayName": "user1",
                                     "personOrgId": "Y2lzY29zcGFyazovL3VzL09SR0FOSVpBVElPTi85Njc2ZDM4YS04OTIyLTQ1MzUtYmE4Zi0yZjRjODk3MzVmZDQ",
                                     "isModerator": false,
                                     "isMonitor": false,
@@ -251,8 +251,8 @@
                                     "roomId": "Y2lzY29zcGFyazovL3VybjpURUFNOnVzLXdlc3QtMl9yL1JPT00vMzk5ZWE4ZTAtM2YwZC0xMWYxLWE4NjQtNTM5NjdjZTYyMjkw",
                                     "roomType": "group",
                                     "personId": "Y2lzY29zcGFyazovL3VzL1BFT1BMRS8zNWE4ZDlhNS1jYzA2LTQ4MDQtYTdhYi0yMGZmMDNhMWJhNGQ",
-                                    "personEmail": "admin@ayurdaku-6xrq.wbx.ai",
-                                    "personDisplayName": "admin@ayurdaku-6xrq.wbx.ai",
+                                    "personEmail": "user2@cisco.com",
+                                    "personDisplayName": "user2",
                                     "personOrgId": "Y2lzY29zcGFyazovL3VzL09SR0FOSVpBVElPTi8yYTRlYjcxYi1lMDljLTQ3N2ItOWM4OC1kZGFmZTM2YmFlOGI",
                                     "isModerator": false,
                                     "isMonitor": false,
@@ -299,7 +299,7 @@
                     "personEmail": {
                         "type": "string",
                         "description": "Email of the person to add.",
-                        "example": "aytac125@gmail.com"
+                        "example": "user1@cisco.com"
                     },
                     "isModerator": {
                         "type": "boolean",
@@ -314,7 +314,7 @@
                 {
                     "body_conditions": {
                         "roomId": "Y2lzY29zcGFyazovL3VybjpURUFNOnVzLXdlc3QtMl9yL1JPT00vMzk5ZWE4ZTAtM2YwZC0xMWYxLWE4NjQtNTM5NjdjZTYyMjkw",
-                        "personEmail": "aytac125@gmail.com"
+                        "personEmail": "user1@cisco.com"
                     },
                     "response": {
                         "status_code": 409,
@@ -334,7 +334,7 @@
                 },
                 {
                     "body_conditions": {
-                        "personEmail": "aytac125gmail.com"
+                        "personEmail": "user1cisco.com"
                     },
                     "response": {
                         "status_code": 404,
@@ -364,8 +364,8 @@
                             "roomId": "Y2lzY29zcGFyazovL3VybjpURUFNOnVzLXdlc3QtMl9yL1JPT00vMzk5ZWE4ZTAtM2YwZC0xMWYxLWE4NjQtNTM5NjdjZTYyMjkw",
                             "roomType": "group",
                             "personId": "Y2lzY29zcGFyazovL3VzL1BFT1BMRS8yY2QzMjkwYi04ZDA0LTQyNjYtYjJmNi0wNWUyZjU1NDNjYjA",
-                            "personEmail": "aytac125@gmail.com",
-                            "personDisplayName": "aytacyu",
+                            "personEmail": "user1@cisco.com",
+                            "personDisplayName": "user1",
                             "personOrgId": "Y2lzY29zcGFyazovL3VzL09SR0FOSVpBVElPTi8xOGY3ZWVmYS1iOTZkLTQwZTQtOTYzYi04NTM0MmQ2YjIxZGI",
                             "isModerator": false,
                             "isMonitor": false,
