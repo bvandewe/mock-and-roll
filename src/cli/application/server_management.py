@@ -18,13 +18,25 @@ from ..domain.repositories import (
 class StartServerUseCase:
     """Use case for starting a server."""
 
-    def __init__(self, server_repo: ServerInstanceRepository, config_repo: ServerConfigRepository, process_repo: ProcessRepository, project_root: Path):
+    def __init__(
+        self,
+        server_repo: ServerInstanceRepository,
+        config_repo: ServerConfigRepository,
+        process_repo: ProcessRepository,
+        project_root: Path,
+    ):
         self.server_repo = server_repo
         self.config_repo = config_repo
         self.process_repo = process_repo
         self.project_root = project_root
 
-    def execute(self, config_name: str, port: Optional[int] = None, host: str = "0.0.0.0", reload: bool = False) -> ServerInstance:
+    def execute(
+        self,
+        config_name: str,
+        port: Optional[int] = None,
+        host: str = "0.0.0.0",
+        reload: bool = False,
+    ) -> ServerInstance:
         """Start a server with the given configuration."""
         # Find and validate configuration
         config = self.config_repo.find_by_name(config_name)
@@ -37,7 +49,20 @@ class StartServerUseCase:
         # Check for existing server
         existing = self.server_repo.find_by_config(config_name)
         if existing and existing.is_running:
-            raise ValueError(f"Server with configuration '{config_name}' is already running")
+            # Verify the tracked PID is actually alive (handles stale state after reboot)
+            if self.process_repo.exists(existing.pid):
+                raise ValueError(
+                    f"Server with configuration '{config_name}' is already running (PID {existing.pid})"
+                )
+            else:
+                # PID is dead - clean up stale entry and continue with start
+                import logging
+
+                logger = logging.getLogger("mockctl")
+                logger.info(
+                    f"Cleaning up stale server entry for '{config_name}' (PID {existing.pid} no longer exists)"
+                )
+                self.server_repo.remove(existing)
 
         # Determine port
         if port is None:
@@ -48,7 +73,9 @@ class StartServerUseCase:
                 raise ValueError(f"Port {port} is already in use by process {existing_pid}")
 
         # Create server instance first to generate timestamped log file path
-        instance = ServerInstance(config_name=config_name, port=port, pid=0, host=host, status=ServerStatus.STARTING)
+        instance = ServerInstance(
+            config_name=config_name, port=port, pid=0, host=host, status=ServerStatus.STARTING
+        )
 
         # Ensure log file path is set
         if instance.log_file is None:
@@ -66,7 +93,9 @@ class StartServerUseCase:
 
         return instance
 
-    def _start_server_process(self, config: ServerConfig, port: int, host: str, reload: bool, log_file_path: str) -> subprocess.Popen:
+    def _start_server_process(
+        self, config: ServerConfig, port: int, host: str, reload: bool, log_file_path: str
+    ) -> subprocess.Popen:
         """Start the actual server process with specified log file path."""
         import os
 
@@ -87,7 +116,9 @@ class StartServerUseCase:
             cmd.append("--reload")
 
         # Start process
-        process = subprocess.Popen(cmd, cwd=self.project_root, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        process = subprocess.Popen(
+            cmd, cwd=self.project_root, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
 
         # Give it a moment to start
         import time
@@ -200,12 +231,24 @@ class GetConfigurationsUseCase:
 class SearchLogsUseCase:
     """Use case for searching server logs."""
 
-    def __init__(self, log_search_repo: LogSearchRepository, server_repo: ServerInstanceRepository, config_repo: ServerConfigRepository):
+    def __init__(
+        self,
+        log_search_repo: LogSearchRepository,
+        server_repo: ServerInstanceRepository,
+        config_repo: ServerConfigRepository,
+    ):
         self.log_search_repo = log_search_repo
         self.server_repo = server_repo
         self.config_repo = config_repo
 
-    def execute(self, path_regex: str, config_name: Optional[str] = None, port: Optional[int] = None, since_timestamp: Optional[datetime] = None, use_all_logs: bool = False) -> SearchResult:
+    def execute(
+        self,
+        path_regex: str,
+        config_name: Optional[str] = None,
+        port: Optional[int] = None,
+        since_timestamp: Optional[datetime] = None,
+        use_all_logs: bool = False,
+    ) -> SearchResult:
         """Search logs for requests matching the path regex.
 
         Args:
@@ -232,7 +275,9 @@ class SearchLogsUseCase:
         else:
             return self._search_multiple_log_files(log_file_paths, path_regex, since_timestamp)
 
-    def _determine_log_files(self, config_name: Optional[str], port: Optional[int], use_all_logs: bool) -> list[str]:
+    def _determine_log_files(
+        self, config_name: Optional[str], port: Optional[int], use_all_logs: bool
+    ) -> list[str]:
         """Determine which log files to search.
 
         Args:
@@ -317,7 +362,9 @@ class SearchLogsUseCase:
 
         return most_recent_logs
 
-    def _search_multiple_log_files(self, log_file_paths: list[str], path_regex: str, since_timestamp: Optional[datetime] = None) -> SearchResult:
+    def _search_multiple_log_files(
+        self, log_file_paths: list[str], path_regex: str, since_timestamp: Optional[datetime] = None
+    ) -> SearchResult:
         """Search multiple log files and combine results.
 
         Args:
@@ -341,7 +388,9 @@ class SearchLogsUseCase:
 
         for log_file_path in log_file_paths:
             try:
-                result = self.log_search_repo.search_logs(log_file_path, path_regex, since_timestamp)
+                result = self.log_search_repo.search_logs(
+                    log_file_path, path_regex, since_timestamp
+                )
                 all_matched_requests.extend(result.matched_requests)
                 total_requests += result.total_requests
                 log_files_searched.append(log_file_path)
@@ -367,4 +416,12 @@ class SearchLogsUseCase:
         # Create combined result
         from ..domain.entities import SearchResult
 
-        return SearchResult(path_pattern=path_regex, log_files=log_files_searched, total_requests=total_requests, matched_requests=all_matched_requests, status_code_summary=dict(all_status_summary), search_duration_ms=search_duration_ms, since_timestamp=since_timestamp)
+        return SearchResult(
+            path_pattern=path_regex,
+            log_files=log_files_searched,
+            total_requests=total_requests,
+            matched_requests=all_matched_requests,
+            status_code_summary=dict(all_status_summary),
+            search_duration_ms=search_duration_ms,
+            since_timestamp=since_timestamp,
+        )
