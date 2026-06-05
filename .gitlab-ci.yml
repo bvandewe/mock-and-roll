@@ -18,7 +18,16 @@ publish-job:
   image: docker:git
   services:
     - docker:dind
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - stuck_or_timeout_failure
+      - script_failure
   before_script:
+    - sleep 5
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
   script:
     - echo "Publishing the container image with the tag '$CI_COMMIT_TAG'"
